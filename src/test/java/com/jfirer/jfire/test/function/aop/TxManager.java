@@ -2,6 +2,7 @@ package com.jfirer.jfire.test.function.aop;
 
 import com.jfirer.jfire.core.aop.impl.transaction.ConnectionHolder;
 import com.jfirer.jfire.core.aop.impl.transaction.JdbcTransactionManager;
+import com.jfirer.jfire.core.aop.impl.transaction.Propagation;
 import com.jfirer.jfire.core.aop.impl.transaction.TransactionState;
 
 import javax.annotation.Resource;
@@ -23,7 +24,7 @@ public class TxManager extends JdbcTransactionManager
     }
 
     @Override
-    public TransactionState beginTransAction(int propagation)
+    public TransactionState beginTransAction(Propagation propagation)
     {
         beginTransAction = true;
         return super.beginTransAction(propagation);
@@ -51,11 +52,6 @@ public class TxManager extends JdbcTransactionManager
             private boolean transactionActive;
             private boolean closed = false;
 
-            @Override
-            public void setPrev(ConnectionHolder connectionHolder)
-            {
-                // TODO Auto-generated method stub
-            }
 
             @Override
             public void rollback()
@@ -63,23 +59,11 @@ public class TxManager extends JdbcTransactionManager
                 // TODO Auto-generated method stub
             }
 
-            @Override
-            public boolean isTransactionActive()
-            {
-                return transactionActive;
-            }
 
             @Override
             public boolean isClosed()
             {
                 return closed;
-            }
-
-            @Override
-            public ConnectionHolder getPrev()
-            {
-                // TODO Auto-generated method stub
-                return null;
             }
 
             @Override

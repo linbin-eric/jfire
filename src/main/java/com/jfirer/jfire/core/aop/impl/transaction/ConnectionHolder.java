@@ -5,8 +5,6 @@ public interface ConnectionHolder
 
     void beginTransaction();
 
-    boolean isTransactionActive();
-
     void commit();
 
     void rollback();
@@ -15,12 +13,5 @@ public interface ConnectionHolder
 
     boolean isClosed();
 
-    /**
-     * 获取上下文中前一个连接对象
-     *
-     * @return
-     */
-    ConnectionHolder getPrev();
 
-    void setPrev(ConnectionHolder connectionHolder);
 }

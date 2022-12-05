@@ -6,7 +6,7 @@ public interface TransactionManager
     /**
      * 以指定的传播级别开启事务。如果当前上下文中不存在连接，则创建一个连接
      */
-    TransactionState beginTransAction(int propagation);
+    TransactionState beginTransAction(Propagation propagation);
 
     /**
      * 如果允许的话，提交事务。提交时如有必要，关闭当前连接

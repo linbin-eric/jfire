@@ -4,6 +4,8 @@ import com.jfirer.jfire.core.aop.impl.transaction.Propagation;
 
 import java.lang.annotation.*;
 
+import static com.jfirer.jfire.core.aop.impl.transaction.Propagation.REQUIRED;
+
 /**
  * 使用该注解表明该类的公共方法或者注解方法是一个事务方法
  *
@@ -15,5 +17,5 @@ import java.lang.annotation.*;
 @Inherited
 public @interface Transactional
 {
-    int propagation() default Propagation.REQUIRED;
+    Propagation propagation() default REQUIRED;
 }
