@@ -28,14 +28,7 @@ import java.util.*;
 
 public class BeanDefinition
 {
-    public static final ThreadLocal<Map<String, Object>> tmpBeanInstanceMap = new ThreadLocal<Map<String, Object>>()
-    {
-        @Override
-        protected java.util.Map<String, Object> initialValue()
-        {
-            return new HashMap<String, Object>();
-        }
-    };
+    public static final ThreadLocal<Map<String, Object>> tmpBeanInstanceMap = ThreadLocal.withInitial(() -> new HashMap<String, Object>());
     private             boolean                          prototype;
     // 如果是单例的情况，后续只会使用该实例
     private volatile    Object                           cachedSingletonInstance;

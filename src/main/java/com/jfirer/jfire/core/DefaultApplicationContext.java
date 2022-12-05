@@ -346,22 +346,23 @@ public class DefaultApplicationContext implements ApplicationContext
 
     private void aopScan()
     {
-        LinkedList<EnhanceManager> list = new LinkedList<EnhanceManager>();
-        list.addAll(getBeans(EnhanceManager.class));
-        Collections.sort(list, new Comparator<EnhanceManager>()
-        {
-            @Override
-            public int compare(EnhanceManager o1, EnhanceManager o2)
-            {
-                return o1.order() > o2.order() ? 1 : o1.order() == o2.order() ? 0 : -1;
-            }
-        });
+//        LinkedList<EnhanceManager> list = new LinkedList<EnhanceManager>();
+//        list.addAll(getBeans(EnhanceManager.class));
+//        Collections.sort(list, new Comparator<EnhanceManager>()
+//        {
+//            @Override
+//            public int compare(EnhanceManager o1, EnhanceManager o2)
+//            {
+//                return o1.order() > o2.order() ? 1 : o1.order() == o2.order() ? 0 : -1;
+//            }
+//        });
         String traceId = TRACEID.currentTraceId();
-        for (EnhanceManager aopManager : list)
-        {
-            LOGGER.debug("traceId:{} 增强类:{}执行AOP扫描", traceId, aopManager.getClass().getName());
-            aopManager.scan(this);
-        }
+        getBeans(EnhanceManager.class).stream().sorted(((o1, o2) -> o1.order() > o2.order() ? 1 : o1.order() == o2.order() ? 0 : -1)).forEach(enhanceManager -> {
+            LOGGER.debug("traceId:{} 增强类:{}执行AOP扫描", traceId, enhanceManager.getClass().getName());
+            enhanceManager.scan(this);
+
+        });
+
         for (BeanDefinition each : beanDefinitionMap.values())
         {
             each.initEnhance();
