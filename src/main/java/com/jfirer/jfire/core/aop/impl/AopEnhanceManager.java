@@ -41,32 +41,26 @@ public class AopEnhanceManager implements EnhanceManager
     public void scan(ApplicationContext context)
     {
         AnnotationContextFactory annotationContextFactory = context.getAnnotationContextFactory();
-        ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
-        for (BeanDefinition each : context.getAllBeanDefinitions())
-        {
-            AnnotationContext annotationContext = annotationContextFactory.get(each.getType(), classLoader);
-            if (annotationContext.isAnnotationPresent(EnhanceClass.class))
-            {
-                String rule = annotationContext.getAnnotationMetadata(EnhanceClass.class).getAttribyte("value").getStringValue();
-                for (BeanDefinition beanDefinition : context.getAllBeanDefinitions())
-                {
-                    if (StringUtil.match(beanDefinition.getType().getName(), rule))
-                    {
-                        beanDefinition.addAopManager(this);
-                    }
-                }
-            }
-        }
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        context.getAllBeanDefinitions().stream()
+               .map(beanDefinition -> annotationContextFactory.get(beanDefinition.getType(), classLoader))
+               .filter(annotationContext -> annotationContext.isAnnotationPresent(EnhanceClass.class))
+               .map(annotationContext -> annotationContext.getAnnotationMetadata(EnhanceClass.class)
+                                                          .getAttribyte("value").getStringValue())
+               .flatMap(rule -> context.getAllBeanDefinitions().stream()
+                                       .filter(beanDefinition -> StringUtil.match(beanDefinition.getType()
+                                                                                                .getName(), rule)))
+               .forEach(beanDefinition -> beanDefinition.addAopManager(AopEnhanceManager.this));
     }
 
     @Override
     public EnhanceCallbackForBeanInstance enhance(ClassModel classModel, final Class<?> type, ApplicationContext applicationContext, String hostFieldName)
     {
-        PriorityQueue<BeanDefinition> queue                    = findAspectClass(type, applicationContext);
-        List<String>                  fieldNames               = new ArrayList<String>();
-        List<BeanDefinition>          injects                  = new ArrayList<BeanDefinition>();
-        AnnotationContextFactory      annotationContextFactory = applicationContext.getAnnotationContextFactory();
-        ClassLoader                   classLoader              = Thread.currentThread().getContextClassLoader();
+        PriorityQueue<BeanDefinition> queue = findAspectClass(type, applicationContext);
+        List<String> fieldNames = new ArrayList<String>();
+        List<BeanDefinition> injects = new ArrayList<BeanDefinition>();
+        AnnotationContextFactory annotationContextFactory = applicationContext.getAnnotationContextFactory();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         for (BeanDefinition each : queue)
         {
             String fieldName = "enhance_" + fieldNameCounter.getAndIncrement();
@@ -115,7 +109,7 @@ public class AopEnhanceManager implements EnhanceManager
                     {
                         if (enhanceInfo.fields == null)
                         {
-                            Field[]  fields      = new Field[enhanceInfo.fieldNames.length];
+                            Field[] fields = new Field[enhanceInfo.fieldNames.length];
                             Class<?> enhanceType = beanInstance.getClass();
                             for (int i = 0; i < enhanceInfo.fieldNames.length; i++)
                             {
@@ -135,7 +129,7 @@ public class AopEnhanceManager implements EnhanceManager
                         }
                     }
                 }
-                Field[]          fields  = enhanceInfo.fields;
+                Field[] fields = enhanceInfo.fields;
                 BeanDefinition[] injects = enhanceInfo.injects;
                 for (int i = 0; i < fields.length; i++)
                 {
@@ -156,17 +150,19 @@ public class AopEnhanceManager implements EnhanceManager
     private void processBeforeAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, Before.class);
+        String rule = getRule(annotationContext, enhanceMethod, Before.class);
         for (Method method : type.getMethods())
         {
             if (match(rule, method))
             {
-                logger.debug("traceId:{} 前置通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
-                MethodModel                methodModel = classModel.getMethodModel(key);
-                String                     originBody  = methodModel.getBody();
-                String                     pointName   = "point_" + fieldNameCounter.getAndIncrement();
-                StringBuilder              cache       = new StringBuilder();
+                logger.debug("traceId:{} 前置通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass()
+                                                                                                                 .getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass()
+                                                                                                                                                                         .getSimpleName() + "." + enhanceMethod.getName());
+                MethodModel.MethodModelKey key = new MethodModel.MethodModelKey(method);
+                MethodModel methodModel = classModel.getMethodModel(key);
+                String originBody = methodModel.getBody();
+                String pointName = "point_" + fieldNameCounter.getAndIncrement();
+                StringBuilder cache = new StringBuilder();
                 generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
                 generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
                 cache.append(originBody);
@@ -203,7 +199,8 @@ public class AopEnhanceManager implements EnhanceManager
         cache.append(pointName).append(".setHost(").append(hostFieldName).append(");\r\n");
         String _MethodDescriptionName = "_MethodDescription_" + fieldNameCounter.getAndIncrement();
         classModel.addImport(ProceedPoint.MethodDescription.class);
-        cache.append("MethodDescription " + _MethodDescriptionName + " = new MethodDescription(\"").append(method.getName()).append("\",new Class[]{");
+        cache.append("MethodDescription " + _MethodDescriptionName + " = new MethodDescription(\"")
+             .append(method.getName()).append("\",new Class[]{");
         if (method.getParameterTypes().length != 0)
         {
             for (Class<?> each : method.getParameterTypes())
@@ -230,17 +227,19 @@ public class AopEnhanceManager implements EnhanceManager
     private void processAfterAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, After.class);
+        String rule = getRule(annotationContext, enhanceMethod, After.class);
         for (Method method : type.getMethods())
         {
             if (match(rule, method))
             {
-                logger.debug("traceId:{} 后置通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
-                MethodModel                methodModel = classModel.getMethodModel(key);
-                String                     originBody  = methodModel.getBody();
-                String                     pointName   = "point_" + fieldNameCounter.getAndIncrement();
-                StringBuilder              cache       = new StringBuilder();
+                logger.debug("traceId:{} 后置通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass()
+                                                                                                                 .getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass()
+                                                                                                                                                                         .getSimpleName() + "." + enhanceMethod.getName());
+                MethodModel.MethodModelKey key = new MethodModel.MethodModelKey(method);
+                MethodModel methodModel = classModel.getMethodModel(key);
+                String originBody = methodModel.getBody();
+                String pointName = "point_" + fieldNameCounter.getAndIncrement();
+                StringBuilder cache = new StringBuilder();
                 cache.append("try{\r\n").append(originBody).append("}\r\n").append("finally\r\n{\r\n");
                 generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
                 generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
@@ -252,26 +251,30 @@ public class AopEnhanceManager implements EnhanceManager
 
     private void generateEnhanceMethodInvoke(String fieldName, Method enhanceMethod, String pointName, StringBuilder cache)
     {
-        cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("(").append(pointName).append(");\r\n");
+        cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("(").append(pointName)
+             .append(");\r\n");
     }
 
     private void processAfterReturningAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, AfterReturning.class);
+        String rule = getRule(annotationContext, enhanceMethod, AfterReturning.class);
         for (Method method : type.getMethods())
         {
             if (method.getReturnType() != void.class && match(rule, method))
             {
-                logger.debug("traceId:{} 返回通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
-                MethodModel                origin = classModel.removeMethodModel(key);
-                MethodModel                newOne = new MethodModel(method, classModel);
+                logger.debug("traceId:{} 返回通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass()
+                                                                                                                 .getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass()
+                                                                                                                                                                         .getSimpleName() + "." + enhanceMethod.getName());
+                MethodModel.MethodModelKey key = new MethodModel.MethodModelKey(method);
+                MethodModel origin = classModel.removeMethodModel(key);
+                MethodModel newOne = new MethodModel(method, classModel);
                 origin.setAccessLevel(MethodModel.AccessLevel.PRIVATE);
                 origin.setMethodName(origin.getMethodName() + "_" + methodNameCounter.getAndIncrement());
                 classModel.putMethodModel(origin);
                 StringBuilder cache = new StringBuilder();
-                cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = ").append(origin.generateInvoke()).append(";\r\n");
+                cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = ")
+                     .append(origin.generateInvoke()).append(";\r\n");
                 String pointName = generatePointName();
                 generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
                 cache.append(pointName).append(".setResult(result);\r\n");
@@ -291,17 +294,19 @@ public class AopEnhanceManager implements EnhanceManager
     private void processAfterThrowableAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, AfterThrowable.class);
+        String rule = getRule(annotationContext, enhanceMethod, AfterThrowable.class);
         classModel.addImport(ReflectUtil.class);
         for (Method method : type.getMethods())
         {
             if (match(rule, method))
             {
-                logger.debug("traceId:{} 规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
-                MethodModel                methodModel = classModel.getMethodModel(key);
-                String                     body        = methodModel.getBody();
-                StringBuilder              cache       = new StringBuilder();
+                logger.debug("traceId:{} 规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass()
+                                                                                                         .getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass()
+                                                                                                                                                                 .getSimpleName() + "." + enhanceMethod.getName());
+                MethodModel.MethodModelKey key = new MethodModel.MethodModelKey(method);
+                MethodModel methodModel = classModel.getMethodModel(key);
+                String body = methodModel.getBody();
+                StringBuilder cache = new StringBuilder();
                 cache.append("try\r\n{\r\n").append(body).append("}\r\ncatch(java.lang.Throwable e)\r\n{");
                 String pointName = generatePointName();
                 generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
@@ -333,20 +338,22 @@ public class AopEnhanceManager implements EnhanceManager
     private void processAroundAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, Around.class);
+        String rule = getRule(annotationContext, enhanceMethod, Around.class);
         for (Method method : type.getMethods())
         {
             if (match(rule, method))
             {
-                logger.debug("traceId:{} 环绕通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
-                MethodModel                methodModel = classModel.getMethodModel(key);
-                boolean[]                  flags       = new boolean[methodModel.getParamterTypes().length];
+                logger.debug("traceId:{} 环绕通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass()
+                                                                                                                 .getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass()
+                                                                                                                                                                         .getSimpleName() + "." + enhanceMethod.getName());
+                MethodModel.MethodModelKey key = new MethodModel.MethodModelKey(method);
+                MethodModel methodModel = classModel.getMethodModel(key);
+                boolean[] flags = new boolean[methodModel.getParamterTypes().length];
                 Arrays.fill(flags, true);
                 methodModel.setParamterFinals(flags);
-                String        body      = methodModel.getBody();
-                String        pointName = generatePointName();
-                StringBuilder cache     = new StringBuilder();
+                String body = methodModel.getBody();
+                String pointName = generatePointName();
+                StringBuilder cache = new StringBuilder();
                 generateProceedPointImplWithInvokeinternal(classModel, hostFieldName, method, pointName, cache, body);
                 Class<?> returnType = method.getReturnType();
                 generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
@@ -402,7 +409,8 @@ public class AopEnhanceManager implements EnhanceManager
                 }
                 else
                 {
-                    cache.append("return (").append(SmcHelper.getReferenceName(returnType, classModel)).append(")").append(pointName).append(".getResult();\r\n");
+                    cache.append("return (").append(SmcHelper.getReferenceName(returnType, classModel)).append(")")
+                         .append(pointName).append(".getResult();\r\n");
                 }
                 methodModel.setBody(cache.toString());
                 classModel.putMethodModel(methodModel);
@@ -412,7 +420,7 @@ public class AopEnhanceManager implements EnhanceManager
 
     private PriorityQueue<BeanDefinition> findAspectClass(Class<?> type, ApplicationContext applicationContext)
     {
-        final ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         final AnnotationContextFactory annotationContextFactory = applicationContext.getAnnotationContextFactory();
         PriorityQueue<BeanDefinition> queue = new PriorityQueue<BeanDefinition>(10, new Comparator<BeanDefinition>()
         {
@@ -420,8 +428,10 @@ public class AopEnhanceManager implements EnhanceManager
             @Override
             public int compare(BeanDefinition o1, BeanDefinition o2)
             {
-                int order1 = annotationContextFactory.get(o1.getType(), classLoader).getAnnotation(EnhanceClass.class).order();
-                int order2 = annotationContextFactory.get(o2.getType(), classLoader).getAnnotation(EnhanceClass.class).order();
+                int order1 = annotationContextFactory.get(o1.getType(), classLoader).getAnnotation(EnhanceClass.class)
+                                                     .order();
+                int order2 = annotationContextFactory.get(o2.getType(), classLoader).getAnnotation(EnhanceClass.class)
+                                                     .order();
                 return order1 - order2;
             }
         });
@@ -458,7 +468,7 @@ public class AopEnhanceManager implements EnhanceManager
         {
             return method.getParameterTypes().length == 0;
         }
-        String[]   split          = paramRule.split(",");
+        String[] split = paramRule.split(",");
         Class<?>[] parameterTypes = method.getParameterTypes();
         if (split.length != parameterTypes.length)
         {
