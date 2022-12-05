@@ -80,7 +80,7 @@ public class DefaultApplicationContext implements ApplicationContext
     private void registerDefaultMethodBeanFatory()
     {
         InstanceDescriptor instanceDescriptor = new ClassReflectInstanceDescriptor(DefaultMethodBeanFactory.class);
-        BeanDefinition     beanDefinition     = new BeanDefinition("defaultMethodBeanFactory", DefaultMethodBeanFactory.class, false, instanceDescriptor);
+        BeanDefinition beanDefinition = new BeanDefinition("defaultMethodBeanFactory", DefaultMethodBeanFactory.class, false, instanceDescriptor);
         beanDefinitionMap.put(beanDefinition.getBeanName(), beanDefinition);
     }
 
@@ -92,7 +92,7 @@ public class DefaultApplicationContext implements ApplicationContext
 
     private void registerDefaultBeanFactory()
     {
-        BeanFactory    beanFactory    = new DefaultClassBeanFactory(annotationContextFactory);
+        BeanFactory beanFactory = new DefaultClassBeanFactory(annotationContextFactory);
         BeanDefinition beanDefinition = new BeanDefinition(DefaultClassBeanFactory.class.getName(), DefaultClassBeanFactory.class, beanFactory);
         beanDefinitionMap.put(beanDefinition.getBeanName(), beanDefinition);
     }
@@ -211,8 +211,8 @@ public class DefaultApplicationContext implements ApplicationContext
     private boolean registerBean(Class<?> ckass)
     {
         AnnotationContext annotationContext = annotationContextFactory.get(ckass);
-        String            beanName;
-        boolean           prototype;
+        String beanName;
+        boolean prototype;
         if (annotationContext.isAnnotationPresent(Resource.class))
         {
             Resource resource = annotationContext.getAnnotation(Resource.class);
@@ -346,23 +346,14 @@ public class DefaultApplicationContext implements ApplicationContext
 
     private void aopScan()
     {
-//        LinkedList<EnhanceManager> list = new LinkedList<EnhanceManager>();
-//        list.addAll(getBeans(EnhanceManager.class));
-//        Collections.sort(list, new Comparator<EnhanceManager>()
-//        {
-//            @Override
-//            public int compare(EnhanceManager o1, EnhanceManager o2)
-//            {
-//                return o1.order() > o2.order() ? 1 : o1.order() == o2.order() ? 0 : -1;
-//            }
-//        });
         String traceId = TRACEID.currentTraceId();
-        getBeans(EnhanceManager.class).stream().sorted(((o1, o2) -> o1.order() > o2.order() ? 1 : o1.order() == o2.order() ? 0 : -1)).forEach(enhanceManager -> {
-            LOGGER.debug("traceId:{} 增强类:{}执行AOP扫描", traceId, enhanceManager.getClass().getName());
-            enhanceManager.scan(this);
-
-        });
-
+        getBeans(EnhanceManager.class).stream()
+                                      .sorted(((o1, o2) -> o1.order() > o2.order() ? 1 : o1.order() == o2.order() ? 0 : -1))
+                                      .forEach(enhanceManager -> {
+                                          LOGGER.debug("traceId:{} 增强类:{}执行AOP扫描", traceId, enhanceManager.getClass()
+                                                                                                                 .getName());
+                                          enhanceManager.scan(DefaultApplicationContext.this);
+                                      });
         for (BeanDefinition each : beanDefinitionMap.values())
         {
             each.initEnhance();
@@ -447,7 +438,7 @@ public class DefaultApplicationContext implements ApplicationContext
     {
         refreshIfNeed();
         List<BeanDefinition> beanDefinitions = getBeanDefinitions(ckass);
-        List<E>              list            = new LinkedList<E>();
+        List<E> list = new LinkedList<E>();
         for (BeanDefinition each : beanDefinitions)
         {
             list.add((E) each.getBean());
@@ -473,7 +464,7 @@ public class DefaultApplicationContext implements ApplicationContext
         List<BeanDefinition> list = new ArrayList<BeanDefinition>();
         for (BeanDefinition each : beanDefinitionMap.values())
         {
-            Class<?>          type              = each.getType();
+            Class<?> type = each.getType();
             AnnotationContext annotationContext = annotationContextFactory.get(type);
             if (annotationContext.isAnnotationPresent(ckass))
             {

@@ -23,9 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class ConfigurationProcessor implements ContextPrepare
 {
@@ -39,13 +37,13 @@ public class ConfigurationProcessor implements ContextPrepare
         list = new SortList(list, context.getAnnotationContextFactory()).sort();
         logger.trace("traceId:{} 修正排序完毕", TRACEID.currentTraceId());
         logOrder(list);
-        ErrorMessage             errorMessage             = new ErrorMessage();
+        ErrorMessage errorMessage = new ErrorMessage();
         AnnotationContextFactory annotationContextFactory = context.getAnnotationContextFactory();
         for (Class<?> each : list)
         {
             errorMessage.clear();
-            AnnotationContext        annotationContextOnClass = annotationContextFactory.get(each);
-            List<AnnotationMetadata> conditionalAnnotations   = annotationContextOnClass.getAnnotationMetadatas(Conditional.class);
+            AnnotationContext annotationContextOnClass = annotationContextFactory.get(each);
+            List<AnnotationMetadata> conditionalAnnotations = annotationContextOnClass.getAnnotationMetadatas(Conditional.class);
             if (!conditionalAnnotations.isEmpty())
             {
                 boolean pass = true;
@@ -67,43 +65,63 @@ public class ConfigurationProcessor implements ContextPrepare
                 }
             }
             Class<?> ckass = each;
-            for (Method method : ckass.getDeclaredMethods())
-            {
-                AnnotationContext annotationContextOnMethod = annotationContextFactory.get(method);
-                if (annotationContextOnMethod.isAnnotationPresent(Bean.class) == false)
-                {
-                    continue;
-                }
-                // 没有包含条件的直接注册
-                else if (annotationContextOnMethod.isAnnotationPresent(Conditional.class) == false)
-                {
-                    registerMethodBeanDefinition(method, context, annotationContextOnMethod);
-                }
-                // 判断条件是否成功
-                else
-                {
-                    boolean pass = true;
-                    for (AnnotationMetadata conditional : annotationContextOnMethod.getAnnotationMetadatas(Conditional.class))
-                    {
-                        if (matchCondition(context, conditional, annotationContextOnMethod, errorMessage) == false)
-                        {
-                            pass = false;
-                            break;
-                        }
-                    }
-                    if (pass)
-                    {
-                        registerMethodBeanDefinition(method, context, annotationContextOnMethod);
-                    }
-                    else
-                    {
-                        for (String error : errorMessage.getList())
-                        {
-                            logger.debug("traceId:{} 配置类:{}不符合条件:{}", TRACEID.currentTraceId(), each, error);
-                        }
-                    }
-                }
-            }
+            Arrays.stream(ckass.getDeclaredMethods())
+                  .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class))
+                  .filter(method -> annotationContextFactory.get(method)
+                                                            .isAnnotationPresent(Conditional.class) == false)
+                  .forEach(method -> {
+                      registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
+                  });
+            Arrays.stream(ckass.getDeclaredMethods())
+                  .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class))
+                  .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class))
+                  .filter(method -> {
+                      AnnotationContext annotationContextOnMethod = annotationContextFactory.get(method);
+                      Optional<AnnotationMetadata> notMatch = annotationContextOnMethod.getAnnotationMetadatas(Conditional.class)
+                                                                                       .stream()
+                                                                                       .filter(annotationMetadata -> matchCondition(context, annotationMetadata, annotationContextOnMethod, errorMessage) == false)
+                                                                                       .findAny();
+                      return notMatch.isPresent() == false;
+                  }).forEach(method -> {
+                      registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
+                  });
+//            for (Method method : ckass.getDeclaredMethods())
+//            {
+//                AnnotationContext annotationContextOnMethod = annotationContextFactory.get(method);
+//                if (annotationContextOnMethod.isAnnotationPresent(Bean.class) == false)
+//                {
+//                    continue;
+//                }
+//                // 没有包含条件的直接注册
+//                else if (annotationContextOnMethod.isAnnotationPresent(Conditional.class) == false)
+//                {
+//                    registerMethodBeanDefinition(method, context, annotationContextOnMethod);
+//                }
+//                // 判断条件是否成功
+//                else
+//                {
+//                    boolean pass = true;
+//                    for (AnnotationMetadata conditional : annotationContextOnMethod.getAnnotationMetadatas(Conditional.class))
+//                    {
+//                        if (matchCondition(context, conditional, annotationContextOnMethod, errorMessage) == false)
+//                        {
+//                            pass = false;
+//                            break;
+//                        }
+//                    }
+//                    if (pass)
+//                    {
+//                        registerMethodBeanDefinition(method, context, annotationContextOnMethod);
+//                    }
+//                    else
+//                    {
+//                        for (String error : errorMessage.getList())
+//                        {
+//                            logger.debug("traceId:{} 配置类:{}不符合条件:{}", TRACEID.currentTraceId(), each, error);
+//                        }
+//                    }
+//                }
+//            }
         }
         return ApplicationContext.NeedRefresh.NO;
     }
@@ -118,7 +136,7 @@ public class ConfigurationProcessor implements ContextPrepare
     {
         if (logger.isDebugEnabled())
         {
-            int    index   = 1;
+            int index = 1;
             String traceId = TRACEID.currentTraceId();
             for (Class<?> each : list)
             {
@@ -163,8 +181,8 @@ public class ConfigurationProcessor implements ContextPrepare
                 if (annotationContext.isAnnotationPresent(ConfigBefore.class))
                 {
                     AnnotationMetadata configBefore = annotationContext.getAnnotationMetadata(ConfigBefore.class);
-                    SortList.SortEntry index        = entry.pre;
-                    String             targetClass  = configBefore.getAttribyte("value").getClassName();
+                    SortList.SortEntry index = entry.pre;
+                    String targetClass = configBefore.getAttribyte("value").getClassName();
                     while (index != null && index.value.getName().equals(targetClass) == false)
                     {
                         index = index.pre;
@@ -181,8 +199,8 @@ public class ConfigurationProcessor implements ContextPrepare
                 if (annotationContext.isAnnotationPresent(ConfigAfter.class))
                 {
                     AnnotationMetadata configAfter = annotationContext.getAnnotationMetadata(ConfigAfter.class);
-                    SortList.SortEntry index       = entry.next;
-                    String             targetClass = configAfter.getAttribyte("value").getClassName();
+                    SortList.SortEntry index = entry.next;
+                    String targetClass = configAfter.getAttribyte("value").getClassName();
                     while (index != null && index.value.getName().equals(targetClass) == false)
                     {
                         index = index.next;
@@ -217,7 +235,7 @@ public class ConfigurationProcessor implements ContextPrepare
             }
             else
             {
-                SortList.SortEntry pre  = entry.pre;
+                SortList.SortEntry pre = entry.pre;
                 SortList.SortEntry next = entry.next;
                 pre.next = next;
                 if (next != null)
@@ -250,9 +268,9 @@ public class ConfigurationProcessor implements ContextPrepare
         {
             if (logger.isDebugEnabled())
             {
-                SortList.SortEntry head    = this.head;
-                String             traceId = TRACEID.currentTraceId();
-                int                index   = 1;
+                SortList.SortEntry head = this.head;
+                String traceId = TRACEID.currentTraceId();
+                int index = 1;
                 while (head != null)
                 {
                     logger.trace("traceId:{} 顺序{}为{}", traceId, index, head.value);
@@ -286,8 +304,8 @@ public class ConfigurationProcessor implements ContextPrepare
      */
     private boolean matchCondition(ApplicationContext context, AnnotationMetadata conditional, AnnotationContext annotationContext, ErrorMessage errorMessage)
     {
-        boolean     match       = true;
-        ValuePair[] value       = conditional.getAttribyte("value").getArray();
+        boolean match = true;
+        ValuePair[] value = conditional.getAttribyte("value").getArray();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         for (ValuePair each : value)
         {
@@ -310,11 +328,12 @@ public class ConfigurationProcessor implements ContextPrepare
 
     private void registerMethodBeanDefinition(Method method, ApplicationContext context, AnnotationContext annotationContextOnMethod)
     {
-        Bean               bean                 = annotationContextOnMethod.getAnnotation(Bean.class);
-        String             beanName             = StringUtil.isNotBlank(bean.name()) ? bean.name() : method.getName();
-        InstanceDescriptor instanceDescriptor   = new MethodInvokeInstanceDescriptor(method);
-        BeanDefinition     methodBeanDefinition = new BeanDefinition(beanName, method.getReturnType(), bean.prototype(), instanceDescriptor);
+        Bean bean = annotationContextOnMethod.getAnnotation(Bean.class);
+        String beanName = StringUtil.isNotBlank(bean.name()) ? bean.name() : method.getName();
+        InstanceDescriptor instanceDescriptor = new MethodInvokeInstanceDescriptor(method);
+        BeanDefinition methodBeanDefinition = new BeanDefinition(beanName, method.getReturnType(), bean.prototype(), instanceDescriptor);
         context.registerBeanDefinition(methodBeanDefinition);
-        logger.debug("traceId:{} 注册方法Bean:{}", TRACEID.currentTraceId(), method.getDeclaringClass().getSimpleName() + "." + method.getName());
+        logger.debug("traceId:{} 注册方法Bean:{}", TRACEID.currentTraceId(), method.getDeclaringClass()
+                                                                                   .getSimpleName() + "." + method.getName());
     }
 }
