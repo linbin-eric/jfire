@@ -5,7 +5,7 @@ import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.reflect.ValueAccessor;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.BeanDefinition;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.inject.InjectHandler;
 import com.jfirer.jfire.core.inject.notated.CanBeNull;
 import com.jfirer.jfire.core.inject.notated.MapKeyMethodName;
@@ -65,7 +65,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
     class InstacenInject implements Inject
     {
-        private BeanDefinition beanDefinition;
+        private DefaultBeanDefinition beanDefinition;
 
         InstacenInject()
         {
@@ -97,7 +97,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
     class AbstractInject implements Inject
     {
-        BeanDefinition beanDefinition;
+        DefaultBeanDefinition beanDefinition;
 
         AbstractInject()
         {
@@ -117,7 +117,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
             }
             else
             {
-                List<BeanDefinition> list = context.getBeanDefinitions(fieldType);
+                List<DefaultBeanDefinition> list = context.getBeanDefinitions(fieldType);
                 if (list.size() > 1)
                 {
                     throw new BeanDefinitionCanNotFindException(list, fieldType);
@@ -158,8 +158,8 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
     class CollectionInject implements Inject
     {
-        private BeanDefinition[] beanDefinitions;
-        private int              listOrSet = 0;
+        private DefaultBeanDefinition[] beanDefinitions;
+        private int                     listOrSet = 0;
 
         private static final int LIST = 1;
         private static final int SET  = 2;
@@ -173,8 +173,8 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                 throw new InjectTypeException(field.toGenericString() + "不是泛型定义，无法找到需要注入的Bean类型");
             }
             Class<?>             rawType = (Class<?>) ((ParameterizedType) genericType).getActualTypeArguments()[0];
-            List<BeanDefinition> list    = context.getBeanDefinitions(rawType);
-            beanDefinitions = list.toArray(new BeanDefinition[list.size()]);
+            List<DefaultBeanDefinition> list    = context.getBeanDefinitions(rawType);
+            beanDefinitions = list.toArray(new DefaultBeanDefinition[list.size()]);
             if (List.class.isAssignableFrom(field.getType()))
             {
                 listOrSet = LIST;
@@ -209,7 +209,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                         throw new InjectValueException("无法识别类型:" + valueAccessor.getField().getType().getName() + "，无法生成其对应的实例");
                     }
                 }
-                for (BeanDefinition each : beanDefinitions)
+                for (DefaultBeanDefinition each : beanDefinitions)
                 {
                     value.add(each.getBean());
                 }
@@ -232,9 +232,9 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
     class MapInject implements Inject
     {
-        MapKeyType       mapKeyType;
-        BeanDefinition[] beanDefinitions;
-        Method           method;
+        MapKeyType              mapKeyType;
+        DefaultBeanDefinition[] beanDefinitions;
+        Method                  method;
 
         MapInject()
         {
@@ -245,8 +245,8 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                 throw new InjectTypeException(field.toGenericString() + "不是泛型定义，无法找到需要注入的Bean类型");
             }
             Class<?>             rawType = (Class<?>) ((ParameterizedType) genericType).getActualTypeArguments()[1];
-            List<BeanDefinition> list    = context.getBeanDefinitions(rawType);
-            beanDefinitions = list.toArray(new BeanDefinition[list.size()]);
+            List<DefaultBeanDefinition> list    = context.getBeanDefinitions(rawType);
+            beanDefinitions = list.toArray(new DefaultBeanDefinition[list.size()]);
             AnnotationContext annotationContext = context.getAnnotationContextFactory().get(field, Thread.currentThread().getContextClassLoader());
             if (annotationContext.isAnnotationPresent(MapKeyMethodName.class))
             {
@@ -282,7 +282,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                 switch (mapKeyType)
                 {
                     case METHOD:
-                        for (BeanDefinition each : beanDefinitions)
+                        for (DefaultBeanDefinition each : beanDefinitions)
                         {
                             Object entryValue = each.getBean();
                             Object entryKey   = method.invoke(entryValue);
@@ -290,7 +290,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                         }
                         break;
                     case BEAN_NAME:
-                        for (BeanDefinition each : beanDefinitions)
+                        for (DefaultBeanDefinition each : beanDefinitions)
                         {
                             Object entryValue = each.getBean();
                             String entryKey   = each.getBeanName();

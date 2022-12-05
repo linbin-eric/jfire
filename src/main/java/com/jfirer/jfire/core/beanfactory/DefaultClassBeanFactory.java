@@ -2,7 +2,7 @@ package com.jfirer.jfire.core.beanfactory;
 
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.reflect.ReflectUtil;
-import com.jfirer.jfire.core.BeanFactory;
+import com.jfirer.jfire.core.bean.BeanFactory;
 import com.jfirer.jfire.core.beandescriptor.InstanceDescriptor;
 
 public class DefaultClassBeanFactory implements BeanFactory

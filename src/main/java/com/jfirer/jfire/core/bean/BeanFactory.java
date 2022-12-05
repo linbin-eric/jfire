@@ -1,4 +1,4 @@
-package com.jfirer.jfire.core;
+package com.jfirer.jfire.core.bean;
 
 import com.jfirer.jfire.core.beandescriptor.InstanceDescriptor;
 

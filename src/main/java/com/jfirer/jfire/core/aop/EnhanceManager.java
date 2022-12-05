@@ -13,14 +13,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 public interface EnhanceManager
 {
     // 用来作为AOP时增加的属性命名数字后缀，保证一个类中属性名不会出现重复
-    AtomicInteger fieldNameCounter  = new AtomicInteger(0);
-    AtomicInteger classNameCounter  = new AtomicInteger(0);
-    AtomicInteger methodNameCounter = new AtomicInteger(0);
-    AtomicInteger varNameCounter    = new AtomicInteger(0);
-    int           DEFAULT           = 100;
-    int           TRANSACTION       = 10;
-    int           CACHE             = 30;
-    int           VALIDATE          = 50;
+    AtomicInteger FIELD_NAME_COUNTER  = new AtomicInteger(0);
+    AtomicInteger CLASS_NAME_COUNTER  = new AtomicInteger(0);
+    AtomicInteger METHOD_NAME_COUNTER = new AtomicInteger(0);
+    AtomicInteger VAR_NAME_COUNTER    = new AtomicInteger(0);
+    int           DEFAULT             = 100;
+    int           TRANSACTION         = 10;
+    int           CACHE               = 30;
+    int           VALIDATE            = 50;
 
     /**
      * 扫描环境中所有的BeanDefinition，如果发现其符合增强条件，则将自身放入其AopManager集合中。 该方法仅会在环境初始化时调用一次
@@ -51,6 +51,6 @@ public interface EnhanceManager
          *
          * @param instance
          */
-        void setAopHost(Object instance);
+        void setHostAndContext(Object instance, ApplicationContext context);
     }
 }

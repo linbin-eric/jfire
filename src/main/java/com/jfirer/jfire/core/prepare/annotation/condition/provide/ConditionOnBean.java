@@ -3,7 +3,7 @@ package com.jfirer.jfire.core.prepare.annotation.condition.provide;
 import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
 import com.jfirer.baseutil.bytecode.annotation.ValuePair;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.BeanDefinition;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.prepare.annotation.condition.Conditional;
 import com.jfirer.jfire.core.prepare.annotation.condition.ErrorMessage;
 
@@ -42,7 +42,7 @@ public @interface ConditionOnBean
                     return false;
                 }
                 boolean        miss           = true;
-                BeanDefinition beanDefinition = applicationContext.getBeanDefinition(aClass);
+                DefaultBeanDefinition beanDefinition = applicationContext.getBeanDefinition(aClass);
                 if (beanDefinition == null)
                 {
                     errorMessage.addErrorMessage("没有Bean是" + beanType + "类型或者其子类");

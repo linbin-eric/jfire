@@ -1,4 +1,4 @@
-package com.jfirer.jfire.core;
+package com.jfirer.jfire.core.bean;
 
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.smc.SmcHelper;
@@ -6,6 +6,7 @@ import com.jfirer.baseutil.smc.compiler.CompileHelper;
 import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
+import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceCallbackForBeanInstance;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.ProceedPoint;
@@ -26,7 +27,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
-public class BeanDefinition
+public class DefaultBeanDefinition implements BeanDefinition
 {
     public static final ThreadLocal<Map<String, Object>> tmpBeanInstanceMap = ThreadLocal.withInitial(() -> new HashMap<String, Object>());
     private             boolean                          prototype;
@@ -42,12 +43,12 @@ public class BeanDefinition
     private             String                           beanName;
     // 标注@PostConstruct的方法
     private             Method                           postConstructMethod;
-    private             InjectHandler[]                  injectHandlers;
-    private             ApplicationContext               context;
-    private             InstanceDescriptor               instanceDescriptor;
-    private             BeanDefinition                   beanFactoryBeanDefinition;
+    private InjectHandler[]    injectHandlers;
+    private ApplicationContext context;
+    private InstanceDescriptor instanceDescriptor;
+    private             DefaultBeanDefinition            beanFactoryBeanDefinition;
 
-    public BeanDefinition(String beanName, Class type, boolean prototype, InstanceDescriptor instanceDescriptor)
+    public DefaultBeanDefinition(String beanName, Class type, boolean prototype, InstanceDescriptor instanceDescriptor)
     {
         this.beanName = beanName;
         this.prototype = prototype;
@@ -55,7 +56,7 @@ public class BeanDefinition
         this.instanceDescriptor = instanceDescriptor;
     }
 
-    public BeanDefinition(String beanName, Class<?> type, Object outterInstance)
+    public DefaultBeanDefinition(String beanName, Class<?> type, Object outterInstance)
     {
         this.beanName = beanName;
         this.type = type;
@@ -63,6 +64,7 @@ public class BeanDefinition
         prototype = false;
     }
 
+    @Override
     public void init(ApplicationContext context)
     {
         this.context = context;
@@ -74,6 +76,7 @@ public class BeanDefinition
         }
     }
 
+    @Override
     public void initEnhance()
     {
         if (aopManagers.size() == 0 || cachedSingletonInstance != null)
@@ -91,7 +94,7 @@ public class BeanDefinition
                 return o1.order() - o2.order();
             }
         });
-        ClassModel classModel = new ClassModel(type.getSimpleName() + "$AOP$" + EnhanceManager.classNameCounter.getAndIncrement());
+        ClassModel classModel = new ClassModel(type.getSimpleName() + "$AOP$" + EnhanceManager.CLASS_NAME_COUNTER.getAndIncrement());
         classModel.setPackageName(type.getPackage().getName());
         if (type.isInterface())
         {
@@ -104,9 +107,10 @@ public class BeanDefinition
         classModel.addImport(ProceedPointImpl.class);
         classModel.addImport(ProceedPoint.class);
         classModel.addImport(Object.class);
-        String hostFieldName = "host_" + EnhanceManager.fieldNameCounter.getAndIncrement();
-        addHostField(classModel, hostFieldName);
-        addSetAopHostMethod(classModel, hostFieldName);
+        String hostFieldName = "host_" + EnhanceManager.FIELD_NAME_COUNTER.getAndIncrement();
+        String contextFieldName = "context_"+EnhanceManager.FIELD_NAME_COUNTER.getAndIncrement();
+        addHostFieldAndContextField(classModel, hostFieldName,contextFieldName);
+        addSetHostAndContextMethod(classModel, hostFieldName,contextFieldName);
         addInvokeHostPublicMethod(classModel, hostFieldName);
         for (int i = 0; i < orderedAopManagers.length; i++)
         {
@@ -154,22 +158,24 @@ public class BeanDefinition
         }
     }
 
-    private void addSetAopHostMethod(ClassModel classModel, String hostFieldName)
+    private void addSetHostAndContextMethod(ClassModel classModel, String hostFieldName, String contextFieldName)
     {
+        classModel.addInterface(EnhanceManager.SetHost.class);
         MethodModel setAopHost = new MethodModel(classModel);
         setAopHost.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
-        setAopHost.setMethodName("setAopHost");
-        setAopHost.setParamterTypes(Object.class);
+        setAopHost.setMethodName("setHostAndContext");
+        setAopHost.setParamterTypes(Object.class,ApplicationContext.class);
         setAopHost.setReturnType(void.class);
-        setAopHost.setBody(hostFieldName + " = (" + SmcHelper.getReferenceName(type, classModel) + ")$0;");
+        String line1 = hostFieldName + " = (" + SmcHelper.getReferenceName(type, classModel) + ")$0;";
+        String line2 = contextFieldName + " = (" + SmcHelper.getReferenceName(ApplicationContext.class, classModel) + ")$1;";
+        setAopHost.setBody(line1+"\r\n"+line2);
         classModel.putMethodModel(setAopHost);
     }
 
-    private void addHostField(ClassModel classModel, String hostFieldName)
+    private void addHostFieldAndContextField(ClassModel classModel, String hostFieldName,String contextFiledName)
     {
-        FieldModel hostField = new FieldModel(hostFieldName, type, classModel);
-        classModel.addField(hostField);
-        classModel.addInterface(EnhanceManager.SetHost.class);
+        classModel.addField(new FieldModel(hostFieldName, type, classModel));
+        classModel.addField(new FieldModel(contextFiledName,ApplicationContext.class,classModel));
     }
 
     /**
@@ -254,13 +260,13 @@ public class BeanDefinition
         }
     }
 
-    public BeanDefinition setBeanName(String beanName)
+    public DefaultBeanDefinition setBeanName(String beanName)
     {
         this.beanName = beanName;
         return this;
     }
 
-    public BeanDefinition setType(Class<?> type)
+    public DefaultBeanDefinition setType(Class<?> type)
     {
         this.type = type;
         return this;
@@ -271,6 +277,7 @@ public class BeanDefinition
      *
      * @return
      */
+    @Override
     public Object getBean()
     {
         if (prototype)
@@ -297,7 +304,7 @@ public class BeanDefinition
 
     private synchronized Object buildInstance()
     {
-        BeanFactory         beanFactory = (BeanFactory) beanFactoryBeanDefinition.getBean();
+        BeanFactory beanFactory = (BeanFactory) beanFactoryBeanDefinition.getBean();
         Map<String, Object> map         = tmpBeanInstanceMap.get();
         boolean             cleanMark   = map.isEmpty();
         Object              instance    = map.get(beanName);
@@ -312,7 +319,7 @@ public class BeanDefinition
             try
             {
                 EnhanceManager.SetHost newInstance = (EnhanceManager.SetHost) enhanceType.newInstance();
-                newInstance.setAopHost(originInstance);
+                newInstance.setHostAndContext(originInstance,context);
                 instance = newInstance;
                 for (EnhanceCallbackForBeanInstance each : enhanceCallbackForBeanInstances)
                 {
@@ -356,7 +363,8 @@ public class BeanDefinition
      * @param entityClass
      * @return
      */
-    Field[] getAllFields(Class<?> entityClass)
+    @Override
+    public Field[] getAllFields(Class<?> entityClass)
     {
         Set<Field> set = new TreeSet<Field>(new Comparator<Field>()
         {
@@ -385,16 +393,19 @@ public class BeanDefinition
         return set.toArray(new Field[set.size()]);
     }
 
+    @Override
     public String getBeanName()
     {
         return beanName;
     }
 
+    @Override
     public Class<?> getType()
     {
         return type;
     }
 
+    @Override
     public void addAopManager(EnhanceManager aopManager)
     {
         aopManagers.add(aopManager);

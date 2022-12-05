@@ -10,7 +10,7 @@ import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.BeanDefinition;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.aop.EnhanceCallbackForBeanInstance;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.ProceedPoint;
@@ -32,8 +32,8 @@ public class AopEnhanceManager implements EnhanceManager
     class EnhanceInfo
     {
         Class<?>         type;
-        String[]         fieldNames;
-        BeanDefinition[] injects;
+        String[]                fieldNames;
+        DefaultBeanDefinition[] injects;
         volatile Field[] fields;
     }
 
@@ -56,14 +56,14 @@ public class AopEnhanceManager implements EnhanceManager
     @Override
     public EnhanceCallbackForBeanInstance enhance(ClassModel classModel, final Class<?> type, ApplicationContext applicationContext, String hostFieldName)
     {
-        PriorityQueue<BeanDefinition> queue = findAspectClass(type, applicationContext);
+        PriorityQueue<DefaultBeanDefinition> queue = findAspectClass(type, applicationContext);
         List<String> fieldNames = new ArrayList<String>();
-        List<BeanDefinition> injects = new ArrayList<BeanDefinition>();
+        List<DefaultBeanDefinition> injects = new ArrayList<DefaultBeanDefinition>();
         AnnotationContextFactory annotationContextFactory = applicationContext.getAnnotationContextFactory();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (BeanDefinition each : queue)
+        for (DefaultBeanDefinition each : queue)
         {
-            String fieldName = "enhance_" + fieldNameCounter.getAndIncrement();
+            String fieldName = "enhance_" + FIELD_NAME_COUNTER.getAndIncrement();
             fieldNames.add(fieldName);
             injects.add(each);
             FieldModel fieldModel = new FieldModel(fieldName, each.getType(), classModel);
@@ -95,7 +95,7 @@ public class AopEnhanceManager implements EnhanceManager
         }
         final EnhanceInfo enhanceInfo = new EnhanceInfo();
         enhanceInfo.fieldNames = fieldNames.toArray(new String[fieldNames.size()]);
-        enhanceInfo.injects = injects.toArray(new BeanDefinition[injects.size()]);
+        enhanceInfo.injects = injects.toArray(new DefaultBeanDefinition[injects.size()]);
         enhanceInfo.type = type;
         return new EnhanceCallbackForBeanInstance()
         {
@@ -130,7 +130,7 @@ public class AopEnhanceManager implements EnhanceManager
                     }
                 }
                 Field[] fields = enhanceInfo.fields;
-                BeanDefinition[] injects = enhanceInfo.injects;
+                DefaultBeanDefinition[] injects = enhanceInfo.injects;
                 for (int i = 0; i < fields.length; i++)
                 {
                     Field field = fields[i];
@@ -161,7 +161,7 @@ public class AopEnhanceManager implements EnhanceManager
                 MethodModel.MethodModelKey key = new MethodModel.MethodModelKey(method);
                 MethodModel methodModel = classModel.getMethodModel(key);
                 String originBody = methodModel.getBody();
-                String pointName = "point_" + fieldNameCounter.getAndIncrement();
+                String pointName = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
                 StringBuilder cache = new StringBuilder();
                 generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
                 generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
@@ -197,7 +197,7 @@ public class AopEnhanceManager implements EnhanceManager
             cache.append("ProceedPointImpl ").append(pointName).append(" = new ProceedPointImpl();\r\n");
         }
         cache.append(pointName).append(".setHost(").append(hostFieldName).append(");\r\n");
-        String _MethodDescriptionName = "_MethodDescription_" + fieldNameCounter.getAndIncrement();
+        String _MethodDescriptionName = "_MethodDescription_" + FIELD_NAME_COUNTER.getAndIncrement();
         classModel.addImport(ProceedPoint.MethodDescription.class);
         cache.append("MethodDescription " + _MethodDescriptionName + " = new MethodDescription(\"")
              .append(method.getName()).append("\",new Class[]{");
@@ -238,7 +238,7 @@ public class AopEnhanceManager implements EnhanceManager
                 MethodModel.MethodModelKey key = new MethodModel.MethodModelKey(method);
                 MethodModel methodModel = classModel.getMethodModel(key);
                 String originBody = methodModel.getBody();
-                String pointName = "point_" + fieldNameCounter.getAndIncrement();
+                String pointName = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
                 StringBuilder cache = new StringBuilder();
                 cache.append("try{\r\n").append(originBody).append("}\r\n").append("finally\r\n{\r\n");
                 generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
@@ -270,7 +270,7 @@ public class AopEnhanceManager implements EnhanceManager
                 MethodModel origin = classModel.removeMethodModel(key);
                 MethodModel newOne = new MethodModel(method, classModel);
                 origin.setAccessLevel(MethodModel.AccessLevel.PRIVATE);
-                origin.setMethodName(origin.getMethodName() + "_" + methodNameCounter.getAndIncrement());
+                origin.setMethodName(origin.getMethodName() + "_" + METHOD_NAME_COUNTER.getAndIncrement());
                 classModel.putMethodModel(origin);
                 StringBuilder cache = new StringBuilder();
                 cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = ")
@@ -288,7 +288,7 @@ public class AopEnhanceManager implements EnhanceManager
 
     private String generatePointName()
     {
-        return "point_" + fieldNameCounter.getAndIncrement();
+        return "point_" + FIELD_NAME_COUNTER.getAndIncrement();
     }
 
     private void processAfterThrowableAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
@@ -418,15 +418,15 @@ public class AopEnhanceManager implements EnhanceManager
         }
     }
 
-    private PriorityQueue<BeanDefinition> findAspectClass(Class<?> type, ApplicationContext applicationContext)
+    private PriorityQueue<DefaultBeanDefinition> findAspectClass(Class<?> type, ApplicationContext applicationContext)
     {
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         final AnnotationContextFactory annotationContextFactory = applicationContext.getAnnotationContextFactory();
-        PriorityQueue<BeanDefinition> queue = new PriorityQueue<BeanDefinition>(10, new Comparator<BeanDefinition>()
+        PriorityQueue<DefaultBeanDefinition> queue = new PriorityQueue<DefaultBeanDefinition>(10, new Comparator<DefaultBeanDefinition>()
         {
 
             @Override
-            public int compare(BeanDefinition o1, BeanDefinition o2)
+            public int compare(DefaultBeanDefinition o1, DefaultBeanDefinition o2)
             {
                 int order1 = annotationContextFactory.get(o1.getType(), classLoader).getAnnotation(EnhanceClass.class)
                                                      .order();
@@ -435,7 +435,7 @@ public class AopEnhanceManager implements EnhanceManager
                 return order1 - order2;
             }
         });
-        for (BeanDefinition each : applicationContext.getAllBeanDefinitions())
+        for (DefaultBeanDefinition each : applicationContext.getAllBeanDefinitions())
         {
             AnnotationContext annotationContext = annotationContextFactory.get(each.getType(), classLoader);
             if (annotationContext.isAnnotationPresent(EnhanceClass.class))

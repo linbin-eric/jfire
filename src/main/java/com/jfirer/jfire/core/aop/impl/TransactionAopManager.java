@@ -8,7 +8,7 @@ import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.BeanDefinition;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.aop.EnhanceCallbackForBeanInstance;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.impl.transaction.Propagation;
@@ -22,14 +22,14 @@ import java.util.Arrays;
 
 public class TransactionAopManager implements EnhanceManager
 {
-    private BeanDefinition transactionBeandefinition;
+    private DefaultBeanDefinition transactionBeandefinition;
 
     @Override
     public void scan(ApplicationContext context)
     {
         AnnotationContextFactory annotationContextFactory = context.getAnnotationContextFactory();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (BeanDefinition beanDefinition : context.getAllBeanDefinitions())
+        for (DefaultBeanDefinition beanDefinition : context.getAllBeanDefinitions())
         {
             for (Method method : beanDefinition.getType().getMethods())
             {
@@ -71,13 +71,13 @@ public class TransactionAopManager implements EnhanceManager
             MethodModel.MethodModelKey key = new MethodModel.MethodModelKey(method);
             MethodModel origin = classModel.removeMethodModel(key);
             origin.setAccessLevel(MethodModel.AccessLevel.PRIVATE);
-            origin.setMethodName(origin.getMethodName() + "_" + methodNameCounter.getAndIncrement());
+            origin.setMethodName(origin.getMethodName() + "_" + METHOD_NAME_COUNTER.getAndIncrement());
             classModel.putMethodModel(origin);
             MethodModel newOne = new MethodModel(method, classModel);
             StringBuilder cache = new StringBuilder();
             Transactional transactional = annotationContext.getAnnotation(Transactional.class);
             String propagation = "Propagation." + transactional.propagation().name();
-            String transactionStateName = "transactionState_" + varNameCounter.getAndIncrement();
+            String transactionStateName = "transactionState_" + VAR_NAME_COUNTER.getAndIncrement();
             cache.append(SmcHelper.getReferenceName(TransactionState.class, classModel)).append(" ")
                  .append(transactionStateName)//
                  .append(" = ").append(transFieldName).append(".beginTransAction(").append(propagation)
@@ -140,7 +140,7 @@ public class TransactionAopManager implements EnhanceManager
 
     private String generateTransactionManagerField(ClassModel classModel)
     {
-        String transFieldName = "transactionManager_" + fieldNameCounter.getAndIncrement();
+        String transFieldName = "transactionManager_" + FIELD_NAME_COUNTER.getAndIncrement();
         FieldModel fieldModel = new FieldModel(transFieldName, TransactionManager.class, classModel);
         classModel.addField(fieldModel);
         return transFieldName;

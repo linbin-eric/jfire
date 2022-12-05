@@ -8,7 +8,7 @@ import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.reflect.ReflectUtil;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.BeanDefinition;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.beandescriptor.InstanceDescriptor;
 import com.jfirer.jfire.core.beandescriptor.MethodInvokeInstanceDescriptor;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
@@ -331,7 +331,7 @@ public class ConfigurationProcessor implements ContextPrepare
         Bean bean = annotationContextOnMethod.getAnnotation(Bean.class);
         String beanName = StringUtil.isNotBlank(bean.name()) ? bean.name() : method.getName();
         InstanceDescriptor instanceDescriptor = new MethodInvokeInstanceDescriptor(method);
-        BeanDefinition methodBeanDefinition = new BeanDefinition(beanName, method.getReturnType(), bean.prototype(), instanceDescriptor);
+        DefaultBeanDefinition methodBeanDefinition = new DefaultBeanDefinition(beanName, method.getReturnType(), bean.prototype(), instanceDescriptor);
         context.registerBeanDefinition(methodBeanDefinition);
         logger.debug("traceId:{} 注册方法Bean:{}", TRACEID.currentTraceId(), method.getDeclaringClass()
                                                                                    .getSimpleName() + "." + method.getName());

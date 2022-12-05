@@ -9,7 +9,7 @@ import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.BeanDefinition;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.aop.EnhanceCallbackForBeanInstance;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.notated.cache.CacheDelete;
@@ -25,14 +25,14 @@ import java.util.Map;
 
 public class CacheAopManager implements EnhanceManager
 {
-    private BeanDefinition cacheBeanDefinition;
+    private DefaultBeanDefinition cacheBeanDefinition;
 
     @Override
     public void scan(ApplicationContext context)
     {
         AnnotationContextFactory annotationContextFactory = context.getAnnotationContextFactory();
         ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
-        for (BeanDefinition beanDefinition : context.getAllBeanDefinitions())
+        for (DefaultBeanDefinition beanDefinition : context.getAllBeanDefinitions())
         {
             for (Method method : beanDefinition.getType().getMethods())
             {
@@ -46,7 +46,7 @@ public class CacheAopManager implements EnhanceManager
                 }
             }
         }
-        List<BeanDefinition> beanDefinitions = context.getBeanDefinitions(CacheManager.class);
+        List<DefaultBeanDefinition> beanDefinitions = context.getBeanDefinitions(CacheManager.class);
         if (beanDefinitions.isEmpty() == false)
         {
             cacheBeanDefinition = beanDefinitions.get(0);
@@ -303,14 +303,14 @@ public class CacheAopManager implements EnhanceManager
         MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
         MethodModel                origin = classModel.removeMethodModel(key);
         origin.setAccessLevel(MethodModel.AccessLevel.PRIVATE);
-        origin.setMethodName(origin.getMethodName() + "_" + methodNameCounter.getAndIncrement());
+        origin.setMethodName(origin.getMethodName() + "_" + METHOD_NAME_COUNTER.getAndIncrement());
         classModel.putMethodModel(origin);
         return origin;
     }
 
     private String generateKeyField(ClassModel classModel, String key)
     {
-        String     lexerKeyFieldName = "expression_" + fieldNameCounter.getAndIncrement();
+        String     lexerKeyFieldName = "expression_" + FIELD_NAME_COUNTER.getAndIncrement();
         FieldModel keyField          = new FieldModel(lexerKeyFieldName, Expression.class, "Expression.parse(\"" + key + "\")", classModel);
         classModel.addField(keyField);
         return lexerKeyFieldName;
@@ -318,7 +318,7 @@ public class CacheAopManager implements EnhanceManager
 
     private String generateConditionField(ClassModel classModel, String condition)
     {
-        String     lexerConditionFieldName = "expression_" + fieldNameCounter.getAndIncrement();
+        String     lexerConditionFieldName = "expression_" + FIELD_NAME_COUNTER.getAndIncrement();
         FieldModel conditionField          = new FieldModel(lexerConditionFieldName, Expression.class, "Expression.parse(\"" + condition + "\")", classModel);
         classModel.addField(conditionField);
         return lexerConditionFieldName;
@@ -340,7 +340,7 @@ public class CacheAopManager implements EnhanceManager
 
     private String generateCacheManagerField(ClassModel classModel)
     {
-        String     cacheManagerFieldName = "cacheManager_" + fieldNameCounter.getAndIncrement();
+        String     cacheManagerFieldName = "cacheManager_" + FIELD_NAME_COUNTER.getAndIncrement();
         FieldModel fieldModel            = new FieldModel(cacheManagerFieldName, CacheManager.class, classModel);
         classModel.addField(fieldModel);
         return cacheManagerFieldName;

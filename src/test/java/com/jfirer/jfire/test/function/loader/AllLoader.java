@@ -1,6 +1,6 @@
 package com.jfirer.jfire.test.function.loader;
 
-import com.jfirer.jfire.core.BeanFactory;
+import com.jfirer.jfire.core.bean.BeanFactory;
 import com.jfirer.jfire.core.beandescriptor.InstanceDescriptor;
 
 import javax.annotation.Resource;

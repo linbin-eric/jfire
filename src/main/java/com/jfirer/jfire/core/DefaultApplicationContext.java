@@ -12,6 +12,8 @@ import com.jfirer.jfire.core.aop.impl.AopEnhanceManager;
 import com.jfirer.jfire.core.aop.impl.CacheAopManager;
 import com.jfirer.jfire.core.aop.impl.TransactionAopManager;
 import com.jfirer.jfire.core.aop.impl.ValidateAopManager;
+import com.jfirer.jfire.core.bean.BeanFactory;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.beandescriptor.ClassReflectInstanceDescriptor;
 import com.jfirer.jfire.core.beandescriptor.InstanceDescriptor;
 import com.jfirer.jfire.core.beandescriptor.SelectedBeanFactoryInstanceDescriptor;
@@ -37,8 +39,8 @@ public class DefaultApplicationContext implements ApplicationContext
      * 如果支持每一轮刷新都根据不同的环境变量或者其他条件满足来增减Bean定义会变得较为复杂，而且实际上也没有遇到这样的场景。
      * 因为目前简化为只支持Bean定义不断增多。
      */
-    protected            Map<String, BeanDefinition> beanDefinitionMap          = new HashMap<String, BeanDefinition>();
-    private              Environment                 environment                = new Environment.EnvironmentImpl();
+    protected            Map<String, DefaultBeanDefinition> beanDefinitionMap = new HashMap<String, DefaultBeanDefinition>();
+    private              Environment                        environment       = new Environment.EnvironmentImpl();
     private              AnnotationContextFactory    annotationContextFactory   = new SupportOverrideAttributeAnnotationContextFactory();
     private              CompileHelper               compileHelper;
     private              boolean                     firstRefresh               = false;
@@ -80,26 +82,26 @@ public class DefaultApplicationContext implements ApplicationContext
     private void registerDefaultMethodBeanFatory()
     {
         InstanceDescriptor instanceDescriptor = new ClassReflectInstanceDescriptor(DefaultMethodBeanFactory.class);
-        BeanDefinition beanDefinition = new BeanDefinition("defaultMethodBeanFactory", DefaultMethodBeanFactory.class, false, instanceDescriptor);
+        DefaultBeanDefinition beanDefinition = new DefaultBeanDefinition("defaultMethodBeanFactory", DefaultMethodBeanFactory.class, false, instanceDescriptor);
         beanDefinitionMap.put(beanDefinition.getBeanName(), beanDefinition);
     }
 
     private void registerAnnotationContextFactory()
     {
-        BeanDefinition beanDefinition = new BeanDefinition("annotationContextFactory", SupportOverrideAttributeAnnotationContextFactory.class, annotationContextFactory);
+        DefaultBeanDefinition beanDefinition = new DefaultBeanDefinition("annotationContextFactory", SupportOverrideAttributeAnnotationContextFactory.class, annotationContextFactory);
         beanDefinitionMap.put(beanDefinition.getBeanName(), beanDefinition);
     }
 
     private void registerDefaultBeanFactory()
     {
         BeanFactory beanFactory = new DefaultClassBeanFactory(annotationContextFactory);
-        BeanDefinition beanDefinition = new BeanDefinition(DefaultClassBeanFactory.class.getName(), DefaultClassBeanFactory.class, beanFactory);
+        DefaultBeanDefinition beanDefinition = new DefaultBeanDefinition(DefaultClassBeanFactory.class.getName(), DefaultClassBeanFactory.class, beanFactory);
         beanDefinitionMap.put(beanDefinition.getBeanName(), beanDefinition);
     }
 
     private void registerApplicationContext()
     {
-        BeanDefinition beanDefinition = new BeanDefinition("jfireContext", ApplicationContext.class, this);
+        DefaultBeanDefinition beanDefinition = new DefaultBeanDefinition("jfireContext", ApplicationContext.class, this);
         registerBeanDefinition(beanDefinition);
     }
 
@@ -249,14 +251,14 @@ public class DefaultApplicationContext implements ApplicationContext
         {
             instanceDescriptor = new ClassReflectInstanceDescriptor(ckass);
         }
-        BeanDefinition beanDefinition = new BeanDefinition(beanName, ckass, prototype, instanceDescriptor);
+        DefaultBeanDefinition beanDefinition = new DefaultBeanDefinition(beanName, ckass, prototype, instanceDescriptor);
         beanDefinitionMap.put(beanDefinition.getBeanName(), beanDefinition);
         LOGGER.debug("traceId:{} 注册Bean:{}", TRACEID.currentTraceId(), ckass);
         return true;
     }
 
     @Override
-    public boolean registerBeanDefinition(BeanDefinition beanDefinition)
+    public boolean registerBeanDefinition(DefaultBeanDefinition beanDefinition)
     {
         return beanDefinitionMap.put(beanDefinition.getBeanName(), beanDefinition) == null;
     }
@@ -270,7 +272,7 @@ public class DefaultApplicationContext implements ApplicationContext
         }
         try
         {
-            BeanDefinition beanDefinition = new BeanDefinition(beanName, ckass, ckass.newInstance());
+            DefaultBeanDefinition beanDefinition = new DefaultBeanDefinition(beanName, ckass, ckass.newInstance());
             beanDefinitionMap.put(beanName, beanDefinition);
             LOGGER.debug("traceId:{} 注册bean:{}，其实现了ContextPrepare接口", TRACEID.currentTraceId(), ckass);
         }
@@ -287,7 +289,7 @@ public class DefaultApplicationContext implements ApplicationContext
         if (configurationClassSetBuild == false)
         {
             configurationClassSet.clear();
-            for (BeanDefinition value : beanDefinitionMap.values())
+            for (DefaultBeanDefinition value : beanDefinitionMap.values())
             {
                 if (annotationContextFactory.get(value.getType()).isAnnotationPresent(Configuration.class))
                 {
@@ -326,7 +328,7 @@ public class DefaultApplicationContext implements ApplicationContext
     private void awareContextInit()
     {
         String traceId = TRACEID.currentTraceId();
-        for (BeanDefinition beanDefinition : beanDefinitionMap.values())
+        for (DefaultBeanDefinition beanDefinition : beanDefinitionMap.values())
         {
             if (AwareContextInited.class.isAssignableFrom(beanDefinition.getType()))
             {
@@ -338,7 +340,7 @@ public class DefaultApplicationContext implements ApplicationContext
 
     private void invokeBeanDefinitionInitMethod()
     {
-        for (BeanDefinition beanDefinition : beanDefinitionMap.values())
+        for (DefaultBeanDefinition beanDefinition : beanDefinitionMap.values())
         {
             beanDefinition.init(this);
         }
@@ -354,22 +356,22 @@ public class DefaultApplicationContext implements ApplicationContext
                                                                                                                  .getName());
                                           enhanceManager.scan(DefaultApplicationContext.this);
                                       });
-        for (BeanDefinition each : beanDefinitionMap.values())
+        for (DefaultBeanDefinition each : beanDefinitionMap.values())
         {
             each.initEnhance();
         }
     }
 
     @Override
-    public Collection<BeanDefinition> getAllBeanDefinitions()
+    public Collection<DefaultBeanDefinition> getAllBeanDefinitions()
     {
         return beanDefinitionMap.values();
     }
 
     @Override
-    public BeanDefinition getBeanDefinition(Class<?> ckass)
+    public DefaultBeanDefinition getBeanDefinition(Class<?> ckass)
     {
-        for (BeanDefinition each : beanDefinitionMap.values())
+        for (DefaultBeanDefinition each : beanDefinitionMap.values())
         {
             if (ckass == each.getType() || ckass.isAssignableFrom(each.getType()))
             {
@@ -380,13 +382,13 @@ public class DefaultApplicationContext implements ApplicationContext
     }
 
     @Override
-    public BeanDefinition getBeanDefinition(String beanName)
+    public DefaultBeanDefinition getBeanDefinition(String beanName)
     {
         return beanDefinitionMap.get(beanName);
     }
 
     @Override
-    public BeanDefinition getBeanFactory(InstanceDescriptor beanDescriptor)
+    public DefaultBeanDefinition getBeanFactory(InstanceDescriptor beanDescriptor)
     {
         if (StringUtil.isNotBlank(beanDescriptor.selectedBeanFactoryBeanName()))
         {
@@ -412,7 +414,7 @@ public class DefaultApplicationContext implements ApplicationContext
     public <E> E getBean(Class<E> ckass)
     {
         refreshIfNeed();
-        BeanDefinition beanDefinition = getBeanDefinition(ckass);
+        DefaultBeanDefinition beanDefinition = getBeanDefinition(ckass);
         if (beanDefinition == null)
         {
             throw new BeanDefinitionCanNotFindException(ckass);
@@ -420,10 +422,10 @@ public class DefaultApplicationContext implements ApplicationContext
         return (E) beanDefinition.getBean();
     }
 
-    public List<BeanDefinition> getBeanDefinitions(Class<?> ckass)
+    public List<DefaultBeanDefinition> getBeanDefinitions(Class<?> ckass)
     {
-        List<BeanDefinition> beanDefinitions = new LinkedList<BeanDefinition>();
-        for (BeanDefinition each : beanDefinitionMap.values())
+        List<DefaultBeanDefinition> beanDefinitions = new LinkedList<DefaultBeanDefinition>();
+        for (DefaultBeanDefinition each : beanDefinitionMap.values())
         {
             if (ckass == each.getType() || ckass.isAssignableFrom(each.getType()))
             {
@@ -437,9 +439,9 @@ public class DefaultApplicationContext implements ApplicationContext
     public <E> List<E> getBeans(Class<E> ckass)
     {
         refreshIfNeed();
-        List<BeanDefinition> beanDefinitions = getBeanDefinitions(ckass);
+        List<DefaultBeanDefinition> beanDefinitions = getBeanDefinitions(ckass);
         List<E> list = new LinkedList<E>();
-        for (BeanDefinition each : beanDefinitions)
+        for (DefaultBeanDefinition each : beanDefinitions)
         {
             list.add((E) each.getBean());
         }
@@ -450,7 +452,7 @@ public class DefaultApplicationContext implements ApplicationContext
     public <E> E getBean(String beanName)
     {
         refreshIfNeed();
-        BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+        DefaultBeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
         if (beanDefinition == null)
         {
             throw new BeanDefinitionCanNotFindException(beanName);
@@ -459,10 +461,10 @@ public class DefaultApplicationContext implements ApplicationContext
     }
 
     @Override
-    public List<BeanDefinition> getBeanDefinitionsByAnnotation(Class<? extends Annotation> ckass)
+    public List<DefaultBeanDefinition> getBeanDefinitionsByAnnotation(Class<? extends Annotation> ckass)
     {
-        List<BeanDefinition> list = new ArrayList<BeanDefinition>();
-        for (BeanDefinition each : beanDefinitionMap.values())
+        List<DefaultBeanDefinition> list = new ArrayList<DefaultBeanDefinition>();
+        for (DefaultBeanDefinition each : beanDefinitionMap.values())
         {
             Class<?> type = each.getType();
             AnnotationContext annotationContext = annotationContextFactory.get(type);

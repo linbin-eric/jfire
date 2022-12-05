@@ -6,7 +6,7 @@ import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.BeanDefinition;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.aop.EnhanceCallbackForBeanInstance;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 
@@ -21,14 +21,14 @@ import java.util.Map;
 
 public class ValidateAopManager implements EnhanceManager
 {
-    private BeanDefinition validatorBeandefinition;
+    private DefaultBeanDefinition validatorBeandefinition;
 
     @Override
     public void scan(ApplicationContext context)
     {
         AnnotationContextFactory annotationContextFactory = context.getAnnotationContextFactory();
         ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
-        for (BeanDefinition beanDefinition : context.getAllBeanDefinitions())
+        for (DefaultBeanDefinition beanDefinition : context.getAllBeanDefinitions())
         {
             for (Method method : beanDefinition.getType().getMethods())
             {
@@ -92,7 +92,7 @@ public class ValidateAopManager implements EnhanceManager
 
     private String generateMethodMapField(ClassModel classModel)
     {
-        String     fieldName  = "validator_" + fieldNameCounter.getAndIncrement();
+        String     fieldName  = "validator_" + FIELD_NAME_COUNTER.getAndIncrement();
         FieldModel fieldModel = new FieldModel(fieldName, Map.class, classModel);
         classModel.addField(fieldModel);
         return fieldName;
@@ -109,10 +109,10 @@ public class ValidateAopManager implements EnhanceManager
     {
         MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
         MethodModel                origin = classModel.removeMethodModel(key);
-        origin.setMethodName(origin.getMethodName() + "_" + methodNameCounter.getAndIncrement());
+        origin.setMethodName(origin.getMethodName() + "_" + METHOD_NAME_COUNTER.getAndIncrement());
         classModel.putMethodModel(origin);
         StringBuilder cache      = new StringBuilder();
-        String        mehtodName = "validateMethod_$" + fieldNameCounter.getAndIncrement();
+        String        mehtodName = "validateMethod_$" + FIELD_NAME_COUNTER.getAndIncrement();
         cache.append(method.getReturnType().getSimpleName()).append(" result = ").append(origin.generateInvoke()).append(";\r\n");
         cache.append(validateFieldName).append(".validateReturnValue(").append(hostFieldName).append(",")//
                 .append(methodMapField).append(".get(\"" + mehtodName + "\"),result);\r\n")//
@@ -132,7 +132,7 @@ public class ValidateAopManager implements EnhanceManager
     private String processValidateParamter(ClassModel classModel, ApplicationContext applicationContext, String hostFieldName, String validateFieldName, Method method, String methodMapField)
     {
         StringBuilder cache      = new StringBuilder();
-        String        methodName = "validateMethod_$" + fieldNameCounter.getAndIncrement();
+        String        methodName = "validateMethod_$" + FIELD_NAME_COUNTER.getAndIncrement();
         cache.append(validateFieldName).append(".validateParameters(").append(hostFieldName).append(",(java.lang.reflect.Method)")//
                 .append(methodMapField).append(".get(\"" + methodName + "\"),")//
                 .append("new Object[]{");
@@ -160,7 +160,7 @@ public class ValidateAopManager implements EnhanceManager
      */
     private String generateValidatorField(ClassModel classModel)
     {
-        String     fieldName  = "validator_" + fieldNameCounter.getAndIncrement();
+        String     fieldName  = "validator_" + FIELD_NAME_COUNTER.getAndIncrement();
         FieldModel fieldModel = new FieldModel(fieldName, JfireMethodValidator.class, classModel);
         classModel.addField(fieldModel);
         return fieldName;

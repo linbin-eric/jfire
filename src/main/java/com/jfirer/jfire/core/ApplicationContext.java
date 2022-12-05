@@ -2,6 +2,7 @@ package com.jfirer.jfire.core;
 
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.smc.compiler.CompileHelper;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.beandescriptor.InstanceDescriptor;
 
 import java.lang.annotation.Annotation;
@@ -17,7 +18,7 @@ public interface ApplicationContext
 
     <E> E getBean(String beanName);
 
-    List<BeanDefinition> getBeanDefinitionsByAnnotation(Class<? extends Annotation> ckass);
+    List<DefaultBeanDefinition> getBeanDefinitionsByAnnotation(Class<? extends Annotation> ckass);
 
     /**
      * 刷新上下文，动作包含：<br/>
@@ -39,15 +40,15 @@ public interface ApplicationContext
      * @param beanDescriptor
      * @return
      */
-    BeanDefinition getBeanFactory(InstanceDescriptor beanDescriptor);
+    DefaultBeanDefinition getBeanFactory(InstanceDescriptor beanDescriptor);
 
-    Collection<BeanDefinition> getAllBeanDefinitions();
+    Collection<DefaultBeanDefinition> getAllBeanDefinitions();
 
-    BeanDefinition getBeanDefinition(Class<?> ckass);
+    DefaultBeanDefinition getBeanDefinition(Class<?> ckass);
 
-    BeanDefinition getBeanDefinition(String beanName);
+    DefaultBeanDefinition getBeanDefinition(String beanName);
 
-    List<BeanDefinition> getBeanDefinitions(Class<?> ckass);
+    List<DefaultBeanDefinition> getBeanDefinitions(Class<?> ckass);
 
     /**
      * 注册一个类，框架会分析导入类的类型：<br/>
@@ -67,7 +68,7 @@ public interface ApplicationContext
      *
      * @param beanDefinition
      */
-    boolean registerBeanDefinition(BeanDefinition beanDefinition);
+    boolean registerBeanDefinition(DefaultBeanDefinition beanDefinition);
 
     Set<Class<?>> getConfigurationClassSet();
 
