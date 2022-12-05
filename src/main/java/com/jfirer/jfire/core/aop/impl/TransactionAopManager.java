@@ -9,7 +9,6 @@ import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
-import com.jfirer.jfire.core.aop.EnhanceCallbackForBeanInstance;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.impl.transaction.Propagation;
 import com.jfirer.jfire.core.aop.impl.transaction.TransactionManager;
@@ -45,16 +44,24 @@ public class TransactionAopManager implements EnhanceManager
     }
 
     @Override
-    public EnhanceCallbackForBeanInstance enhance(ClassModel classModel, Class<?> type, ApplicationContext applicationContext, String hostFieldName)
+    public void enhance(ClassModel classModel, Class<?> type, ApplicationContext applicationContext, String hostFieldName)
     {
         if (transactionBeandefinition == null)
         {
-            return null;
+            return ;
         }
         classModel.addImport(ReflectUtil.class);
         classModel.addImport(Propagation.class);
         String transFieldName = generateTransactionManagerField(classModel);
-        generateSetTransactionManagerMethod(classModel, transFieldName);
+//        generateSetTransactionManagerMethod(classModel, transFieldName);
+        MethodModel.MethodModelKey key1 = new MethodModel.MethodModelKey();
+        key1.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
+        key1.setMethodName("setEnhanceFields");
+        key1.setParamterTypes(new Class[]{ApplicationContext.class});
+        MethodModel setEnhanceFieldsMethod = classModel.getMethodModel(key1);
+        String setEnhanceFieldsMethodBody = setEnhanceFieldsMethod.getBody();
+        setEnhanceFieldsMethodBody += transFieldName + "=(" + SmcHelper.getReferenceName(TransactionManager.class, classModel) + ")$0.getBean(\"" + transactionBeandefinition.getBeanName() + "\");\r\n";
+        setEnhanceFieldsMethod.setBody(setEnhanceFieldsMethodBody);
         AnnotationContextFactory annotationContextFactory = applicationContext.getAnnotationContextFactory();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         for (Method method : type.getMethods())
@@ -128,14 +135,14 @@ public class TransactionAopManager implements EnhanceManager
             }
             classModel.putMethodModel(newOne);
         }
-        return new EnhanceCallbackForBeanInstance()
-        {
-            @Override
-            public void run(Object beanInstance)
-            {
-                ((SetTransactionManager) beanInstance).setTransactionManager((TransactionManager) transactionBeandefinition.getBean());
-            }
-        };
+//        return new EnhanceCallbackForBeanInstance()
+//        {
+//            @Override
+//            public void run(Object beanInstance)
+//            {
+//                ((SetTransactionManager) beanInstance).setTransactionManager((TransactionManager) transactionBeandefinition.getBean());
+//            }
+//        };
     }
 
     private String generateTransactionManagerField(ClassModel classModel)

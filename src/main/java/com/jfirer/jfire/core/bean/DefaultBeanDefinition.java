@@ -108,13 +108,12 @@ public class DefaultBeanDefinition implements BeanDefinition
         classModel.addImport(ProceedPoint.class);
         classModel.addImport(Object.class);
         String hostFieldName = "host_" + EnhanceManager.FIELD_NAME_COUNTER.getAndIncrement();
-        String contextFieldName = "context_"+EnhanceManager.FIELD_NAME_COUNTER.getAndIncrement();
-        addHostFieldAndContextField(classModel, hostFieldName,contextFieldName);
-        addSetHostAndContextMethod(classModel, hostFieldName,contextFieldName);
+        classModel.addField(new FieldModel(hostFieldName, type, classModel));
+        addSetHostAndSetEnhanceFieldsMethod(classModel, hostFieldName);
         addInvokeHostPublicMethod(classModel, hostFieldName);
         for (int i = 0; i < orderedAopManagers.length; i++)
         {
-            enhanceCallbackForBeanInstances[i] = orderedAopManagers[i].enhance(classModel, type, context, hostFieldName);
+           orderedAopManagers[i].enhance(classModel, type, context, hostFieldName);
         }
         CompileHelper compiler = context.getCompileHelper();
         try
@@ -158,24 +157,23 @@ public class DefaultBeanDefinition implements BeanDefinition
         }
     }
 
-    private void addSetHostAndContextMethod(ClassModel classModel, String hostFieldName, String contextFieldName)
+    private void addSetHostAndSetEnhanceFieldsMethod(ClassModel classModel, String hostFieldName)
     {
-        classModel.addInterface(EnhanceManager.SetHost.class);
+        classModel.addInterface(EnhanceManager.EnhanceWrapper.class);
         MethodModel setAopHost = new MethodModel(classModel);
         setAopHost.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
-        setAopHost.setMethodName("setHostAndContext");
-        setAopHost.setParamterTypes(Object.class,ApplicationContext.class);
+        setAopHost.setMethodName("setHost");
+        setAopHost.setParamterTypes(Object.class);
         setAopHost.setReturnType(void.class);
-        String line1 = hostFieldName + " = (" + SmcHelper.getReferenceName(type, classModel) + ")$0;";
-        String line2 = contextFieldName + " = (" + SmcHelper.getReferenceName(ApplicationContext.class, classModel) + ")$1;";
-        setAopHost.setBody(line1+"\r\n"+line2);
+        setAopHost.setBody(hostFieldName + " = (" + SmcHelper.getReferenceName(type, classModel) + ")$0;");
         classModel.putMethodModel(setAopHost);
-    }
-
-    private void addHostFieldAndContextField(ClassModel classModel, String hostFieldName,String contextFiledName)
-    {
-        classModel.addField(new FieldModel(hostFieldName, type, classModel));
-        classModel.addField(new FieldModel(contextFiledName,ApplicationContext.class,classModel));
+        MethodModel setEnhanceFieldsMethod = new MethodModel(classModel);
+        setEnhanceFieldsMethod.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
+        setEnhanceFieldsMethod.setMethodName("setEnhanceFields");
+        setEnhanceFieldsMethod.setParamterTypes(ApplicationContext.class);
+        setEnhanceFieldsMethod.setReturnType(void.class);
+        setEnhanceFieldsMethod.setBody("");
+        classModel.putMethodModel(setEnhanceFieldsMethod);
     }
 
     /**
@@ -318,13 +316,14 @@ public class DefaultBeanDefinition implements BeanDefinition
         {
             try
             {
-                EnhanceManager.SetHost newInstance = (EnhanceManager.SetHost) enhanceType.newInstance();
-                newInstance.setHostAndContext(originInstance,context);
+                EnhanceManager.EnhanceWrapper newInstance = (EnhanceManager.EnhanceWrapper) enhanceType.newInstance();
+                newInstance.setHost(originInstance);
+                newInstance.setEnhanceFields(context);
                 instance = newInstance;
-                for (EnhanceCallbackForBeanInstance each : enhanceCallbackForBeanInstances)
-                {
-                    each.run(instance);
-                }
+//                for (EnhanceCallbackForBeanInstance each : enhanceCallbackForBeanInstances)
+//                {
+//                    each.run(instance);
+//                }
             }
             catch (Throwable e)
             {

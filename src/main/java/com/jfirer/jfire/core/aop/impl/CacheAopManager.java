@@ -54,7 +54,7 @@ public class CacheAopManager implements EnhanceManager
     }
 
     @Override
-    public EnhanceCallbackForBeanInstance enhance(ClassModel classModel, Class<?> type, ApplicationContext applicationContext, String hostFieldName)
+    public void enhance(ClassModel classModel, Class<?> type, ApplicationContext applicationContext, String hostFieldName)
     {
         classModel.addImport(Expression.class);
         classModel.addImport(HashMap.class);
@@ -63,9 +63,18 @@ public class CacheAopManager implements EnhanceManager
         classModel.addImport(Boolean.class);
         classModel.addImport(Cache.class);
         String cacheManagerFieldName = generateCacheManagerField(classModel);
-        generateSetCacheManagerMethod(classModel, cacheManagerFieldName);
+//        generateSetCacheManagerMethod(classModel, cacheManagerFieldName);
+        MethodModel.MethodModelKey key = new MethodModel.MethodModelKey();
+        key.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
+        key.setMethodName("setEnhanceFields");
+        key.setParamterTypes(new Class[]{ApplicationContext.class});
+        MethodModel setEnhanceFieldsMethod = classModel.getMethodModel(key);
+        String setEnhanceFieldsMethodBody = setEnhanceFieldsMethod.getBody();
+        setEnhanceFieldsMethodBody += cacheManagerFieldName + "=(" + SmcHelper.getReferenceName(CacheManager.class, classModel) + ")$0.getBean(\"" + cacheBeanDefinition.getBeanName() + "\");\r\n";
+        setEnhanceFieldsMethod.setBody(setEnhanceFieldsMethodBody);
         AnnotationContextFactory annotationContextFactory = applicationContext.getAnnotationContextFactory();
         ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
+
         for (Method method : type.getMethods())
         {
             if (Modifier.isFinal(method.getModifiers()))
@@ -90,14 +99,14 @@ public class CacheAopManager implements EnhanceManager
                 processCachePut(classModel, cacheManagerFieldName, annotationContext, method);
             }
         }
-        return new EnhanceCallbackForBeanInstance()
-        {
-            @Override
-            public void run(Object beanInstance)
-            {
-                ((SetCacheManager) beanInstance).setCacheManager((CacheManager) cacheBeanDefinition.getBean());
-            }
-        };
+//        return new EnhanceCallbackForBeanInstance()
+//        {
+//            @Override
+//            public void run(Object beanInstance)
+//            {
+//                ((SetCacheManager) beanInstance).setCacheManager((CacheManager) cacheBeanDefinition.getBean());
+//            }
+//        };
     }
 
     private void processCachePut(ClassModel classModel, String cacheManagerFieldName, AnnotationContext annotationContext, Method method)

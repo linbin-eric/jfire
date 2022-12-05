@@ -6,7 +6,7 @@ import com.jfirer.jfire.core.ApplicationContext;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 不同的AOP管理类实现不同的增强内容
+ * 不同的增强管理类实现不同的增强内容
  *
  * @author linbin
  */
@@ -35,7 +35,7 @@ public interface EnhanceManager
      * @param context       上下文
      * @param hostFieldName 被增强类实例
      */
-    EnhanceCallbackForBeanInstance enhance(ClassModel classModel, Class<?> type, ApplicationContext context, String hostFieldName);
+    void enhance(ClassModel classModel, Class<?> type, ApplicationContext context, String hostFieldName);
 
     /**
      * 该AOP生效顺序。数字越小生效越快
@@ -44,13 +44,15 @@ public interface EnhanceManager
      */
     int order();
 
-    interface SetHost
+    interface EnhanceWrapper
     {
         /**
          * 设置被代理的实例
          *
          * @param instance
          */
-        void setHostAndContext(Object instance, ApplicationContext context);
+        void setHost(Object instance);
+
+        void setEnhanceFields(ApplicationContext context);
     }
 }

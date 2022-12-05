@@ -10,11 +10,11 @@ import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.core.aop.EnhanceCallbackForBeanInstance;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.ProceedPoint;
 import com.jfirer.jfire.core.aop.notated.*;
+import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
 import com.jfirer.jfire.exception.CannotFindEnhanceFieldException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class AopEnhanceManager implements EnhanceManager
 
     class EnhanceInfo
     {
-        Class<?>         type;
+        Class<?>                type;
         String[]                fieldNames;
         DefaultBeanDefinition[] injects;
         volatile Field[] fields;
@@ -54,19 +54,27 @@ public class AopEnhanceManager implements EnhanceManager
     }
 
     @Override
-    public EnhanceCallbackForBeanInstance enhance(ClassModel classModel, final Class<?> type, ApplicationContext applicationContext, String hostFieldName)
+    public void enhance(ClassModel classModel, final Class<?> type, ApplicationContext applicationContext, String hostFieldName)
     {
         PriorityQueue<DefaultBeanDefinition> queue = findAspectClass(type, applicationContext);
         List<String> fieldNames = new ArrayList<String>();
         List<DefaultBeanDefinition> injects = new ArrayList<DefaultBeanDefinition>();
         AnnotationContextFactory annotationContextFactory = applicationContext.getAnnotationContextFactory();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        MethodModel.MethodModelKey key = new MethodModel.MethodModelKey();
+        key.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
+        key.setMethodName("setEnhanceFields");
+        key.setParamterTypes(new Class[]{ApplicationContext.class});
+        MethodModel setEnhanceFieldsMethod = classModel.getMethodModel(key);
         for (DefaultBeanDefinition each : queue)
         {
             String fieldName = "enhance_" + FIELD_NAME_COUNTER.getAndIncrement();
             fieldNames.add(fieldName);
             injects.add(each);
             FieldModel fieldModel = new FieldModel(fieldName, each.getType(), classModel);
+            String setEnhanceFieldsMethodBody = setEnhanceFieldsMethod.getBody();
+            setEnhanceFieldsMethodBody += fieldName + "=(" + SmcHelper.getReferenceName(each.getType(), classModel) + ")$0.getBean(\"" + each.getBeanName() + "\");\r\n";
+            setEnhanceFieldsMethod.setBody(setEnhanceFieldsMethodBody);
             classModel.addField(fieldModel);
             for (Method enhanceMethod : each.getType().getMethods())
             {
@@ -93,58 +101,58 @@ public class AopEnhanceManager implements EnhanceManager
                 }
             }
         }
-        final EnhanceInfo enhanceInfo = new EnhanceInfo();
-        enhanceInfo.fieldNames = fieldNames.toArray(new String[fieldNames.size()]);
-        enhanceInfo.injects = injects.toArray(new DefaultBeanDefinition[injects.size()]);
-        enhanceInfo.type = type;
-        return new EnhanceCallbackForBeanInstance()
-        {
-
-            @Override
-            public void run(Object beanInstance)
-            {
-                if (enhanceInfo.fields == null)
-                {
-                    synchronized (enhanceInfo)
-                    {
-                        if (enhanceInfo.fields == null)
-                        {
-                            Field[] fields = new Field[enhanceInfo.fieldNames.length];
-                            Class<?> enhanceType = beanInstance.getClass();
-                            for (int i = 0; i < enhanceInfo.fieldNames.length; i++)
-                            {
-                                String fieldName = enhanceInfo.fieldNames[i];
-                                try
-                                {
-                                    Field field = enhanceType.getDeclaredField(fieldName);
-                                    field.setAccessible(true);
-                                    fields[i] = field;
-                                }
-                                catch (Exception e)
-                                {
-                                    throw new CannotFindEnhanceFieldException(e);
-                                }
-                            }
-                            enhanceInfo.fields = fields;
-                        }
-                    }
-                }
-                Field[] fields = enhanceInfo.fields;
-                DefaultBeanDefinition[] injects = enhanceInfo.injects;
-                for (int i = 0; i < fields.length; i++)
-                {
-                    Field field = fields[i];
-                    try
-                    {
-                        field.set(beanInstance, injects[i].getBean());
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        };
+//        final EnhanceInfo enhanceInfo = new EnhanceInfo();
+//        enhanceInfo.fieldNames = fieldNames.toArray(new String[fieldNames.size()]);
+//        enhanceInfo.injects = injects.toArray(new DefaultBeanDefinition[injects.size()]);
+//        enhanceInfo.type = type;
+//         new EnhanceCallbackForBeanInstance()
+//        {
+//
+//            @Override
+//            public void run(Object beanInstance)
+//            {
+//                if (enhanceInfo.fields == null)
+//                {
+//                    synchronized (enhanceInfo)
+//                    {
+//                        if (enhanceInfo.fields == null)
+//                        {
+//                            Field[] fields = new Field[enhanceInfo.fieldNames.length];
+//                            Class<?> enhanceType = beanInstance.getClass();
+//                            for (int i = 0; i < enhanceInfo.fieldNames.length; i++)
+//                            {
+//                                String fieldName = enhanceInfo.fieldNames[i];
+//                                try
+//                                {
+//                                    Field field = enhanceType.getDeclaredField(fieldName);
+//                                    field.setAccessible(true);
+//                                    fields[i] = field;
+//                                }
+//                                catch (Exception e)
+//                                {
+//                                    throw new CannotFindEnhanceFieldException(e);
+//                                }
+//                            }
+//                            enhanceInfo.fields = fields;
+//                        }
+//                    }
+//                }
+//                Field[] fields = enhanceInfo.fields;
+//                DefaultBeanDefinition[] injects = enhanceInfo.injects;
+//                for (int i = 0; i < fields.length; i++)
+//                {
+//                    Field field = fields[i];
+//                    try
+//                    {
+//                        field.set(beanInstance, injects[i].getBean());
+//                    }
+//                    catch (Exception e)
+//                    {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        };
     }
 
     private void processBeforeAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
