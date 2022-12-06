@@ -35,7 +35,7 @@
         <Root level="error">
             <AppenderRef ref="AllFile"/>
         </Root>
-        <Logger name="com.jfirer" level="debug">
+        <Logger name="com.jfirer" level="trace">
             <AppenderRef ref="Console"/>
         </Logger>
     </Loggers>

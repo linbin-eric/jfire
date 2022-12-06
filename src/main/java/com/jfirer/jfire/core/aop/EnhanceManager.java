@@ -6,7 +6,7 @@ import com.jfirer.jfire.core.ApplicationContext;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 不同的增强管理类实现不同的增强内容
+ * 不同的增强管理类实现不同的增强内容,该接口的实现类在容器中会直接以反射的形式被实例化，而不会经过容器的其他流程。
  *
  * @author linbin
  */
@@ -43,16 +43,4 @@ public interface EnhanceManager
      * @return
      */
     int order();
-
-    interface EnhanceWrapper
-    {
-        /**
-         * 设置被代理的实例
-         *
-         * @param instance
-         */
-        void setHost(Object instance);
-
-        void setEnhanceFields(ApplicationContext context);
-    }
 }

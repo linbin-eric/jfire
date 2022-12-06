@@ -3,7 +3,7 @@ package com.jfirer.jfire.core.prepare.annotation.condition.provide;
 import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
 import com.jfirer.baseutil.bytecode.annotation.ValuePair;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
+import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.prepare.annotation.condition.Conditional;
 import com.jfirer.jfire.core.prepare.annotation.condition.ErrorMessage;
 
@@ -41,9 +41,9 @@ public @interface ConditionOnBean
                     errorMessage.addErrorMessage("类:" + beanType + "不存在classpath，对应的Bean也不会存在");
                     return false;
                 }
-                boolean        miss           = true;
-                DefaultBeanDefinition beanDefinition = applicationContext.getBeanDefinition(aClass);
-                if (beanDefinition == null)
+                boolean          miss             = true;
+                BeanRegisterInfo beanRegisterInfo = applicationContext.getBeanRegisterInfo(aClass);
+                if (beanRegisterInfo == null)
                 {
                     errorMessage.addErrorMessage("没有Bean是" + beanType + "类型或者其子类");
                     return false;

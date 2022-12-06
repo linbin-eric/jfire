@@ -3,6 +3,7 @@ package com.jfirer.jfire.test.function.base;
 import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
+import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import com.jfirer.jfire.test.function.base.data.House;
 import com.jfirer.jfire.test.function.base.data.ImmutablePerson;
 import com.jfirer.jfire.test.function.base.data.MutablePerson;
@@ -17,6 +18,7 @@ public class ContextTest
 {
     private static final Logger logger = LoggerFactory.getLogger(ContextTest.class);
 
+    @Configuration
     @ComponentScan("com.jfirer.jfire.test.function.base")
     public static class ContextTestScan
     {

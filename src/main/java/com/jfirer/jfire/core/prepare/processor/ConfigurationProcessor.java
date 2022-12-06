@@ -8,9 +8,10 @@ import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.reflect.ReflectUtil;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
-import com.jfirer.jfire.core.beandescriptor.InstanceDescriptor;
-import com.jfirer.jfire.core.beandescriptor.MethodInvokeInstanceDescriptor;
+import com.jfirer.jfire.core.DefaultApplicationContext;
+import com.jfirer.jfire.core.bean.BeanRegisterInfo;
+import com.jfirer.jfire.core.bean.impl.register.DefaultBeanRegisterInfo;
+import com.jfirer.jfire.core.beanfactory.impl.MethodBeanFactory;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
 import com.jfirer.jfire.core.prepare.annotation.condition.Condition;
 import com.jfirer.jfire.core.prepare.annotation.condition.Conditional;
@@ -18,12 +19,17 @@ import com.jfirer.jfire.core.prepare.annotation.condition.ErrorMessage;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Bean;
 import com.jfirer.jfire.core.prepare.annotation.configuration.ConfigAfter;
 import com.jfirer.jfire.core.prepare.annotation.configuration.ConfigBefore;
+import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import com.jfirer.jfire.util.PrepareConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ConfigurationProcessor implements ContextPrepare
 {
@@ -32,18 +38,22 @@ public class ConfigurationProcessor implements ContextPrepare
     @Override
     public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
     {
-        List<Class<?>> list = new ArrayList<Class<?>>(context.getConfigurationClassSet());
-        logOrder(list);
-        list = new SortList(list, context.getAnnotationContextFactory()).sort();
-        logger.trace("traceId:{} 修正排序完毕", TRACEID.currentTraceId());
-        logOrder(list);
-        ErrorMessage errorMessage = new ErrorMessage();
-        AnnotationContextFactory annotationContextFactory = context.getAnnotationContextFactory();
+//        List<Class<?>> list = new ArrayList<Class<?>>(context.getConfigurationClassSet());
+//        logOrder(list);
+//        list = new SortList(list, context.getAnnotationContextFactory()).sort();
+//        logger.trace("traceId:{} 修正排序完毕", TRACEID.currentTraceId());
+//        logOrder(list);
+        ErrorMessage             errorMessage             = new ErrorMessage();
+        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
+        List<Class<?>> list = context.getAllBeanRegisterInfos().stream()
+                                     .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType())
+                                                                                         .isAnnotationPresent(Configuration.class))
+                                     .map(beanRegisterInfo -> beanRegisterInfo.getType()).collect(Collectors.toList());
         for (Class<?> each : list)
         {
             errorMessage.clear();
-            AnnotationContext annotationContextOnClass = annotationContextFactory.get(each);
-            List<AnnotationMetadata> conditionalAnnotations = annotationContextOnClass.getAnnotationMetadatas(Conditional.class);
+            AnnotationContext        annotationContextOnClass = annotationContextFactory.get(each);
+            List<AnnotationMetadata> conditionalAnnotations   = annotationContextOnClass.getAnnotationMetadatas(Conditional.class);
             if (!conditionalAnnotations.isEmpty())
             {
                 boolean pass = true;
@@ -136,7 +146,7 @@ public class ConfigurationProcessor implements ContextPrepare
     {
         if (logger.isDebugEnabled())
         {
-            int index = 1;
+            int    index   = 1;
             String traceId = TRACEID.currentTraceId();
             for (Class<?> each : list)
             {
@@ -181,8 +191,8 @@ public class ConfigurationProcessor implements ContextPrepare
                 if (annotationContext.isAnnotationPresent(ConfigBefore.class))
                 {
                     AnnotationMetadata configBefore = annotationContext.getAnnotationMetadata(ConfigBefore.class);
-                    SortList.SortEntry index = entry.pre;
-                    String targetClass = configBefore.getAttribyte("value").getClassName();
+                    SortList.SortEntry index        = entry.pre;
+                    String             targetClass  = configBefore.getAttribyte("value").getClassName();
                     while (index != null && index.value.getName().equals(targetClass) == false)
                     {
                         index = index.pre;
@@ -199,8 +209,8 @@ public class ConfigurationProcessor implements ContextPrepare
                 if (annotationContext.isAnnotationPresent(ConfigAfter.class))
                 {
                     AnnotationMetadata configAfter = annotationContext.getAnnotationMetadata(ConfigAfter.class);
-                    SortList.SortEntry index = entry.next;
-                    String targetClass = configAfter.getAttribyte("value").getClassName();
+                    SortList.SortEntry index       = entry.next;
+                    String             targetClass = configAfter.getAttribyte("value").getClassName();
                     while (index != null && index.value.getName().equals(targetClass) == false)
                     {
                         index = index.next;
@@ -235,7 +245,7 @@ public class ConfigurationProcessor implements ContextPrepare
             }
             else
             {
-                SortList.SortEntry pre = entry.pre;
+                SortList.SortEntry pre  = entry.pre;
                 SortList.SortEntry next = entry.next;
                 pre.next = next;
                 if (next != null)
@@ -268,9 +278,9 @@ public class ConfigurationProcessor implements ContextPrepare
         {
             if (logger.isDebugEnabled())
             {
-                SortList.SortEntry head = this.head;
-                String traceId = TRACEID.currentTraceId();
-                int index = 1;
+                SortList.SortEntry head    = this.head;
+                String             traceId = TRACEID.currentTraceId();
+                int                index   = 1;
                 while (head != null)
                 {
                     logger.trace("traceId:{} 顺序{}为{}", traceId, index, head.value);
@@ -304,8 +314,8 @@ public class ConfigurationProcessor implements ContextPrepare
      */
     private boolean matchCondition(ApplicationContext context, AnnotationMetadata conditional, AnnotationContext annotationContext, ErrorMessage errorMessage)
     {
-        boolean match = true;
-        ValuePair[] value = conditional.getAttribyte("value").getArray();
+        boolean     match       = true;
+        ValuePair[] value       = conditional.getAttribyte("value").getArray();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         for (ValuePair each : value)
         {
@@ -328,11 +338,13 @@ public class ConfigurationProcessor implements ContextPrepare
 
     private void registerMethodBeanDefinition(Method method, ApplicationContext context, AnnotationContext annotationContextOnMethod)
     {
-        Bean bean = annotationContextOnMethod.getAnnotation(Bean.class);
-        String beanName = StringUtil.isNotBlank(bean.name()) ? bean.name() : method.getName();
-        InstanceDescriptor instanceDescriptor = new MethodInvokeInstanceDescriptor(method);
-        DefaultBeanDefinition methodBeanDefinition = new DefaultBeanDefinition(beanName, method.getReturnType(), bean.prototype(), instanceDescriptor);
-        context.registerBeanDefinition(methodBeanDefinition);
+        Bean              bean              = annotationContextOnMethod.getAnnotation(Bean.class);
+        String            beanName          = StringUtil.isNotBlank(bean.name()) ? bean.name() : method.getName();
+        BeanRegisterInfo  beanRegisterInfo  = new DefaultBeanRegisterInfo(bean.prototype(), method.getReturnType(), beanName, context, new MethodBeanFactory(context, method));
+        context.registerBeanRegisterInfo(beanRegisterInfo);
+//        InstanceDescriptor    instanceDescriptor   = new MethodInvokeInstanceDescriptor(method);
+//        DefaultBeanDefinition methodBeanDefinition = new DefaultBeanDefinition(beanName, method.getReturnType(), bean.prototype(), instanceDescriptor);
+//        context.registerBeanRegisterInfo(methodBeanDefinition);
         logger.debug("traceId:{} 注册方法Bean:{}", TRACEID.currentTraceId(), method.getDeclaringClass()
                                                                                    .getSimpleName() + "." + method.getName());
     }

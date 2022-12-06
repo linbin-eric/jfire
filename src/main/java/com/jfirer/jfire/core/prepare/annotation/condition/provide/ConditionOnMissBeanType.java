@@ -40,7 +40,7 @@ public @interface ConditionOnMissBeanType
                 {
                     continue;
                 }
-                if (applicationContext.getBeanDefinition(aClass) != null)
+                if (applicationContext.getBeanRegisterInfo(aClass) != null)
                 {
                     errorMessage.addErrorMessage("已经存在类型:" + each + "的Bean");
                     return false;

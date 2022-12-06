@@ -1,9 +1,9 @@
 package com.jfirer.jfire.exception;
 
 import com.jfirer.baseutil.StringUtil;
-import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
+import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 
-import java.util.List;
+import java.util.Collection;
 
 public class BeanDefinitionCanNotFindException extends RuntimeException
 {
@@ -22,7 +22,7 @@ public class BeanDefinitionCanNotFindException extends RuntimeException
         super("无法找到类型为:" + ckass.getName() + "的Bean");
     }
 
-    public BeanDefinitionCanNotFindException(List<DefaultBeanDefinition> list, Class<?> type)
+    public BeanDefinitionCanNotFindException(Collection<BeanRegisterInfo> list, Class<?> type)
     {
         super(StringUtil.format("无法找到合适的Bean,符合类型:{}的bean存在:{}个", type.getName(), list.size()));
     }

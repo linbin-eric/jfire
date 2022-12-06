@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function.loader;
 
-import com.jfirer.jfire.core.bean.BeanFactory;
-import com.jfirer.jfire.core.beandescriptor.InstanceDescriptor;
+import com.jfirer.jfire.core.bean.BeanDefinition;
+import com.jfirer.jfire.core.beanfactory.BeanFactory;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
@@ -34,9 +34,10 @@ public class AllLoader implements BeanFactory
         });
     }
 
+
     @Override
-    public <E> E getInstance(InstanceDescriptor beanDescriptor)
+    public <E> E getUnEnhanceyInstance(BeanDefinition beanDefinition)
     {
-        return (E) holder.get(beanDescriptor.newInstanceDescriptor());
+        return (E) holder.get(beanDefinition.getType());
     }
 }

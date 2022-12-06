@@ -1,54 +1,37 @@
 package com.jfirer.jfire.core;
 
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
-import com.jfirer.baseutil.smc.compiler.CompileHelper;
-import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
-import com.jfirer.jfire.core.beandescriptor.InstanceDescriptor;
+import com.jfirer.jfire.core.bean.BeanDefinition;
+import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 
-import java.lang.annotation.Annotation;
 import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 public interface ApplicationContext
 {
     <E> E getBean(Class<E> ckass);
 
-    <E> List<E> getBeans(Class<E> ckass);
+    <E> Collection<E> getBeans(Class<E> ckass);
 
     <E> E getBean(String beanName);
 
-    List<DefaultBeanDefinition> getBeanDefinitionsByAnnotation(Class<? extends Annotation> ckass);
-
     /**
      * 刷新上下文，动作包含：<br/>
-     * 1. 清空当前所有的Bean配置,并且注册默认的内置Bean<br/>
+     * 1. 清空容器内的所有Bean实例。<br/>
+     * 2. 注册默认的Bean信息到容器。<br/>
      * 2. 读取配置类信息，如果配置类注解了Import注解，则导入对应的类。并且将配置类注册为一个Bean。<br/>
      * 3. 执行当前的预处理器处理链<br/>
-     * 通过register方法注册的bean不会被删除。
      */
     void refresh();
 
     ////
     Environment getEnv();
 
-    AnnotationContextFactory getAnnotationContextFactory();
+    Collection<BeanRegisterInfo> getAllBeanRegisterInfos();
 
-    /**
-     * 返回BeanFactory的Bean定义
-     *
-     * @param beanDescriptor
-     * @return
-     */
-    DefaultBeanDefinition getBeanFactory(InstanceDescriptor beanDescriptor);
+    BeanRegisterInfo getBeanRegisterInfo(Class<?> ckass);
 
-    Collection<DefaultBeanDefinition> getAllBeanDefinitions();
+    BeanRegisterInfo getBeanRegisterInfo(String beanName);
 
-    DefaultBeanDefinition getBeanDefinition(Class<?> ckass);
-
-    DefaultBeanDefinition getBeanDefinition(String beanName);
-
-    List<DefaultBeanDefinition> getBeanDefinitions(Class<?> ckass);
+    Collection<BeanRegisterInfo> getBeanRegisterInfos(Class<?> ckass);
 
     /**
      * 注册一个类，框架会分析导入类的类型：<br/>
@@ -65,22 +48,21 @@ public interface ApplicationContext
 
     /**
      * 注册Bean定义，注册成功返回true。如果Bean名称相同，则不再注册，直接返回false。
-     *
-     * @param beanDefinition
      */
-    boolean registerBeanDefinition(DefaultBeanDefinition beanDefinition);
+    RegisterResult registerBeanRegisterInfo(BeanRegisterInfo beanRegisterInfo);
 
-    Set<Class<?>> getConfigurationClassSet();
-
-    CompileHelper getCompileHelper();
 
     enum NeedRefresh
     {
-        YES, NO
+        YES,
+        NO
     }
 
     enum RegisterResult
     {
-        PREPARE, CONFIGURATION, BEAN, NODATA
+        PREPARE,
+        CONFIGURATION,
+        BEAN,
+        NODATA
     }
 }

@@ -9,6 +9,7 @@ import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.bytecode.util.BytecodeUtil;
 import com.jfirer.baseutil.reflect.ReflectUtil;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
@@ -17,9 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 负责在路径之下扫描具备@Resource和@Configuration注解的类
@@ -31,21 +31,27 @@ public class ComponentScanProcessor implements ContextPrepare
     @Override
     public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
     {
-        AnnotationContextFactory annotationContextFactory = context.getAnnotationContextFactory();
-        ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
-        List<String>             classNames               = new LinkedList<String>();
-        for (Class<?> each : context.getConfigurationClassSet())
-        {
-            AnnotationContext annotationContext = annotationContextFactory.get(each);
-            if (annotationContext.isAnnotationPresent(ComponentScan.class))
-            {
-                ComponentScan componentScan = annotationContext.getAnnotation(ComponentScan.class);
-                for (String scanPath : componentScan.value())
-                {
-                    Collections.addAll(classNames, PackageScan.scan(scanPath));
-                }
-            }
-        }
+        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
+        ClassLoader              classLoader       = Thread.currentThread().getContextClassLoader();
+        Collection<String>       classNames              ;
+        classNames= context.getAllBeanRegisterInfos().stream()
+               .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType())
+                                                                   .isAnnotationPresent(ComponentScan.class))
+                .map(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotation(ComponentScan.class))
+                .flatMap(componentScan -> Arrays.stream(componentScan.value()) )
+                .flatMap(scanPath-> Arrays.stream(PackageScan.scan(scanPath))).collect(Collectors.toSet());
+//        for (Class<?> each : context.getConfigurationClassSet())
+//        {
+//            AnnotationContext annotationContext = annotationContextFactory.get(each);
+//            if (annotationContext.isAnnotationPresent(ComponentScan.class))
+//            {
+//                ComponentScan componentScan = annotationContext.getAnnotation(ComponentScan.class);
+//                for (String scanPath : componentScan.value())
+//                {
+//                    Collections.addAll(classNames, PackageScan.scan(scanPath));
+//                }
+//            }
+//        }
         boolean needRefresh = false;
         for (String each : classNames)
         {

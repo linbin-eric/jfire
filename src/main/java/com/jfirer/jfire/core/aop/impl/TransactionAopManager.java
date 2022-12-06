@@ -8,48 +8,46 @@ import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.bean.DefaultBeanDefinition;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.impl.transaction.Propagation;
 import com.jfirer.jfire.core.aop.impl.transaction.TransactionManager;
 import com.jfirer.jfire.core.aop.impl.transaction.TransactionState;
 import com.jfirer.jfire.core.aop.notated.Transactional;
+import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Optional;
 
 public class TransactionAopManager implements EnhanceManager
 {
-    private DefaultBeanDefinition transactionBeandefinition;
+    private String transactionManagerBeanName;
 
     @Override
     public void scan(ApplicationContext context)
     {
-        AnnotationContextFactory annotationContextFactory = context.getAnnotationContextFactory();
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (DefaultBeanDefinition beanDefinition : context.getAllBeanDefinitions())
+        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
+        for (BeanRegisterInfo each : context.getAllBeanRegisterInfos())
         {
-            for (Method method : beanDefinition.getType().getMethods())
+            for (Method method : each.getType().getMethods())
             {
-                AnnotationContext annotationContext = annotationContextFactory.get(method, classLoader);
+                AnnotationContext annotationContext = annotationContextFactory.get(method);
                 if (annotationContext.isAnnotationPresent(Transactional.class))
                 {
-                    beanDefinition.addAopManager(this);
+                    each.addEnhanceManager(this);
                     break;
                 }
             }
         }
-        transactionBeandefinition = context.getBeanDefinition(TransactionManager.class);
+        transactionManagerBeanName = Optional.ofNullable(context.getBeanRegisterInfo(TransactionManager.class))
+                                             .map(beanRegisterInfo -> beanRegisterInfo.getBeanName()).orElse(null);
     }
 
     @Override
     public void enhance(ClassModel classModel, Class<?> type, ApplicationContext applicationContext, String hostFieldName)
     {
-        if (transactionBeandefinition == null)
-        {
-            return ;
-        }
         classModel.addImport(ReflectUtil.class);
         classModel.addImport(Propagation.class);
         String transFieldName = generateTransactionManagerField(classModel);
@@ -58,33 +56,28 @@ public class TransactionAopManager implements EnhanceManager
         key1.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
         key1.setMethodName("setEnhanceFields");
         key1.setParamterTypes(new Class[]{ApplicationContext.class});
-        MethodModel setEnhanceFieldsMethod = classModel.getMethodModel(key1);
-        String setEnhanceFieldsMethodBody = setEnhanceFieldsMethod.getBody();
-        setEnhanceFieldsMethodBody += transFieldName + "=(" + SmcHelper.getReferenceName(TransactionManager.class, classModel) + ")$0.getBean(\"" + transactionBeandefinition.getBeanName() + "\");\r\n";
+        MethodModel setEnhanceFieldsMethod     = classModel.getMethodModel(key1);
+        String      setEnhanceFieldsMethodBody = setEnhanceFieldsMethod.getBody();
+        setEnhanceFieldsMethodBody += transFieldName + "=(" + SmcHelper.getReferenceName(TransactionManager.class, classModel) + ")$0.getBean(\"" + transactionManagerBeanName + "\");\r\n";
         setEnhanceFieldsMethod.setBody(setEnhanceFieldsMethodBody);
-        AnnotationContextFactory annotationContextFactory = applicationContext.getAnnotationContextFactory();
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
         for (Method method : type.getMethods())
         {
-            AnnotationContext annotationContext = annotationContextFactory.get(method, classLoader);
-            if (Modifier.isFinal(method.getModifiers()))
+            AnnotationContext annotationContext = annotationContextFactory.get(method);
+            if (Modifier.isFinal(method.getModifiers()) || annotationContext.isAnnotationPresent(Transactional.class) == false)
             {
                 continue;
             }
-            if (annotationContext.isAnnotationPresent(Transactional.class) == false)
-            {
-                continue;
-            }
-            MethodModel.MethodModelKey key = new MethodModel.MethodModelKey(method);
-            MethodModel origin = classModel.removeMethodModel(key);
+            MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
+            MethodModel                origin = classModel.removeMethodModel(key);
             origin.setAccessLevel(MethodModel.AccessLevel.PRIVATE);
             origin.setMethodName(origin.getMethodName() + "_" + METHOD_NAME_COUNTER.getAndIncrement());
             classModel.putMethodModel(origin);
-            MethodModel newOne = new MethodModel(method, classModel);
-            StringBuilder cache = new StringBuilder();
-            Transactional transactional = annotationContext.getAnnotation(Transactional.class);
-            String propagation = "Propagation." + transactional.propagation().name();
-            String transactionStateName = "transactionState_" + VAR_NAME_COUNTER.getAndIncrement();
+            MethodModel   newOne               = new MethodModel(method, classModel);
+            StringBuilder cache                = new StringBuilder();
+            Transactional transactional        = annotationContext.getAnnotation(Transactional.class);
+            String        propagation          = "Propagation." + transactional.propagation().name();
+            String        transactionStateName = "transactionState_" + VAR_NAME_COUNTER.getAndIncrement();
             cache.append(SmcHelper.getReferenceName(TransactionState.class, classModel)).append(" ")
                  .append(transactionStateName)//
                  .append(" = ").append(transFieldName).append(".beginTransAction(").append(propagation)
@@ -147,32 +140,16 @@ public class TransactionAopManager implements EnhanceManager
 
     private String generateTransactionManagerField(ClassModel classModel)
     {
-        String transFieldName = "transactionManager_" + FIELD_NAME_COUNTER.getAndIncrement();
-        FieldModel fieldModel = new FieldModel(transFieldName, TransactionManager.class, classModel);
+        String     transFieldName = "transactionManager_" + FIELD_NAME_COUNTER.getAndIncrement();
+        FieldModel fieldModel     = new FieldModel(transFieldName, TransactionManager.class, classModel);
         classModel.addField(fieldModel);
         return transFieldName;
     }
 
-    private void generateSetTransactionManagerMethod(ClassModel classModel, String transFieldName)
-    {
-        classModel.addInterface(SetTransactionManager.class);
-        MethodModel methodModel = new MethodModel(classModel);
-        methodModel.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
-        methodModel.setMethodName("setTransactionManager");
-        methodModel.setParamterTypes(TransactionManager.class);
-        methodModel.setReturnType(void.class);
-        methodModel.setBody(transFieldName + " = $0;");
-        classModel.putMethodModel(methodModel);
-    }
 
     @Override
     public int order()
     {
         return TRANSACTION;
-    }
-
-    public interface SetTransactionManager
-    {
-        void setTransactionManager(TransactionManager transactionManager);
     }
 }

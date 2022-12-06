@@ -5,12 +5,16 @@ import com.jfirer.baseutil.bytecode.annotation.ValuePair;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
+import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.prepare.annotation.condition.Conditional;
 import com.jfirer.jfire.core.prepare.annotation.condition.ErrorMessage;
+import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Optional;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Conditional(ConditionOnAnnotation.OnAnnotation.class)
@@ -31,7 +35,7 @@ public @interface ConditionOnAnnotation
         {
             ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
             ValuePair[]              value                    = metadata.getAttribyte("value").getArray();
-            AnnotationContextFactory annotationContextFactory = context.getAnnotationContextFactory();
+            AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
             for (ValuePair each : value)
             {
                 Class<? extends Annotation> aClass;
@@ -44,24 +48,27 @@ public @interface ConditionOnAnnotation
                     errorMessage.addErrorMessage("注解:" + each + "不存在于类路径");
                     return false;
                 }
-                boolean has = false;
-                for (Class<?> configurationClass : context.getConfigurationClassSet())
-                {
-                    AnnotationContext annotationContext = annotationContextFactory.get(configurationClass, classLoader);
-                    if (annotationContext.isAnnotationPresent(aClass))
-                    {
-                        has = true;
-                        break;
-                    }
-                }
+                boolean has  = context.getAllBeanRegisterInfos().stream()
+                                                        .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType())
+                                                                                                            .isAnnotationPresent(Configuration.class))
+                                                        .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType())
+                                                                                                            .isAnnotationPresent(aClass))
+                                                        .findAny().isPresent();
+//                for (Class<?> configurationClass : context.getConfigurationClassSet())
+//                {
+//                    AnnotationContext annotationContext = annotationContextFactory.get(configurationClass, classLoader);
+//                    if (annotationContext.isAnnotationPresent(aClass))
+//                    {
+//                        has = true;
+//                        break;
+//                    }
+//                }
                 if (has == false)
                 {
                     errorMessage.addErrorMessage("注解:" + each + "没有标注在配置类上");
                     return false;
                 }
-            }
-            return true;
+            } return true;
         }
-
     }
 }
