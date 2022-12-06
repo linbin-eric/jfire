@@ -6,7 +6,6 @@ import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.reflect.ValueAccessor;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
-import com.jfirer.jfire.core.bean.BeanDefinition;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.inject.InjectHandler;
 import com.jfirer.jfire.core.inject.notated.CanBeNull;
@@ -36,6 +35,13 @@ public class DefaultDependencyInjectHandler implements InjectHandler
         this.context = context;
         valueAccessor = new ValueAccessor(field);
         Class<?> fieldType = field.getType();
+        /**
+         *
+         * 需要注意，在生成注入处理器的过程中，会发现类之间存在循环依赖。Inject的实例如果在初始化的时候就获取对应类的BeanDefinition实例，会导致死循环。
+         * 因为下一个类依赖于本类，所以下一个类的注入属性也需要持有本类的BeanDefinition，但是此时本类的BeanDefinition还在生成中。
+         * 解决的办法很简单，就是Inject的实例初始化时持有所需要注入属性对应的BeanRegisterInfo实例即可。
+         * 在运行期在逐步创建对应的实例。
+         */
         if (Map.class.isAssignableFrom(fieldType))
         {
             inject = new MapInject();
@@ -60,6 +66,12 @@ public class DefaultDependencyInjectHandler implements InjectHandler
         inject.inject(instance);
     }
 
+    enum MapKeyType
+    {
+        BEAN_NAME,
+        METHOD
+    }
+
     interface Inject
     {
         void inject(Object instance);
@@ -67,7 +79,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
     class InstacenInject implements Inject
     {
-        private BeanRegisterInfo beanRegisterInfo;
+        private final BeanRegisterInfo beanRegisterInfo;
 
         InstacenInject()
         {
@@ -75,13 +87,11 @@ public class DefaultDependencyInjectHandler implements InjectHandler
             AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
             AnnotationContext        annotationContext        = annotationContextFactory.get(field);
             Resource                 resource                 = annotationContext.getAnnotation(Resource.class);
-            String                   beanName                 = StringUtil.isNotBlank(resource.name()) ? resource.name() : field.getType()
-                                                                                                                                .getName();
-              beanRegisterInfo         = context.getBeanRegisterInfo(beanName);
-            if (beanRegisterInfo == null && annotationContext.isAnnotationPresent(CanBeNull.class) == false)
+            String beanName = StringUtil.isNotBlank(resource.name()) ? resource.name() : field.getType().getName();
+            beanRegisterInfo = context.getBeanRegisterInfo(beanName);
+            if (beanRegisterInfo == null && !annotationContext.isAnnotationPresent(CanBeNull.class))
             {
-                throw new InjectValueException("无法找到属性:" + field.getDeclaringClass()
-                                                                      .getSimpleName() + "." + field.getName() + "可以注入的bean，需要的bean名称:" + beanName);
+                throw new InjectValueException("无法找到属性:" + field.getDeclaringClass().getSimpleName() + "." + field.getName() + "可以注入的bean，需要的bean名称:" + beanName);
             }
         }
 
@@ -113,8 +123,8 @@ public class DefaultDependencyInjectHandler implements InjectHandler
             // 如果定义了名称，就寻找特定名称的Bean
             if (StringUtil.isNotBlank(resource.name()))
             {
-                 beanRegisterInfo = context.getBeanRegisterInfo(resource.name());
-                if (beanRegisterInfo == null && annotationContext.isAnnotationPresent(CanBeNull.class) == false)
+                beanRegisterInfo = context.getBeanRegisterInfo(resource.name());
+                if (beanRegisterInfo == null && !annotationContext.isAnnotationPresent(CanBeNull.class))
                 {
                     throw new BeanDefinitionCanNotFindException(resource.name());
                 }
@@ -161,23 +171,21 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
     class CollectionInject implements Inject
     {
-        private BeanRegisterInfo[] beanRegisterInfos;
-        private int              listOrSet = 0;
-
         private static final int LIST = 1;
-        private static final int SET  = 2;
+        private static final int                SET  = 2;
+        private final        BeanRegisterInfo[] beanRegisterInfos;
+        private              int                listOrSet = 0;
 
         CollectionInject()
         {
             Field field       = valueAccessor.getField();
             Type  genericType = field.getGenericType();
-            if (genericType instanceof ParameterizedType == false)
+            if (!(genericType instanceof ParameterizedType))
             {
                 throw new InjectTypeException(field.toGenericString() + "不是泛型定义，无法找到需要注入的Bean类型");
             }
             Class<?> rawType = (Class<?>) ((ParameterizedType) genericType).getActualTypeArguments()[0];
-            beanRegisterInfos = context.getBeanRegisterInfos(rawType).stream()
-                                     .toArray(BeanRegisterInfo[]::new);
+            beanRegisterInfos = context.getBeanRegisterInfos(rawType).stream().toArray(BeanRegisterInfo[]::new);
             if (List.class.isAssignableFrom(field.getType()))
             {
                 listOrSet = LIST;
@@ -209,8 +217,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                     }
                     else
                     {
-                        throw new InjectValueException("无法识别类型:" + valueAccessor.getField().getType()
-                                                                                      .getName() + "，无法生成其对应的实例");
+                        throw new InjectValueException("无法识别类型:" + valueAccessor.getField().getType().getName() + "，无法生成其对应的实例");
                     }
                 }
                 for (BeanRegisterInfo each : beanRegisterInfos)
@@ -229,23 +236,17 @@ public class DefaultDependencyInjectHandler implements InjectHandler
         }
     }
 
-    enum MapKeyType
-    {
-        BEAN_NAME,
-        METHOD
-    }
-
     class MapInject implements Inject
     {
-        MapKeyType       mapKeyType;
+        MapKeyType         mapKeyType;
         BeanRegisterInfo[] beanRegisterInfos;
-        Method           method;
+        Method             method;
 
         MapInject()
         {
             Field field       = valueAccessor.getField();
             Type  genericType = field.getGenericType();
-            if (genericType instanceof ParameterizedType == false)
+            if (!(genericType instanceof ParameterizedType))
             {
                 throw new InjectTypeException(field.toGenericString() + "不是泛型定义，无法找到需要注入的Bean类型");
             }

@@ -7,22 +7,7 @@ import java.util.concurrent.ConcurrentMap;
 
 public class ConcurrentMapCache implements CacheAopManager.Cache
 {
-    class Element
-    {
-        private final Object value;
-        private final long   time;
-        private final long   ttl;
-
-        public Element(Object value, long time, long ttl)
-        {
-            this.value = value;
-            this.time = time;
-            this.ttl = ttl;
-        }
-    }
-
-    private ConcurrentMap<String, Element> map = new ConcurrentHashMap<String, Element>();
-
+    private final ConcurrentMap<String, Element> map = new ConcurrentHashMap<String, Element>();
     @Override
     public void put(String key, Object value, int timeToLive)
     {
@@ -33,11 +18,10 @@ public class ConcurrentMapCache implements CacheAopManager.Cache
         }
         else
         {
-            Element element = new Element(value, System.currentTimeMillis(), timeToLive * 1000);
+            Element element = new Element(value, System.currentTimeMillis(), timeToLive * 1000L);
             map.put(key, element);
         }
     }
-
     @Override
     public Object get(String key)
     {
@@ -63,16 +47,28 @@ public class ConcurrentMapCache implements CacheAopManager.Cache
             return null;
         }
     }
-
     @Override
     public void remove(String key)
     {
         map.remove(key);
     }
-
     @Override
     public void clear()
     {
         map.clear();
+    }
+
+    class Element
+    {
+        private final Object value;
+        private final long   time;
+        private final long   ttl;
+
+        public Element(Object value, long time, long ttl)
+        {
+            this.value = value;
+            this.time = time;
+            this.ttl = ttl;
+        }
     }
 }

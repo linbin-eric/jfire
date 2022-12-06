@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function;
 
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Bean;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import org.junit.Assert;
@@ -23,16 +23,6 @@ public class ConfigBeanTest
         home.person = person;
         return home;
     }
-
-    public static class Home
-    {
-        private Person person;
-    }
-
-    public static class Person
-    {
-    }
-
     @Test
     public void test()
     {
@@ -40,6 +30,14 @@ public class ConfigBeanTest
         Home               home    = context.getBean(Home.class);
         Person             person  = context.getBean(Person.class);
         Assert.assertNotNull(person);
-        Assert.assertTrue(person == home.person);
+        Assert.assertSame(person, home.person);
     }
+
+    public static class Home
+    {
+        private Person person;
+    }
+
+    public static class Person
+    {}
 }

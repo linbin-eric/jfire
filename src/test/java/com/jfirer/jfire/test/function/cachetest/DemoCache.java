@@ -6,7 +6,7 @@ import java.util.HashMap;
 
 public class DemoCache implements Cache
 {
-    private HashMap<Object, Object> map = new HashMap<Object, Object>();
+    private final HashMap<Object, Object> map = new HashMap<Object, Object>();
 
     @Override
     public Object get(String key)

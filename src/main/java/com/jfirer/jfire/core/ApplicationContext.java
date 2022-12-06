@@ -1,6 +1,5 @@
 package com.jfirer.jfire.core;
 
-import com.jfirer.jfire.core.bean.BeanDefinition;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 
 import java.util.Collection;
@@ -45,12 +44,10 @@ public interface ApplicationContext
      */
     RegisterResult register(Class<?> ckass);
 
-
     /**
      * 注册Bean定义，注册成功返回true。如果Bean名称相同，则不再注册，直接返回false。
      */
     RegisterResult registerBeanRegisterInfo(BeanRegisterInfo beanRegisterInfo);
-
 
     enum NeedRefresh
     {

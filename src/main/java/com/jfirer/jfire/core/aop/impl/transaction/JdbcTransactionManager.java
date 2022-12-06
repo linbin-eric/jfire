@@ -42,8 +42,8 @@ public abstract class JdbcTransactionManager implements TransactionManager
                 JdbcTransactionState prevState = CONTEXT.get();
                 if (prevState == null)
                 {
-                    ConnectionHolder connectionHolder = openConnection();
-                    JdbcTransactionState newState = new JdbcTransactionState(SUPPORTS, true, false, false, prevState, connectionHolder);
+                    ConnectionHolder     connectionHolder = openConnection();
+                    JdbcTransactionState newState         = new JdbcTransactionState(SUPPORTS, true, false, false, prevState, connectionHolder);
                     CONTEXT.set(newState);
                     return newState;
                 }

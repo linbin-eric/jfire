@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function.base;
 
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import com.jfirer.jfire.test.function.base.data.House;
@@ -17,14 +17,6 @@ import static org.junit.Assert.assertNotEquals;
 public class ContextTest
 {
     private static final Logger logger = LoggerFactory.getLogger(ContextTest.class);
-
-    @Configuration
-    @ComponentScan("com.jfirer.jfire.test.function.base")
-    public static class ContextTestScan
-    {
-
-    }
-
     /**
      * 测试构造方法,并且测试单例的正确性与否
      */
@@ -34,7 +26,6 @@ public class ContextTest
         ApplicationContext context = new DefaultApplicationContext(ContextTestScan.class);
         baseTest(context);
     }
-
     private void baseTest(ApplicationContext context)
     {
         ImmutablePerson immutablePerson = context.getBean(ImmutablePerson.class);
@@ -47,7 +38,6 @@ public class ContextTest
         assertEquals(mutablePerson.getHome(), immutablePerson.getHome());
         assertEquals("林斌的房子", context.getBean(House.class).getName());
     }
-
     @Test
     public void testDirect()
     {
@@ -58,13 +48,18 @@ public class ContextTest
         context.refresh();
         baseTest(context);
     }
-
-
     @Test
     public void testInit2()
     {
         ApplicationContext context = new DefaultApplicationContext(ContextTestScan.class);
         assertEquals("林斌的房子", context.getBean(House.class).getName());
         assertEquals("林斌的房子", ((House) context.getBean(House.class.getName())).getName());
+    }
+
+    @Configuration
+    @ComponentScan("com.jfirer.jfire.test.function.base")
+    public static class ContextTestScan
+    {
+
     }
 }

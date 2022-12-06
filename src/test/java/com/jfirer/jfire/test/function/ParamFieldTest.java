@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function;
 
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.Environment;
 import com.jfirer.jfire.core.inject.notated.PropertyRead;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
@@ -15,11 +15,6 @@ import java.util.Set;
 @Resource
 public class ParamFieldTest
 {
-    public enum name
-    {
-        test1, test2
-    }
-
     @PropertyRead
     private int[]       f1;
     @PropertyRead
@@ -48,7 +43,6 @@ public class ParamFieldTest
     private Class<?>    f13;
     @PropertyRead
     private name        f14;
-
     @Test
     public void test()
     {
@@ -74,6 +68,12 @@ public class ParamFieldTest
         Assert.assertEquals(set, data.f12);
         Assert.assertEquals(ParamFieldTest.class, data.f13);
         Assert.assertEquals(name.test1, data.f14);
+    }
+
+    public enum name
+    {
+        test1,
+        test2
     }
 
     public static class ForProperty implements ContextPrepare

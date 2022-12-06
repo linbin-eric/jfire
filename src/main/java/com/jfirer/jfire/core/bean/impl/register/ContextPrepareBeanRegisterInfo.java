@@ -11,7 +11,6 @@ public class ContextPrepareBeanRegisterInfo extends BeanDefinitionCacheHolder
 
     public ContextPrepareBeanRegisterInfo(Class<? extends ContextPrepare> ckass) {this.ckass = ckass;}
 
-
     @Override
     protected BeanDefinition internalGet()
     {

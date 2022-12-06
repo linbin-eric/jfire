@@ -26,7 +26,7 @@ public class JfireMethodValidatorImpl implements ValidateAopManager.JfireMethodV
     {
         ExecutableValidator         executables = validator.forExecutables();
         Set<ConstraintViolation<T>> set         = executables.validateParameters(object, method, parameterValues, groups);
-        if (set.isEmpty() == false)
+        if (!set.isEmpty())
         {
             StringBuilder cache = new StringBuilder();
             for (ConstraintViolation<T> each : set)
@@ -42,7 +42,7 @@ public class JfireMethodValidatorImpl implements ValidateAopManager.JfireMethodV
     {
         ExecutableValidator         executables = validator.forExecutables();
         Set<ConstraintViolation<T>> set         = executables.validateReturnValue(object, method, returnValue, groups);
-        if (set.isEmpty() == false)
+        if (!set.isEmpty())
         {
             StringBuilder cache = new StringBuilder();
             for (ConstraintViolation<T> each : set)

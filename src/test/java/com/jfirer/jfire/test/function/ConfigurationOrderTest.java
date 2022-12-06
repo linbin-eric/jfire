@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function;
 
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Bean;
 import com.jfirer.jfire.core.prepare.annotation.configuration.ConfigAfter;
@@ -17,6 +17,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ConfigurationOrderTest
 {
     public static AtomicInteger count = new AtomicInteger();
+    @Test
+    public void test()
+    {
+        ApplicationContext context = new DefaultApplicationContext(ConfigurationOrderTest.class);
+        Assert.assertEquals(1, ((Person) context.getBean("person")).getAge());
+        Assert.assertEquals(2, ((Person) context.getBean("person2")).getAge());
+        Assert.assertEquals(3, ((Person) context.getBean("person3")).getAge());
+        Assert.assertEquals(4, ((Person) context.getBean("person4")).getAge());
+        Assert.assertEquals(5, ((Person) context.getBean("person5")).getAge());
+        Assert.assertEquals(5, count.get());
+    }
 
     public static class Person
     {
@@ -125,17 +136,5 @@ public class ConfigurationOrderTest
                 throw new IllegalStateException();
             }
         }
-    }
-
-    @Test
-    public void test()
-    {
-        ApplicationContext context = new DefaultApplicationContext(ConfigurationOrderTest.class);
-        Assert.assertEquals(1, ((Person) context.getBean("person")).getAge());
-        Assert.assertEquals(2, ((Person) context.getBean("person2")).getAge());
-        Assert.assertEquals(3, ((Person) context.getBean("person3")).getAge());
-        Assert.assertEquals(4, ((Person) context.getBean("person4")).getAge());
-        Assert.assertEquals(5, ((Person) context.getBean("person5")).getAge());
-        Assert.assertEquals(5, count.get());
     }
 }

@@ -20,7 +20,6 @@ public enum Propagation
      */
     REQUIRES_NEW(4);
 
-
     int code;
 
     Propagation(int code)

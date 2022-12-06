@@ -44,13 +44,13 @@ public class DefaultApplicationContext implements ApplicationContext
      * 因为目前简化为只支持Bean定义不断增多。
      */
     protected            Map<String, BeanRegisterInfo> beanRegisterInfoMap        = new HashMap<>();
-    protected            Map<String, BeanDefinition>   beanDefinitionMap;
-    private              Environment                   environment                = new Environment.EnvironmentImpl();
-    private              boolean                       firstRefresh               = false;
+    protected     Map<String, BeanDefinition> beanDefinitionMap;
+    private final Environment                 environment  = new Environment.EnvironmentImpl();
+    private       boolean                     firstRefresh = false;
 
     public DefaultApplicationContext(Class<?> bootStarpClass)
     {
-        if (ANNOTATION_CONTEXT_FACTORY.get(bootStarpClass).isAnnotationPresent(Configuration.class) == false)
+        if (!ANNOTATION_CONTEXT_FACTORY.get(bootStarpClass).isAnnotationPresent(Configuration.class))
         {
             throw new IllegalArgumentException("启动的配置类，一定要有Configuration注解");
         }
@@ -63,7 +63,7 @@ public class DefaultApplicationContext implements ApplicationContext
 
     private void refreshIfNeed()
     {
-        if (firstRefresh == false)
+        if (!firstRefresh)
         {
             refresh();
         }
@@ -74,7 +74,6 @@ public class DefaultApplicationContext implements ApplicationContext
 //        DefaultBeanDefinition beanDefinition     = new DefaultBeanDefinition("defaultMethodBeanFactory", MethodBeanFactory.class, false, instanceDescriptor);
 //        beanRegisterInfoMap.put(beanDefinition.getBeanName(), beanDefinition);
 //    }
-
 
     private void registerApplicationContext()
     {
@@ -119,8 +118,7 @@ public class DefaultApplicationContext implements ApplicationContext
             }
         }
         Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
-        beanRegisterInfoMap.values().stream()
-                           .forEach(beanRegisterInfo -> beanDefinitionMap.put(beanRegisterInfo.getBeanName(), beanRegisterInfo.get()));
+        beanRegisterInfoMap.values().stream().forEach(beanRegisterInfo -> beanDefinitionMap.put(beanRegisterInfo.getBeanName(), beanRegisterInfo.get()));
         this.beanDefinitionMap = beanDefinitionMap;
         LOGGER.debug("traceId:{} 准备获取所有的AwareContextInited接口实现，执行aware方法", traceId);
         awareContextInit();
@@ -129,29 +127,26 @@ public class DefaultApplicationContext implements ApplicationContext
 
     private NeedRefresh processContextPrepare()
     {
-        long count = beanRegisterInfoMap.values().stream()
-                                        .filter(beanRegisterInfo -> ContextPrepare.class.isAssignableFrom(beanRegisterInfo.getType()))
-                                        .map(beanRegisterInfo -> ((ContextPrepare) ((ContextPrepareBeanRegisterInfo) beanRegisterInfo).get()
-                                                                                                                                      .getBean()))
-                                        .sorted(Comparator.comparingInt(ContextPrepare::order))
-                                        .map(contextPrepare -> contextPrepare.prepare(DefaultApplicationContext.this))
-                                        .filter(needRefresh -> needRefresh == NeedRefresh.YES).count();
+        long count = beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> ContextPrepare.class.isAssignableFrom(beanRegisterInfo.getType()))//
+                                        .map(beanRegisterInfo -> ((ContextPrepare) beanRegisterInfo.get().getBean()))//
+                                        .sorted(Comparator.comparingInt(ContextPrepare::order))//
+                                        .map(contextPrepare -> contextPrepare.prepare(DefaultApplicationContext.this))//
+                                        .filter(needRefresh -> needRefresh == NeedRefresh.YES)//
+                                        .count();
         return count > 0 ? NeedRefresh.YES : NeedRefresh.NO;
     }
 
     private NeedRefresh processConfigurationImports()
     {
-        Set<Class<?>> importClasses = beanRegisterInfoMap.values().stream()
-                                                   .map(beanRegisterInfo -> beanRegisterInfo.getType())
-                                                   .filter(ckass -> ANNOTATION_CONTEXT_FACTORY.get(ckass)
-                                                                                              .isAnnotationPresent(Import.class))
-                                                   .flatMap(ckass -> ANNOTATION_CONTEXT_FACTORY.get(ckass)
-                                                                                               .getAnnotations(Import.class)
-                                                                                               .stream())
-                                                   .flatMap(importAnnotation -> Arrays.stream(importAnnotation.value()))
-                                                   .collect(Collectors.toSet());
-        long count = importClasses.stream().map(ckass -> register(ckass))
-                                  .filter(registerResult -> registerResult == RegisterResult.PREPARE || registerResult == RegisterResult.CONFIGURATION)
+        Set<Class<?>> importClasses = beanRegisterInfoMap.values().stream()//
+                                                         .map(beanRegisterInfo -> beanRegisterInfo.getType())//
+                                                         .filter(ckass -> ANNOTATION_CONTEXT_FACTORY.get(ckass).isAnnotationPresent(Import.class))//
+                                                         .flatMap(ckass -> ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotations(Import.class).stream())//
+                                                         .flatMap(importAnnotation -> Arrays.stream(importAnnotation.value()))//
+                                                         .collect(Collectors.toSet());
+        long count = importClasses.stream()//
+                                  .map(ckass -> register(ckass))//
+                                  .filter(registerResult -> registerResult == RegisterResult.PREPARE || registerResult == RegisterResult.CONFIGURATION)//
                                   .count();
         return count > 0 ? NeedRefresh.YES : NeedRefresh.NO;
     }
@@ -173,7 +168,7 @@ public class DefaultApplicationContext implements ApplicationContext
         {
             Resource resource = ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotation(Resource.class);
             beanName = StringUtil.isNotBlank(resource.name()) ? resource.name() : ckass.getName();
-            prototype = resource.shareable() == false;
+            prototype = !resource.shareable();
         }
         else
         {
@@ -186,9 +181,8 @@ public class DefaultApplicationContext implements ApplicationContext
         }
         if (ANNOTATION_CONTEXT_FACTORY.get(ckass).isAnnotationPresent(SelectBeanFactory.class))
         {
-            AnnotationMetadata annotationMetadata = ANNOTATION_CONTEXT_FACTORY.get(ckass)
-                                                                              .getAnnotationMetadata(SelectBeanFactory.class);
-            String beanFactoryName = annotationMetadata.getAttribyte("value").getStringValue();
+            AnnotationMetadata annotationMetadata = ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotationMetadata(SelectBeanFactory.class);
+            String             beanFactoryName    = annotationMetadata.getAttribyte("value").getStringValue();
             return registerBeanRegisterInfo(new DefaultBeanRegisterInfo(prototype, ckass, beanName, this, new SelectedBeanFactory(this, beanFactoryName)));
         }
         else
@@ -201,7 +195,7 @@ public class DefaultApplicationContext implements ApplicationContext
     public RegisterResult registerBeanRegisterInfo(BeanRegisterInfo beanRegisterInfo)
     {
         String beanName = beanRegisterInfo.getBeanName();
-        if (beanRegisterInfoMap.containsKey(beanName) )
+        if (beanRegisterInfoMap.containsKey(beanName))
         {
             return RegisterResult.NODATA;
         }
@@ -223,52 +217,27 @@ public class DefaultApplicationContext implements ApplicationContext
             return RegisterResult.BEAN;
         }
     }
-//    private boolean registerJfirePrepare(Class<? extends ContextPrepare> ckass)
-//    {
-//        String beanName = ckass.getName();
-//        if (beanRegisterInfoMap.containsKey(beanName))
-//        {
-//            return false;
-//        }
-//        try
-//        {
-//            ContextPrepareBeanRegisterInfo beanRegisterInfo = new ContextPrepareBeanRegisterInfo(ckass);
-//            DefaultBeanDefinition          beanDefinition   = new DefaultBeanDefinition(beanName, ckass, ckass.newInstance());
-//            beanRegisterInfoMap.put(beanName, beanDefinition);
-//            LOGGER.debug("traceId:{} 注册bean:{}，其实现了ContextPrepare接口", TRACEID.currentTraceId(), ckass);
-//        }
-//        catch (Throwable e)
-//        {
-//            ReflectUtil.throwException(e);
-//        }
-//        return true;
-//    }
-
 
     private void awareContextInit()
     {
         String traceId = TRACEID.currentTraceId();
-        beanDefinitionMap.values().stream()
-                         .filter(beanDefinition -> AwareContextInited.class.isAssignableFrom(beanDefinition.getType()))
-                         .forEach(beanDefinition -> {
-                             ((AwareContextInited) beanDefinition.getBean()).aware(DefaultApplicationContext.this);
-                             LOGGER.debug("traceId:{} Bean：{}执行aware方法", traceId, beanDefinition.getBeanName());
-                         });
+        beanDefinitionMap.values().stream().filter(beanDefinition -> AwareContextInited.class.isAssignableFrom(beanDefinition.getType())).forEach(beanDefinition -> {
+            ((AwareContextInited) beanDefinition.getBean()).aware(DefaultApplicationContext.this);
+            LOGGER.debug("traceId:{} Bean：{}执行aware方法", traceId, beanDefinition.getBeanName());
+        });
     }
-
 
     private void aopScan()
     {
         String traceId = TRACEID.currentTraceId();
-        getBeanRegisterInfos(EnhanceManager.class).stream().map(beanRegisterInfo -> ((EnhanceManager) beanRegisterInfo.get()
-                                                                                                         .getBean()))
-
-                                      .sorted(((o1, o2) -> o1.order() > o2.order() ? 1 : o1.order() == o2.order() ? 0 : -1))
-                                      .forEach(enhanceManager -> {
-                                          LOGGER.debug("traceId:{} 增强类:{}执行AOP扫描", traceId, enhanceManager.getClass()
-                                                                                                                 .getName());
-                                          enhanceManager.scan(DefaultApplicationContext.this);
-                                      });
+        getBeanRegisterInfos(EnhanceManager.class).stream()//
+                                                  .map(beanRegisterInfo -> ((EnhanceManager) beanRegisterInfo.get().getBean()))//
+                                                  .sorted(((o1, o2) -> o1.order() > o2.order() ? 1 : o1.order() == o2.order() ? 0 : -1))//
+                                                  .forEach(enhanceManager ->//
+                                                           {
+                                                               LOGGER.debug("traceId:{} 增强类:{}执行AOP扫描", traceId, enhanceManager.getClass().getName());
+                                                               enhanceManager.scan(DefaultApplicationContext.this);
+                                                           });
     }
 
     @Override
@@ -280,9 +249,7 @@ public class DefaultApplicationContext implements ApplicationContext
     @Override
     public BeanRegisterInfo getBeanRegisterInfo(Class<?> ckass)
     {
-        Optional<BeanRegisterInfo> any = beanRegisterInfoMap.values().stream()
-                                                            .filter(beanRegisterInfo -> ckass == beanRegisterInfo.getType() || ckass.isAssignableFrom(beanRegisterInfo.getType()))
-                                                            .findAny();
+        Optional<BeanRegisterInfo> any = beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> ckass == beanRegisterInfo.getType() || ckass.isAssignableFrom(beanRegisterInfo.getType())).findAny();
         return any.orElse(null);
     }
 
@@ -291,7 +258,6 @@ public class DefaultApplicationContext implements ApplicationContext
     {
         return beanRegisterInfoMap.get(beanName);
     }
-
 
     @Override
     public Environment getEnv()
@@ -303,9 +269,7 @@ public class DefaultApplicationContext implements ApplicationContext
     public <E> E getBean(Class<E> ckass)
     {
         refreshIfNeed();
-        Optional<BeanDefinition> any = beanDefinitionMap.values().stream()
-                                                        .filter(beanDefinition -> ckass.isAssignableFrom(beanDefinition.getType()))
-                                                        .findAny();
+        Optional<BeanDefinition> any = beanDefinitionMap.values().stream().filter(beanDefinition -> ckass.isAssignableFrom(beanDefinition.getType())).findAny();
         if (any.isPresent())
         {
             return (E) any.get().getBean();
@@ -318,9 +282,7 @@ public class DefaultApplicationContext implements ApplicationContext
 
     public Collection<BeanRegisterInfo> getBeanRegisterInfos(Class<?> ckass)
     {
-        Set<BeanRegisterInfo> collect = beanRegisterInfoMap.values().stream()
-                                                           .filter(beanRegisterInfo -> ckass == beanRegisterInfo.getType() || ckass.isAssignableFrom(beanRegisterInfo.getType()))
-                                                           .collect(Collectors.toSet());
+        Set<BeanRegisterInfo> collect = beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> ckass == beanRegisterInfo.getType() || ckass.isAssignableFrom(beanRegisterInfo.getType())).collect(Collectors.toSet());
         return collect;
     }
 
@@ -328,10 +290,7 @@ public class DefaultApplicationContext implements ApplicationContext
     public <E> Collection<E> getBeans(Class<E> ckass)
     {
         refreshIfNeed();
-        Set<E> collect = beanDefinitionMap.values().stream()
-                                          .filter(beanDefinition -> ckass == beanDefinition.getType() || ckass.isAssignableFrom(beanDefinition.getType()))
-                                          .map(beanDefinition -> ((E) beanDefinition.getBean()))
-                                          .collect(Collectors.toSet());
+        Set<E> collect = beanDefinitionMap.values().stream().filter(beanDefinition -> ckass == beanDefinition.getType() || ckass.isAssignableFrom(beanDefinition.getType())).map(beanDefinition -> ((E) beanDefinition.getBean())).collect(Collectors.toSet());
         return collect;
     }
 

@@ -5,7 +5,7 @@ import java.util.List;
 
 public class ErrorMessage
 {
-    private List<String> list = new LinkedList<String>();
+    private final List<String> list = new LinkedList<String>();
 
     public void addErrorMessage(String errorMessage)
     {

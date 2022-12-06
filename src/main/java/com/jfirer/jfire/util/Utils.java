@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public class Utils
 {
@@ -30,7 +31,7 @@ public class Utils
             else if (path.startsWith("file:"))
             {
                 path = path.substring(5);
-                if (new File(path).exists() == false)
+                if (!new File(path).exists())
                 {
                     throw new NullPointerException(StringUtil.format("资源:{}不存在", path));
                 }
@@ -40,7 +41,7 @@ public class Utils
             {
                 throw new UnsupportedOperationException("不支持的资源识别前缀:" + path);
             }
-            return IniReader.read(inputStream, Charset.forName("utf8"));
+            return IniReader.read(inputStream, StandardCharsets.UTF_8);
         }
         catch (Exception e)
         {

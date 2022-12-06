@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function.cachetest;
 
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.test.function.base.data.House;
 import com.jfirer.jfire.test.function.base.data.MutablePerson;
 import org.junit.Assert;
@@ -20,27 +20,27 @@ public class CacheTest
         CacheTarget cacheTarget = context.getBean(CacheTarget.class);
         House       house       = cacheTarget.get(1);
         House       second      = cacheTarget.get(1);
-        Assert.assertFalse(house == second);
+        Assert.assertNotSame(house, second);
         house = cacheTarget.get(5);
         second = cacheTarget.get(5);
-        Assert.assertTrue(house == second);
+        Assert.assertSame(house, second);
         cacheTarget.put(5);
         second = cacheTarget.get(5);
-        Assert.assertFalse(house == second);
+        Assert.assertNotSame(house, second);
         house = cacheTarget.get(5);
         second = cacheTarget.get(5);
-        Assert.assertTrue(house == second);
+        Assert.assertSame(house, second);
         cacheTarget.remove(5);
         second = cacheTarget.get(5);
-        Assert.assertFalse(house == second);
+        Assert.assertNotSame(house, second);
         String first   = cacheTarget.get();
         String seconde = cacheTarget.get();
-        Assert.assertTrue(first == seconde);
+        Assert.assertSame(first, seconde);
         cacheTarget.put();
         seconde = cacheTarget.get();
-        Assert.assertFalse(first == seconde);
+        Assert.assertNotSame(first, seconde);
         first = cacheTarget.get();
-        Assert.assertTrue(first == seconde);
+        Assert.assertSame(first, seconde);
     }
 
     /**
@@ -57,7 +57,7 @@ public class CacheTest
         CacheTarget cacheTarget = context.getBean(CacheTarget.class);
         House       house       = cacheTarget.get2(6);
         House       second      = cacheTarget.get2(6);
-        Assert.assertTrue(house == second);
+        Assert.assertSame(house, second);
     }
 
     /**
@@ -74,7 +74,7 @@ public class CacheTest
         CacheTarget cacheTarget = context.getBean(CacheTarget.class);
         House       house       = cacheTarget.get3(6);
         House       second      = cacheTarget.get3(6);
-        Assert.assertTrue(house == second);
+        Assert.assertSame(house, second);
     }
 
     /**
@@ -93,6 +93,6 @@ public class CacheTest
         person.setAge(18);
         House house  = cacheTarget.get4(person);
         House second = cacheTarget.get4(person);
-        Assert.assertTrue(house == second);
+        Assert.assertSame(house, second);
     }
 }

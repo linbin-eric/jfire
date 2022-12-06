@@ -10,7 +10,7 @@ public class EnhanceMangerBeanDefinition implements BeanDefinition
 
     public EnhanceMangerBeanDefinition(Class<? extends EnhanceManager> type)
     {
-        if (EnhanceManager.class.isAssignableFrom(type) == false)
+        if (!EnhanceManager.class.isAssignableFrom(type))
         {
             throw new IllegalArgumentException();
         }

@@ -9,7 +9,7 @@ import javax.annotation.Resource;
 public class CacheManagerTest implements CacheManager
 {
 
-    private Cache cahce = new DemoCache();
+    private final Cache cahce = new DemoCache();
 
     @Override
     public Cache get(String name)

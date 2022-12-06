@@ -12,6 +12,16 @@ import org.junit.Test;
 @Configuration
 public class StarterTest
 {
+    @Test
+    public void test()
+    {
+        ApplicationContext context   = new DefaultApplicationContext(StarterTest.class);
+        MyStarter          myStarter = context.getBean(MyStarter.class);
+        Assert.assertNotNull(myStarter);
+        WithStarter withStarter = context.getBean(WithStarter.class);
+        Assert.assertNotNull(withStarter);
+    }
+
     @Configuration
     public static class MyStarter
     {
@@ -25,15 +35,5 @@ public class StarterTest
     public static class WithStarter
     {
 
-    }
-
-    @Test
-    public void test()
-    {
-        ApplicationContext context   = new DefaultApplicationContext(StarterTest.class);
-        MyStarter          myStarter = context.getBean(MyStarter.class);
-        Assert.assertNotNull(myStarter);
-        WithStarter withStarter = context.getBean(WithStarter.class);
-        Assert.assertNotNull(withStarter);
     }
 }

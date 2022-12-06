@@ -18,7 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
@@ -32,14 +33,9 @@ public class ComponentScanProcessor implements ContextPrepare
     public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
     {
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        ClassLoader              classLoader       = Thread.currentThread().getContextClassLoader();
-        Collection<String>       classNames              ;
-        classNames= context.getAllBeanRegisterInfos().stream()
-               .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType())
-                                                                   .isAnnotationPresent(ComponentScan.class))
-                .map(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotation(ComponentScan.class))
-                .flatMap(componentScan -> Arrays.stream(componentScan.value()) )
-                .flatMap(scanPath-> Arrays.stream(PackageScan.scan(scanPath))).collect(Collectors.toSet());
+        ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
+        Collection<String>       classNames;
+        classNames = context.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(ComponentScan.class)).map(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotation(ComponentScan.class)).flatMap(componentScan -> Arrays.stream(componentScan.value())).flatMap(scanPath -> Arrays.stream(PackageScan.scan(scanPath))).collect(Collectors.toSet());
 //        for (Class<?> each : context.getConfigurationClassSet())
 //        {
 //            AnnotationContext annotationContext = annotationContextFactory.get(each);

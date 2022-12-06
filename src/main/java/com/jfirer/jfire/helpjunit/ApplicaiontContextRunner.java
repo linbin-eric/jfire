@@ -1,7 +1,7 @@
 package com.jfirer.jfire.helpjunit;
 
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import org.junit.rules.RunRules;
 import org.junit.rules.TestRule;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ApplicaiontContextRunner extends BlockJUnit4ClassRunner
 {
-    private Class<?> klass;
+    private final Class<?> klass;
 
     public ApplicaiontContextRunner(Class<?> klass) throws InitializationError
     {

@@ -7,28 +7,6 @@ package com.jfirer.jfire.core.aop;
  */
 public interface ProceedPoint
 {
-    class MethodDescription
-    {
-        final String methodName;
-        Class<?>[] paramTypes;
-
-        public MethodDescription(String methodName, Class<?>[] paramTypes)
-        {
-            this.methodName = methodName;
-            this.paramTypes = paramTypes;
-        }
-
-        String methodName()
-        {
-            return methodName;
-        }
-
-        Class<?>[] getParamTypes()
-        {
-            return paramTypes;
-        }
-    }
-
     /**
      * 表示对目标方法的调用。在静态代码中作为继承方法被修改以实现对目标方法的调用
      *
@@ -70,4 +48,26 @@ public interface ProceedPoint
      * @return
      */
     Object[] getParams();
+
+    class MethodDescription
+    {
+        final String methodName;
+        Class<?>[] paramTypes;
+
+        public MethodDescription(String methodName, Class<?>[] paramTypes)
+        {
+            this.methodName = methodName;
+            this.paramTypes = paramTypes;
+        }
+
+        String methodName()
+        {
+            return methodName;
+        }
+
+        Class<?>[] getParamTypes()
+        {
+            return paramTypes;
+        }
+    }
 }

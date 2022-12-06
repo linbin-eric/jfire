@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function.beanannotest;
 
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.exception.BeanDefinitionCanNotFindException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -17,7 +17,7 @@ public class BeanAnnoTest
     {
         ApplicationContext context = new DefaultApplicationContext(Data.class);
         Person             person  = context.getBean("person");
-        Assert.assertTrue(person != null);
+        Assert.assertNotNull(person);
         Person person2;
         try
         {
@@ -32,7 +32,7 @@ public class BeanAnnoTest
         properties.put("person2", "pass");
         context.getEnv().addProperties(properties);
         person2 = context.getBean("person2");
-        Assert.assertTrue(person2 != null);
+        Assert.assertNotNull(person2);
         Person person4 = context.getBean("person4");
         Assert.assertEquals("linbin", person4.getName());
         Person person5 = context.getBean("person5");

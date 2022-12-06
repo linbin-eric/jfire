@@ -35,7 +35,7 @@ public @interface ConditionOnProperty
         {
             for (ValuePair each : metadata.getAttribyte("value").getArray())
             {
-                if (StringUtil.isNotBlank(applicationContext.getEnv().getProperty(each.getStringValue())) == false)
+                if (!StringUtil.isNotBlank(applicationContext.getEnv().getProperty(each.getStringValue())))
                 {
                     errorMessage.addErrorMessage("缺少属性:" + each);
                     return false;

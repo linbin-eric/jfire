@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function.cachetest;
 
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.test.function.base.data.House;
 import org.junit.Test;
 

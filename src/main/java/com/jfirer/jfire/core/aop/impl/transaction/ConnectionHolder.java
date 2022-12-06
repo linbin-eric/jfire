@@ -12,6 +12,4 @@ public interface ConnectionHolder
     void close();
 
     boolean isClosed();
-
-
 }

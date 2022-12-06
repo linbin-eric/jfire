@@ -15,7 +15,7 @@ public interface Environment
 
     class EnvironmentImpl implements Environment
     {
-        private Map<String, String> store = new HashMap<String, String>();
+        private final Map<String, String> store = new HashMap<String, String>();
 
         @Override
         public void putProperty(String property, String value)

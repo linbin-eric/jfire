@@ -17,7 +17,7 @@ import java.util.Map;
 public class PrototypeBeanDefinition implements BeanDefinition
 {
     protected static final ThreadLocal<Map<String, Object>> tmpBeanInstanceMap = ThreadLocal.withInitial(() -> new HashMap<String, Object>());
-    protected              BeanFactory                   beanFactory;
+    protected              BeanFactory                      beanFactory;
     protected              ApplicationContext               context;
     // 标注@PostConstruct的方法
     protected              Method                           postConstructMethod;
@@ -28,7 +28,7 @@ public class PrototypeBeanDefinition implements BeanDefinition
 
     public PrototypeBeanDefinition(BeanFactory beanFactory, ApplicationContext context, Method postConstructMethod, InjectHandler[] injectHandlers, Class<?> enhanceType, Class type, String beanName)
     {
-        if (ContextPrepare.class.isAssignableFrom(type) ||EnhanceManager.class.isAssignableFrom(type))
+        if (ContextPrepare.class.isAssignableFrom(type) || EnhanceManager.class.isAssignableFrom(type))
         {
             throw new IllegalArgumentException("框架代码自身错误，ContextPrepare 或 EnhanceManager 类型的Bean应该要选择特定的BeanDefinition");
         }
@@ -43,9 +43,9 @@ public class PrototypeBeanDefinition implements BeanDefinition
 
     protected synchronized Object buildInstance()
     {
-        Map<String, Object> map = tmpBeanInstanceMap.get();
-        boolean cleanMark = map.isEmpty();
-        Object instance = map.get(getBeanName());
+        Map<String, Object> map       = tmpBeanInstanceMap.get();
+        boolean             cleanMark = map.isEmpty();
+        Object              instance  = map.get(getBeanName());
         if (instance != null)
         {
             return instance;
@@ -56,8 +56,7 @@ public class PrototypeBeanDefinition implements BeanDefinition
         {
             try
             {
-                EnhanceWrapper newInstance = (EnhanceWrapper) enhanceType.getDeclaredConstructor()
-                                                                         .newInstance();
+                EnhanceWrapper newInstance = (EnhanceWrapper) enhanceType.getDeclaredConstructor().newInstance();
                 newInstance.setHost(unEnhanceInstance);
                 newInstance.setEnhanceFields(context);
                 instance = newInstance;

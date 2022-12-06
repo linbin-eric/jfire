@@ -10,7 +10,7 @@ public class ContextPrepareBeanDefinition implements BeanDefinition
 
     public ContextPrepareBeanDefinition(Class<? extends ContextPrepare> type)
     {
-        if (ContextPrepare.class.isAssignableFrom(type)==false)
+        if (!ContextPrepare.class.isAssignableFrom(type))
         {
             throw new IllegalArgumentException();
         }

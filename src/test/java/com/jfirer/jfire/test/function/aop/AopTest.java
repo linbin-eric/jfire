@@ -13,13 +13,6 @@ import static org.junit.Assert.assertNotNull;
 
 public class AopTest
 {
-    @Configuration
-    @ComponentScan("com.jfirer.jfire.test.function.aop")
-    public static class AopTtestScan
-    {
-
-    }
-
     @Test
     public void beforetest()
     {
@@ -29,7 +22,6 @@ public class AopTest
         Enhance enhance = context.getBean(Enhance.class);
         assertEquals("你好", enhance.getParam());
     }
-
     /**
      * 测试环绕拦截，拦截了原始的结果，并返回自定义的结果
      */
@@ -41,7 +33,6 @@ public class AopTest
         person.testInts(new int[]{1, 2, 3});
         assertEquals(1, person.invokeCount());
     }
-
     /**
      * 测试order的顺序问题。order数字大的先拦截。该方法被拦截两次，因此最终的order值应该是4
      */
@@ -53,7 +44,6 @@ public class AopTest
         person.order();
         assertEquals("EnhanceForOrder_enhance", EnhanceForOrder.result);
     }
-
     /**
      * 后置拦截可以拦截到方法调用后的结果值。
      */
@@ -66,7 +56,6 @@ public class AopTest
         Enhance enhance = context.getBean(Enhance.class);
         assertEquals("林斌25", enhance.getResult());
     }
-
     @Test
     public void testMyname()
     {
@@ -74,7 +63,6 @@ public class AopTest
         Person             person  = context.getBean(Person.class);
         assertEquals("林斌你好", person.myName("你好"));
     }
-
     @Test
     public void testForVoidReturn()
     {
@@ -84,7 +72,6 @@ public class AopTest
         person.testForVoidReturn();
         assertEquals(2, person.invokeCount());
     }
-
     @Test
     public void testThrow()
     {
@@ -100,7 +87,6 @@ public class AopTest
             assertEquals("aaaa", e.getMessage());
         }
     }
-
     @Test
     public void testTx()
     {
@@ -112,7 +98,6 @@ public class AopTest
         Assert.assertTrue(txManager.isBeginTransAction());
         Assert.assertTrue(txManager.isCommit());
     }
-
     @Test
     public void testAopAndFiled()
     {
@@ -120,5 +105,12 @@ public class AopTest
         context.register(Home.class);
         Person person = context.getBean(Person.class);
         assertNotNull(person.getHome());
+    }
+
+    @Configuration
+    @ComponentScan("com.jfirer.jfire.test.function.aop")
+    public static class AopTtestScan
+    {
+
     }
 }

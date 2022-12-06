@@ -52,13 +52,11 @@ public class TxManager extends JdbcTransactionManager
             private boolean transactionActive;
             private boolean closed = false;
 
-
             @Override
             public void rollback()
             {
                 // TODO Auto-generated method stub
             }
-
 
             @Override
             public boolean isClosed()

@@ -10,7 +10,7 @@ import java.util.Map;
 @Resource(name = "allLoader")
 public class AllLoader implements BeanFactory
 {
-    private Map<Class, Object> holder = new HashMap<Class, Object>();
+    private final Map<Class, Object> holder = new HashMap<Class, Object>();
 
     public AllLoader()
     {
@@ -33,7 +33,6 @@ public class AllLoader implements BeanFactory
             }
         });
     }
-
 
     @Override
     public <E> E getUnEnhanceyInstance(BeanDefinition beanDefinition)

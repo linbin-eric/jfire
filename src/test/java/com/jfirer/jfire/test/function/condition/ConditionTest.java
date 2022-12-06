@@ -4,10 +4,8 @@ import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
 import com.jfirer.jfire.core.prepare.annotation.condition.provide.ConditionOnMissBeanType;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Bean;
-import com.jfirer.jfire.core.prepare.annotation.configuration.ConfigBefore;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import com.jfirer.jfire.exception.BeanDefinitionCanNotFindException;
-import com.jfirer.jfire.test.function.base.ContextTest;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -15,17 +13,6 @@ import org.junit.Test;
 @Configuration
 public class ConditionTest
 {
-
-    static class Demo1
-    {
-
-    }
-
-    static class Demo2
-    {
-
-    }
-
 
     @Bean
     public Demo2 demo2()
@@ -38,12 +25,11 @@ public class ConditionTest
     {
         return new Demo1();
     }
-
     @Test
     public void test()
     {
         DefaultApplicationContext applicationContext = new DefaultApplicationContext(ConditionTest.class);
-        Demo1 demo1 = null;
+        Demo1                     demo1              = null;
         try
         {
             demo1 = applicationContext.getBean(Demo1.class);
@@ -55,5 +41,15 @@ public class ConditionTest
         }
         Demo2 demo2 = applicationContext.getBean(Demo2.class);
         Assert.assertNotNull(demo2);
+    }
+
+    static class Demo1
+    {
+
+    }
+
+    static class Demo2
+    {
+
     }
 }

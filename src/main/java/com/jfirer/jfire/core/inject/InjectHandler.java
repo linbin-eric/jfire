@@ -15,14 +15,14 @@ import java.lang.reflect.Field;
  */
 public interface InjectHandler
 {
+    void init(Field field, ApplicationContext context);
+
+    void inject(Object instance);
+
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.RUNTIME)
     @interface CustomInjectHanlder
     {
         Class<InjectHandler> value();
     }
-
-    void init(Field field, ApplicationContext context);
-
-    void inject(Object instance);
 }

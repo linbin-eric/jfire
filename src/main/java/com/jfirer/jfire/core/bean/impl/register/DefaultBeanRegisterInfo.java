@@ -12,7 +12,6 @@ import com.jfirer.jfire.core.aop.ProceedPoint;
 import com.jfirer.jfire.core.aop.ProceedPointImpl;
 import com.jfirer.jfire.core.bean.AwareContextComplete;
 import com.jfirer.jfire.core.bean.BeanDefinition;
-import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.bean.impl.definition.PrototypeBeanDefinition;
 import com.jfirer.jfire.core.bean.impl.definition.SingletonBeanDefinition;
 import com.jfirer.jfire.core.beanfactory.BeanFactory;
@@ -32,7 +31,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implements  AwareContextComplete
+public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implements AwareContextComplete
 {
     private final boolean            prototype;
     // 该Bean的类
@@ -41,9 +40,8 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
     private final BeanFactory        beanFactory;
     private final ApplicationContext context;
 
-    private boolean             complete        = false;
-    private Set<EnhanceManager> enhanceManagers = new HashSet<EnhanceManager>();
-
+    private       boolean             complete        = false;
+    private final Set<EnhanceManager> enhanceManagers = new HashSet<EnhanceManager>();
 
     public DefaultBeanRegisterInfo(boolean prototype, Class<?> type, String beanName, ApplicationContext context, BeanFactory beanFactory)
     {
@@ -68,7 +66,6 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         return list.toArray(new InjectHandler[list.size()]);
     }
 
-
     @Override
     public void complete()
     {
@@ -78,7 +75,7 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
     @Override
     public void check()
     {
-        if (complete == false)
+        if (!complete)
         {
             throw new IllegalStateException("容器尚未初始化完成，不能调用该方法");
         }
@@ -89,8 +86,7 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         list.addAll(getInjectHandlers(allFields, field -> field.isAnnotationPresent(InjectHandler.CustomInjectHanlder.class), field -> {
             try
             {
-                InjectHandler injectHandler = field.getAnnotation(InjectHandler.CustomInjectHanlder.class).value()
-                                                   .getDeclaredConstructor().newInstance();
+                InjectHandler injectHandler = field.getAnnotation(InjectHandler.CustomInjectHanlder.class).value().getDeclaredConstructor().newInstance();
                 injectHandler.init(field, context);
                 return injectHandler;
             }
@@ -138,7 +134,6 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         return allFields.stream().filter(predicate).map(function).collect(Collectors.toList());
     }
 
-
     private Method findPostConstructMethod()
     {
         if (type.isInterface())
@@ -148,10 +143,7 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         Class ckass = type;
         while (ckass != Object.class)
         {
-            Optional<Method> any = Arrays.stream(ckass.getDeclaredMethods())
-                                         .filter(method -> DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY.get(method)
-                                                                                                               .isAnnotationPresent(PostConstruct.class))
-                                         .findAny();
+            Optional<Method> any = Arrays.stream(ckass.getDeclaredMethods()).filter(method -> DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY.get(method).isAnnotationPresent(PostConstruct.class)).findAny();
             if (any.isPresent())
             {
                 Method method = any.get();
@@ -166,7 +158,6 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         return null;
     }
 
-
     private Collection<Field> getAllFields(Class<?> entityClass)
     {
         Map<String, Field> map = new HashMap<>();
@@ -174,7 +165,7 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         {
             for (Field each : entityClass.getDeclaredFields())
             {
-                if (map.containsKey(each.getName()) == false)
+                if (!map.containsKey(each.getName()))
                 {
                     map.put(each.getName(), each);
                 }
@@ -183,9 +174,6 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         }
         return map.values();
     }
-
-
-
 
     @Override
     protected BeanDefinition internalGet()
@@ -204,7 +192,6 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         }
     }
 
-
     private Class buildEnhanceType()
     {
         if (enhanceManagers.size() == 0)
@@ -216,8 +203,7 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         classModel.addField(new FieldModel(hostFieldName, type, classModel));
         addSetHostAndSetEnhanceFieldsMethod(classModel, hostFieldName);
         addInvokeHostPublicMethod(classModel, hostFieldName);
-        enhanceManagers.stream().sorted(Comparator.comparingInt(EnhanceManager::order))
-                       .forEach(enhanceManager -> enhanceManager.enhance(classModel, type, context, hostFieldName));
+        enhanceManagers.stream().sorted(Comparator.comparingInt(EnhanceManager::order)).forEach(enhanceManager -> enhanceManager.enhance(classModel, type, context, hostFieldName));
         try
         {
             return DefaultApplicationContext.COMPILE_HELPER.compile(classModel);

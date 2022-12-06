@@ -6,13 +6,12 @@ import com.jfirer.jfire.core.bean.impl.definition.EnhanceMangerBeanDefinition;
 
 public class EnhanceManagerBeanRegisterInfo extends BeanDefinitionCacheHolder
 {
-    private Class<? extends EnhanceManager> ckass;
+    private final Class<? extends EnhanceManager> ckass;
 
     public EnhanceManagerBeanRegisterInfo(Class<? extends EnhanceManager> ckass)
     {
         this.ckass = ckass;
     }
-
 
     @Override
     protected BeanDefinition internalGet()

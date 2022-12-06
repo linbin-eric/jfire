@@ -11,7 +11,6 @@ import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceManager;
-import com.jfirer.jfire.core.aop.impl.transaction.TransactionManager;
 import com.jfirer.jfire.core.aop.notated.cache.CacheDelete;
 import com.jfirer.jfire.core.aop.notated.cache.CacheGet;
 import com.jfirer.jfire.core.aop.notated.cache.CachePut;
@@ -20,9 +19,11 @@ import com.jfirer.jfireel.expression.Expression;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class CacheAopManager implements EnhanceManager
 {
@@ -32,22 +33,19 @@ public class CacheAopManager implements EnhanceManager
     public void scan(ApplicationContext context)
     {
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        for (BeanRegisterInfo each : context.getAllBeanRegisterInfos())
-        {
-            for (Method method : each.getType().getMethods())
-            {
-                AnnotationContext annotationContext = annotationContextFactory.get(method);
-                if (annotationContext.isAnnotationPresent(CacheDelete.class) //
-                    || annotationContext.isAnnotationPresent(CacheGet.class)//
-                    || annotationContext.isAnnotationPresent(CachePut.class))
-                {
-                    each.addEnhanceManager(this);
-                    break;
-                }
-            }
-        }
-        cacheManagerBeanName = Optional.ofNullable(context.getBeanRegisterInfo(CacheManager.class))
-                                             .map(beanRegisterInfo -> beanRegisterInfo.getBeanName()).orElse(null);
+        record Wrapper(BeanRegisterInfo beanRegisterInfo, Stream<Method> s) {}
+        context.getAllBeanRegisterInfos().stream()//
+               .map(beanRegisterInfo -> new Wrapper(beanRegisterInfo, Arrays.stream(beanRegisterInfo.getType().getMethods())))//
+               .forEach(wrapper -> {
+                   wrapper.s.filter(method ->//
+                                    {
+                                        AnnotationContext annotationContext = annotationContextFactory.get(method);
+                                        return annotationContext.isAnnotationPresent(CacheDelete.class) || annotationContext.isAnnotationPresent(CacheGet.class) || annotationContext.isAnnotationPresent(CachePut.class);
+                                    })//
+                            .findAny()//
+                            .ifPresent(method -> wrapper.beanRegisterInfo.addEnhanceManager(CacheAopManager.this));
+               });
+        cacheManagerBeanName = Optional.ofNullable(context.getBeanRegisterInfo(CacheManager.class)).map(beanRegisterInfo -> beanRegisterInfo.getBeanName()).orElse(null);
     }
 
     @Override
@@ -59,9 +57,8 @@ public class CacheAopManager implements EnhanceManager
         classModel.addImport(String.class);
         classModel.addImport(Boolean.class);
         classModel.addImport(Cache.class);
-        String cacheManagerFieldName = generateCacheManagerField(classModel);
-//        generateSetCacheManagerMethod(classModel, cacheManagerFieldName);
-        MethodModel.MethodModelKey key = new MethodModel.MethodModelKey();
+        String                     cacheManagerFieldName = generateCacheManagerField(classModel);
+        MethodModel.MethodModelKey key                   = new MethodModel.MethodModelKey();
         key.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
         key.setMethodName("setEnhanceFields");
         key.setParamterTypes(new Class[]{ApplicationContext.class});
@@ -77,7 +74,7 @@ public class CacheAopManager implements EnhanceManager
                 continue;
             }
             AnnotationContext annotationContext = annotationContextFactory.get(method);
-            if (method.getReturnType().isPrimitive() == false //
+            if (!method.getReturnType().isPrimitive() //
                 && method.getReturnType() != Void.class //
                 && annotationContext.isAnnotationPresent(CacheGet.class))
             {
@@ -87,21 +84,13 @@ public class CacheAopManager implements EnhanceManager
             {
                 processCacheDelete(classModel, cacheManagerFieldName, annotationContext, method);
             }
-            else if (method.getReturnType().isPrimitive() == false //
+            else if (!method.getReturnType().isPrimitive() //
                      && method.getReturnType() != Void.class //
                      && annotationContext.isAnnotationPresent(CachePut.class))
             {
                 processCachePut(classModel, cacheManagerFieldName, annotationContext, method);
             }
         }
-//        return new EnhanceCallbackForBeanInstance()
-//        {
-//            @Override
-//            public void run(Object beanInstance)
-//            {
-//                ((SetCacheManager) beanInstance).setCacheManager((CacheManager) cacheBeanDefinition.getBean());
-//            }
-//        };
     }
 
     private void processCachePut(ClassModel classModel, String cacheManagerFieldName, AnnotationContext annotationContext, Method method)
@@ -123,8 +112,7 @@ public class CacheAopManager implements EnhanceManager
             cache.append("return ").append(origin.generateInvoke()).append(";\r\n");
             cache.append("}\r\n");
             cache.append("else\r\n{\r\n");
-            cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = ")
-                 .append(origin.generateInvoke()).append(";\r\n");
+            cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = ").append(origin.generateInvoke()).append(";\r\n");
             generateKeyNameDeclarationPart(cache, lexerKeyFieldName, hasParams);
             generateCacheDeclarationPart(cacheManagerFieldName, lexerKeyFieldName, cache);
             cache.append("cache.put(name,result,").append(cachePut.timeToLive()).append(");\r\n");
@@ -142,8 +130,7 @@ public class CacheAopManager implements EnhanceManager
             {
                 generateConditionMapDeclarationPart(method, cache);
             }
-            cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = ")
-                 .append(origin.generateInvoke()).append(";\r\n");
+            cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = ").append(origin.generateInvoke()).append(";\r\n");
             generateCacheDeclarationPart(cacheManagerFieldName, lexerKeyFieldName, cache);
             generateKeyNameDeclarationPart(cache, lexerKeyFieldName, hasParams);
             cache.append("cache.put(name,result,").append(cachePut.timeToLive()).append(");\r\n");
@@ -173,7 +160,7 @@ public class CacheAopManager implements EnhanceManager
             generateKeyNameDeclarationPart(cache, lexerKeyFieldName, hasParams);
             cache.append("cache.remove(name);\r\n");
             cache.append("}\r\n");
-            methodModel.setBody(cache.toString() + methodModel.getBody());
+            methodModel.setBody(cache + methodModel.getBody());
         }
         else
         {
@@ -189,7 +176,7 @@ public class CacheAopManager implements EnhanceManager
             generateCacheDeclarationPart(cacheManagerFieldName, cacheDelete.cacheName(), cache);
             generateKeyNameDeclarationPart(cache, lexerKeyFieldName, hasParams);
             cache.append("cache.remove(name);\r\n");
-            methodModel.setBody(cache.toString() + methodModel.getBody());
+            methodModel.setBody(cache + methodModel.getBody());
         }
     }
 
@@ -231,8 +218,7 @@ public class CacheAopManager implements EnhanceManager
     {
         if (hasParams)
         {
-            cache.append("Boolean condition = (Boolean)").append(lexerConditionFieldName)
-                 .append(".calculate(conditionParams);\r\n");
+            cache.append("Boolean condition = (Boolean)").append(lexerConditionFieldName).append(".calculate(conditionParams);\r\n");
         }
         else
         {
@@ -256,21 +242,18 @@ public class CacheAopManager implements EnhanceManager
      */
     private void generateCacheDeclarationPart(String cacheManagerFieldName, String cacheName, StringBuilder cache)
     {
-        cache.append("Cache cache = ").append(cacheManagerFieldName).append(".get(\"").append(cacheName)
-             .append("\");\r\n");
+        cache.append("Cache cache = ").append(cacheManagerFieldName).append(".get(\"").append(cacheName).append("\");\r\n");
     }
 
     private void generateGetValuePart(Method method, CacheGet cacheGet, MethodModel origin, StringBuilder cache, String cacheManagerFieldName, String keyFieldName, boolean hasParams, ClassModel classModel)
     {
         generateCacheDeclarationPart(cacheManagerFieldName, cacheGet.cacheName(), cache);
         generateKeyNameDeclarationPart(cache, keyFieldName, hasParams);
-        cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = (")
-             .append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(")cache.get(name);\r\n");
+        cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = (").append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(")cache.get(name);\r\n");
         cache.append("if(result!=null)\r\n{");
         cache.append("return result;\r\n}\r\n");
         cache.append("else\r\n{");
-        cache.append("result = (").append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(")")
-             .append(origin.generateInvoke()).append(";\r\n");
+        cache.append("result = (").append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(")").append(origin.generateInvoke()).append(";\r\n");
         cache.append("cache.put(name,result,").append(cacheGet.timeToLive()).append(");\r\n");
         cache.append("return result;\r\n}\r\n");
     }
@@ -299,13 +282,12 @@ public class CacheAopManager implements EnhanceManager
         String[] methodParamNames = BytecodeUtil.parseMethodParamNames(method);
         if (methodParamNames == null)
         {
-            throw new NullPointerException("无法获取方法" + method.toString() + "的入参名称");
+            throw new NullPointerException("无法获取方法" + method + "的入参名称");
         }
         cache.append("Map<String,Object> conditionParams = new HashMap();\r\n");
         for (int i = 0; i < methodParamNames.length; i++)
         {
-            cache.append("conditionParams.put(\"").append(methodParamNames[i]).append("\",$").append(i)
-                 .append(");\r\n");
+            cache.append("conditionParams.put(\"").append(methodParamNames[i]).append("\",$").append(i).append(");\r\n");
         }
     }
 
@@ -355,18 +337,6 @@ public class CacheAopManager implements EnhanceManager
         FieldModel fieldModel            = new FieldModel(cacheManagerFieldName, CacheManager.class, classModel);
         classModel.addField(fieldModel);
         return cacheManagerFieldName;
-    }
-
-    private void generateSetCacheManagerMethod(ClassModel classModel, String cacheManagerFieldName)
-    {
-        classModel.addInterface(SetCacheManager.class);
-        MethodModel methodModel = new MethodModel(classModel);
-        methodModel.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
-        methodModel.setMethodName("setCacheManager");
-        methodModel.setReturnType(void.class);
-        methodModel.setParamterTypes(CacheManager.class);
-        methodModel.setBody(cacheManagerFieldName + " = $0;\r\n");
-        classModel.putMethodModel(methodModel);
     }
 
     @Override

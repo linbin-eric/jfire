@@ -9,7 +9,6 @@ import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceManager;
-import com.jfirer.jfire.core.aop.impl.transaction.TransactionManager;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 
 import javax.validation.Constraint;
@@ -24,7 +23,32 @@ import java.util.Optional;
 public class ValidateAopManager implements EnhanceManager
 {
     private String validatorBeanNamen;
-
+    private static boolean hasConstraintBeforeMethodExecute(Method method, AnnotationContext annotationContext)
+    {
+        if (annotationContext.isAnnotationPresent(Constraint.class))
+        {
+            return true;
+        }
+        for (Annotation[] parameterAnnotations : method.getParameterAnnotations())
+        {
+            for (Annotation annotation : parameterAnnotations)
+            {
+                if (annotation.annotationType() == Valid.class)
+                {
+                    return true;
+                }
+                if (annotation.annotationType().isAnnotationPresent(Constraint.class))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    private static boolean hasConstraintOnReturnValue(Method method)
+    {
+        return method.getReturnType() != void.class && !method.getReturnType().isPrimitive() && method.isAnnotationPresent(Valid.class);
+    }
     @Override
     public void scan(ApplicationContext context)
     {
@@ -41,10 +65,8 @@ public class ValidateAopManager implements EnhanceManager
                 }
             }
         }
-        validatorBeanNamen = Optional.ofNullable(context.getBeanRegisterInfo(JfireMethodValidator.class))
-                                             .map(beanRegisterInfo -> beanRegisterInfo.getBeanName()).orElse(null);
+        validatorBeanNamen = Optional.ofNullable(context.getBeanRegisterInfo(JfireMethodValidator.class)).map(beanRegisterInfo -> beanRegisterInfo.getBeanName()).orElse(null);
     }
-
     @Override
     public void enhance(ClassModel classModel, Class<?> type, ApplicationContext applicationContext, String hostFieldName)
     {
@@ -98,7 +120,6 @@ public class ValidateAopManager implements EnhanceManager
 //            }
 //        };
     }
-
     private String generateMethodMapField(ClassModel classModel)
     {
         String     fieldName  = "validator_" + FIELD_NAME_COUNTER.getAndIncrement();
@@ -106,7 +127,6 @@ public class ValidateAopManager implements EnhanceManager
         classModel.addField(fieldModel);
         return fieldName;
     }
-
     /**
      * @param classModel
      * @param hostFieldName
@@ -121,8 +141,7 @@ public class ValidateAopManager implements EnhanceManager
         origin.setMethodName(origin.getMethodName() + "_" + METHOD_NAME_COUNTER.getAndIncrement());
         classModel.putMethodModel(origin);
         StringBuilder cache = new StringBuilder();
-        cache.append(method.getReturnType().getSimpleName()).append(" result = ").append(origin.generateInvoke())
-             .append(";\r\n");
+        cache.append(method.getReturnType().getSimpleName()).append(" result = ").append(origin.generateInvoke()).append(";\r\n");
         String methodParamName = "methodParam_$" + FIELD_NAME_COUNTER.getAndIncrement();
         cache.append("try{Method " + methodParamName + "=" + hostFieldName + ".getClass().getDeclaredMethod(\"" + method.getName() + "\"");
         if (method.getParameterTypes().length == 0)
@@ -149,7 +168,6 @@ public class ValidateAopManager implements EnhanceManager
         methodModel.setBody(cache.toString());
         classModel.putMethodModel(methodModel);
     }
-
     /**
      * @param classModel
      * @param hostFieldName
@@ -173,8 +191,7 @@ public class ValidateAopManager implements EnhanceManager
             }
             cache.deleteCharAt(cache.length() - 1).append(");\r\n");
         }
-        cache.append(validateFieldName).append(".validateParameters(").append(hostFieldName)
-             .append("," + methodParamName + ",")//
+        cache.append(validateFieldName).append(".validateParameters(").append(hostFieldName).append("," + methodParamName + ",")//
              .append("new Object[]{");
         int     length   = method.getParameterTypes().length;
         boolean hasComma = false;
@@ -194,9 +211,8 @@ public class ValidateAopManager implements EnhanceManager
         classModel.addImport(Method.class);
         MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
         MethodModel                methodModel = classModel.getMethodModel(key);
-        methodModel.setBody(cache.toString() + methodModel.getBody());
+        methodModel.setBody(cache + methodModel.getBody());
     }
-
     /**
      * @param classModel
      * @return
@@ -208,7 +224,6 @@ public class ValidateAopManager implements EnhanceManager
         classModel.addField(fieldModel);
         return fieldName;
     }
-
     /**
      * @param classModel
      * @param validateFieldName
@@ -223,36 +238,6 @@ public class ValidateAopManager implements EnhanceManager
         methodModel.setBody(validateFieldName + " = $0;\r\n" + methodMapField + " = $1;\r\n");
         classModel.putMethodModel(methodModel);
     }
-
-    private static boolean hasConstraintBeforeMethodExecute(Method method, AnnotationContext annotationContext)
-    {
-        if (annotationContext.isAnnotationPresent(Constraint.class))
-        {
-            return true;
-        }
-        for (Annotation[] parameterAnnotations : method.getParameterAnnotations())
-        {
-            for (Annotation annotation : parameterAnnotations)
-            {
-                if (annotation.annotationType() == Valid.class)
-                {
-                    return true;
-                }
-                if (annotation.annotationType().isAnnotationPresent(Constraint.class))
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean hasConstraintOnReturnValue(Method method)
-    {
-        return method.getReturnType() != void.class && !method.getReturnType()
-                                                              .isPrimitive() && method.isAnnotationPresent(Valid.class) != false;
-    }
-
     @Override
     public int order()
     {

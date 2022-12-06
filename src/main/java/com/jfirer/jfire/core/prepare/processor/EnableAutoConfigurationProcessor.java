@@ -41,7 +41,7 @@ public class EnableAutoConfigurationProcessor implements ContextPrepare
                     while (entries.hasMoreElements())
                     {
                         JarEntry nextElement = entries.nextElement();
-                        if (nextElement.getName().startsWith(directoryName) && nextElement.isDirectory() == false)
+                        if (nextElement.getName().startsWith(directoryName) && !nextElement.isDirectory())
                         {
                             String value = nextElement.getName().substring(offset);
                             needRefresh = registgerAutoConfigor(value, context) ? ApplicationContext.NeedRefresh.YES : needRefresh;
@@ -55,7 +55,7 @@ public class EnableAutoConfigurationProcessor implements ContextPrepare
                     {
                         for (File each : file.listFiles())
                         {
-                            if (each.isDirectory() == false)
+                            if (!each.isDirectory())
                             {
                                 String value = each.getName();
                                 needRefresh = registgerAutoConfigor(value, context) ? ApplicationContext.NeedRefresh.YES : needRefresh;

@@ -8,8 +8,8 @@ import javax.annotation.Resource;
 @Resource
 public class Person
 {
-    private String name        = "林斌";
-    private int    invokeCount = 0;
+    private final String name        = "林斌";
+    private       int    invokeCount = 0;
     @Resource
     private Home   home;
 

@@ -1,6 +1,5 @@
 package com.jfirer.jfire.test.function.map;
 
-
 import javax.annotation.Resource;
 
 @Resource

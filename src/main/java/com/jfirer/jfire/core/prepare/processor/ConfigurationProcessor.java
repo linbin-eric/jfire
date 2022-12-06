@@ -45,10 +45,7 @@ public class ConfigurationProcessor implements ContextPrepare
 //        logOrder(list);
         ErrorMessage             errorMessage             = new ErrorMessage();
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        List<Class<?>> list = context.getAllBeanRegisterInfos().stream()
-                                     .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType())
-                                                                                         .isAnnotationPresent(Configuration.class))
-                                     .map(beanRegisterInfo -> beanRegisterInfo.getType()).collect(Collectors.toList());
+        List<Class<?>> list = context.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class)).map(beanRegisterInfo -> beanRegisterInfo.getType()).collect(Collectors.toList());
         for (Class<?> each : list)
         {
             errorMessage.clear();
@@ -65,7 +62,7 @@ public class ConfigurationProcessor implements ContextPrepare
                         break;
                     }
                 }
-                if (pass == false)
+                if (!pass)
                 {
                     for (String error : errorMessage.getList())
                     {
@@ -75,26 +72,16 @@ public class ConfigurationProcessor implements ContextPrepare
                 }
             }
             Class<?> ckass = each;
-            Arrays.stream(ckass.getDeclaredMethods())
-                  .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class))
-                  .filter(method -> annotationContextFactory.get(method)
-                                                            .isAnnotationPresent(Conditional.class) == false)
-                  .forEach(method -> {
-                      registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
-                  });
-            Arrays.stream(ckass.getDeclaredMethods())
-                  .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class))
-                  .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class))
-                  .filter(method -> {
-                      AnnotationContext annotationContextOnMethod = annotationContextFactory.get(method);
-                      Optional<AnnotationMetadata> notMatch = annotationContextOnMethod.getAnnotationMetadatas(Conditional.class)
-                                                                                       .stream()
-                                                                                       .filter(annotationMetadata -> matchCondition(context, annotationMetadata, annotationContextOnMethod, errorMessage) == false)
-                                                                                       .findAny();
-                      return notMatch.isPresent() == false;
-                  }).forEach(method -> {
-                      registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
-                  });
+            Arrays.stream(ckass.getDeclaredMethods()).filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class)).filter(method -> !annotationContextFactory.get(method).isAnnotationPresent(Conditional.class)).forEach(method -> {
+                registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
+            });
+            Arrays.stream(ckass.getDeclaredMethods()).filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class)).filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class)).filter(method -> {
+                AnnotationContext annotationContextOnMethod = annotationContextFactory.get(method);
+                Optional<AnnotationMetadata> notMatch = annotationContextOnMethod.getAnnotationMetadatas(Conditional.class).stream().filter(annotationMetadata -> !matchCondition(context, annotationMetadata, annotationContextOnMethod, errorMessage)).findAny();
+                return !notMatch.isPresent();
+            }).forEach(method -> {
+                registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
+            });
 //            for (Method method : ckass.getDeclaredMethods())
 //            {
 //                AnnotationContext annotationContextOnMethod = annotationContextFactory.get(method);
@@ -155,6 +142,49 @@ public class ConfigurationProcessor implements ContextPrepare
             }
         }
     }
+    /**
+     * 判断条件注解中的条件是否被符合
+     *
+     * @param context
+     * @param conditional
+     * @param annotationContext 在元素上的注解集合。元素可能为class也可能为member
+     * @param errorMessage
+     * @return
+     */
+    private boolean matchCondition(ApplicationContext context, AnnotationMetadata conditional, AnnotationContext annotationContext, ErrorMessage errorMessage)
+    {
+        boolean     match       = true;
+        ValuePair[] value       = conditional.getAttribyte("value").getArray();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        for (ValuePair each : value)
+        {
+            try
+            {
+                Condition instance = (Condition) (classLoader.loadClass(each.getClassName())).newInstance();
+                if (!instance.match(context, annotationContext, errorMessage))
+                {
+                    match = false;
+                    break;
+                }
+            }
+            catch (Exception e)
+            {
+                ReflectUtil.throwException(e);
+            }
+        }
+        return match;
+    }
+    private void registerMethodBeanDefinition(Method method, ApplicationContext context, AnnotationContext annotationContextOnMethod)
+    {
+        Bean             bean             = annotationContextOnMethod.getAnnotation(Bean.class);
+        String           beanName         = StringUtil.isNotBlank(bean.name()) ? bean.name() : method.getName();
+        BeanRegisterInfo beanRegisterInfo = new DefaultBeanRegisterInfo(bean.prototype(), method.getReturnType(), beanName, context, new MethodBeanFactory(context, method));
+        context.registerBeanRegisterInfo(beanRegisterInfo);
+//        InstanceDescriptor    instanceDescriptor   = new MethodInvokeInstanceDescriptor(method);
+//        DefaultBeanDefinition methodBeanDefinition = new DefaultBeanDefinition(beanName, method.getReturnType(), bean.prototype(), instanceDescriptor);
+//        context.registerBeanRegisterInfo(methodBeanDefinition);
+        logger.debug("traceId:{} 注册方法Bean:{}", TRACEID.currentTraceId(), method.getDeclaringClass().getSimpleName() + "." + method.getName());
+    }
 
     class SortList
     {
@@ -193,7 +223,7 @@ public class ConfigurationProcessor implements ContextPrepare
                     AnnotationMetadata configBefore = annotationContext.getAnnotationMetadata(ConfigBefore.class);
                     SortList.SortEntry index        = entry.pre;
                     String             targetClass  = configBefore.getAttribyte("value").getClassName();
-                    while (index != null && index.value.getName().equals(targetClass) == false)
+                    while (index != null && !index.value.getName().equals(targetClass))
                     {
                         index = index.pre;
                     }
@@ -211,7 +241,7 @@ public class ConfigurationProcessor implements ContextPrepare
                     AnnotationMetadata configAfter = annotationContext.getAnnotationMetadata(ConfigAfter.class);
                     SortList.SortEntry index       = entry.next;
                     String             targetClass = configAfter.getAttribyte("value").getClassName();
-                    while (index != null && index.value.getName().equals(targetClass) == false)
+                    while (index != null && !index.value.getName().equals(targetClass))
                     {
                         index = index.next;
                     }
@@ -301,51 +331,5 @@ public class ConfigurationProcessor implements ContextPrepare
                 this.value = value;
             }
         }
-    }
-
-    /**
-     * 判断条件注解中的条件是否被符合
-     *
-     * @param context
-     * @param conditional
-     * @param annotationContext 在元素上的注解集合。元素可能为class也可能为member
-     * @param errorMessage
-     * @return
-     */
-    private boolean matchCondition(ApplicationContext context, AnnotationMetadata conditional, AnnotationContext annotationContext, ErrorMessage errorMessage)
-    {
-        boolean     match       = true;
-        ValuePair[] value       = conditional.getAttribyte("value").getArray();
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (ValuePair each : value)
-        {
-            try
-            {
-                Condition instance = (Condition) (classLoader.loadClass(each.getClassName())).newInstance();
-                if (instance.match(context, annotationContext, errorMessage) == false)
-                {
-                    match = false;
-                    break;
-                }
-            }
-            catch (Exception e)
-            {
-                ReflectUtil.throwException(e);
-            }
-        }
-        return match;
-    }
-
-    private void registerMethodBeanDefinition(Method method, ApplicationContext context, AnnotationContext annotationContextOnMethod)
-    {
-        Bean              bean              = annotationContextOnMethod.getAnnotation(Bean.class);
-        String            beanName          = StringUtil.isNotBlank(bean.name()) ? bean.name() : method.getName();
-        BeanRegisterInfo  beanRegisterInfo  = new DefaultBeanRegisterInfo(bean.prototype(), method.getReturnType(), beanName, context, new MethodBeanFactory(context, method));
-        context.registerBeanRegisterInfo(beanRegisterInfo);
-//        InstanceDescriptor    instanceDescriptor   = new MethodInvokeInstanceDescriptor(method);
-//        DefaultBeanDefinition methodBeanDefinition = new DefaultBeanDefinition(beanName, method.getReturnType(), bean.prototype(), instanceDescriptor);
-//        context.registerBeanRegisterInfo(methodBeanDefinition);
-        logger.debug("traceId:{} 注册方法Bean:{}", TRACEID.currentTraceId(), method.getDeclaringClass()
-                                                                                   .getSimpleName() + "." + method.getName());
     }
 }

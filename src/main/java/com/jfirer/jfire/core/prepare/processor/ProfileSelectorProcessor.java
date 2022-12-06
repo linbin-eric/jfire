@@ -17,26 +17,18 @@ public class ProfileSelectorProcessor implements ContextPrepare
     public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
     {
         String activeAttribute = context.getEnv().getProperty(ProfileSelector.activePropertyName);
-        if (StringUtil.isNotBlank(activeAttribute) == false)
+        if (!StringUtil.isNotBlank(activeAttribute))
         {
             return ApplicationContext.NeedRefresh.NO;
         }
         ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        context.getAllBeanRegisterInfos().stream()
-               .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType())
-                                                                   .isAnnotationPresent(Configuration.class))
-               .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType())
-                                                                   .isAnnotationPresent(ProfileSelector.class))
-               .map(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType())
-                                                                .getAnnotation(ProfileSelector.class))
-               .map(profileSelector -> profileSelector.protocol() + ":" + profileSelector.prefix() + activeAttribute + ".ini")
-               .map(profileFileName -> Utils.processPath(profileFileName)).forEach(iniFile -> {
-                   for (String key : iniFile.keySet())
-                   {
-                       context.getEnv().putProperty(key, iniFile.getValue(key));
-                   }
-               });
+        context.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class)).filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(ProfileSelector.class)).map(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotation(ProfileSelector.class)).map(profileSelector -> profileSelector.protocol() + ":" + profileSelector.prefix() + activeAttribute + ".ini").map(profileFileName -> Utils.processPath(profileFileName)).forEach(iniFile -> {
+            for (String key : iniFile.keySet())
+            {
+                context.getEnv().putProperty(key, iniFile.getValue(key));
+            }
+        });
 //        for (Class<?> each : context.getConfigurationClassSet())
 //        {
 //            AnnotationContext annotationContext = annotationContextFactory.get(each, classLoader);

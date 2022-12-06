@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function.loader;
 
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import org.junit.Assert;
@@ -9,13 +9,6 @@ import org.junit.Test;
 
 public class HolderTest
 {
-    @Configuration
-    @ComponentScan("com.jfirer.jfire.test.function.loader")
-    public static class HolderTestScan
-    {
-
-    }
-
     @Test
     public void test()
     {
@@ -24,5 +17,12 @@ public class HolderTest
         Assert.assertEquals("name", person.getName());
         Home home = context.getBean(Home.class);
         Assert.assertEquals(100, home.getLength());
+    }
+
+    @Configuration
+    @ComponentScan("com.jfirer.jfire.test.function.loader")
+    public static class HolderTestScan
+    {
+
     }
 }

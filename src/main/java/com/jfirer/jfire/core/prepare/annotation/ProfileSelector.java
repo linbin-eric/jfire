@@ -12,9 +12,9 @@ import java.lang.annotation.Target;
 @Import(ProfileSelectorProcessor.class)
 public @interface ProfileSelector
 {
+    String activePropertyName = "jfire.profile.active";
+
     String protocol() default "file";
 
     String prefix() default "application_";
-
-    String activePropertyName = "jfire.profile.active";
 }

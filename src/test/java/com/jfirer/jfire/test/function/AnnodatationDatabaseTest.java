@@ -13,7 +13,20 @@ import static org.junit.Assert.assertEquals;
 @AnnodatationDatabaseTest.test1(value = RetentionPolicy.RUNTIME, value2 = "22", value3 = AnnodatationDatabaseTest.class, value5 = @AnnodatationDatabaseTest.test2("kk"), value6 = {@AnnodatationDatabaseTest.test2("gg")})
 public class AnnodatationDatabaseTest
 {
-    private AnnotationContextFactory annotationDatabase = new DefaultAnnotationContextFactory();
+    private final AnnotationContextFactory annotationDatabase = new DefaultAnnotationContextFactory();
+    @Test
+    public void test()
+    {
+        AnnotationContext annotationContext = annotationDatabase.get(AnnodatationDatabaseTest.class, Thread.currentThread().getContextClassLoader());
+        test1             test1             = annotationContext.getAnnotation(test1.class);
+        test1             annotation        = test1;
+        assertEquals("22", annotation.value2());
+        assertEquals(RetentionPolicy.RUNTIME, annotation.value()[0]);
+        assertEquals(AnnodatationDatabaseTest.class, annotation.value3());
+        assertEquals(String.class, annotation.value4());
+        assertEquals("kk", annotation.value5().value());
+        assertEquals("gg", annotation.value6()[0].value());
+    }
 
     @Retention(RetentionPolicy.RUNTIME)
     public @interface test1
@@ -35,19 +48,5 @@ public class AnnodatationDatabaseTest
     public @interface test2
     {
         String value();
-    }
-
-    @Test
-    public void test()
-    {
-        AnnotationContext annotationContext = annotationDatabase.get(AnnodatationDatabaseTest.class, Thread.currentThread().getContextClassLoader());
-        test1             test1             = annotationContext.getAnnotation(test1.class);
-        test1             annotation        = test1;
-        assertEquals("22", annotation.value2());
-        assertEquals(RetentionPolicy.RUNTIME, annotation.value()[0]);
-        assertEquals(AnnodatationDatabaseTest.class, annotation.value3());
-        assertEquals(String.class, annotation.value4());
-        assertEquals("kk", annotation.value5().value());
-        assertEquals("gg", annotation.value6()[0].value());
     }
 }
