@@ -34,7 +34,13 @@ public class AopEnhanceManager implements EnhanceManager
     public void scan(ApplicationContext context)
     {
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        context.getAllBeanRegisterInfos().stream().map(beanDefinition -> annotationContextFactory.get(beanDefinition.getType())).filter(annotationContext -> annotationContext.isAnnotationPresent(EnhanceClass.class)).map(annotationContext -> annotationContext.getAnnotationMetadata(EnhanceClass.class).getAttribyte("value").getStringValue()).flatMap(rule -> context.getAllBeanRegisterInfos().stream().filter(beanDefinition -> StringUtil.match(beanDefinition.getType().getName(), rule))).forEach(beanDefinition -> beanDefinition.addEnhanceManager(AopEnhanceManager.this));
+        context.getAllBeanRegisterInfos().stream()//
+               .map(beanDefinition -> annotationContextFactory.get(beanDefinition.getType()))//
+               .filter(annotationContext -> annotationContext.isAnnotationPresent(EnhanceClass.class))//
+               .map(annotationContext -> annotationContext.getAnnotationMetadata(EnhanceClass.class).getAttribyte("value").getStringValue())//
+               .flatMap(rule -> context.getAllBeanRegisterInfos().stream()//
+                                       .filter(beanDefinition -> StringUtil.match(beanDefinition.getType().getName(), rule)))//
+               .forEach(beanDefinition -> beanDefinition.addEnhanceManager(AopEnhanceManager.this));//
     }
 
     @Override
@@ -134,9 +140,9 @@ public class AopEnhanceManager implements EnhanceManager
         generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, true);
     }
 
-    private void generateProceedPointImpl(ClassModel classModel, String hostFieldName, Method method, String pointName, StringBuilder cache, boolean hasProceedPoint)
+    private void generateProceedPointImpl(ClassModel classModel, String hostFieldName, Method method, String pointName, StringBuilder cache, boolean alreadyCreate)
     {
-        if (!hasProceedPoint)
+        if (!alreadyCreate)
         {
             cache.append("ProceedPointImpl ").append(pointName).append(" = new ProceedPointImpl();\r\n");
         }
@@ -355,7 +361,7 @@ public class AopEnhanceManager implements EnhanceManager
         final AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
         List<BeanRegisterInfo> enhanceBeanRegisterList = applicationContext.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(EnhanceClass.class)).filter(beanRegisterInfo -> {
             AnnotationContext annotationContext = annotationContextFactory.get(beanRegisterInfo.getType());
-            String rule = annotationContext.getAnnotation(EnhanceClass.class).value();
+            String            rule              = annotationContext.getAnnotation(EnhanceClass.class).value();
             return StringUtil.match(type.getName(), rule);
         }).sorted(Comparator.comparingInt(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotation(EnhanceClass.class).order())).collect(Collectors.toList());
         return enhanceBeanRegisterList;

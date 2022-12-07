@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentMap;
 public class ConcurrentMapCache implements CacheAopManager.Cache
 {
     private final ConcurrentMap<String, Element> map = new ConcurrentHashMap<String, Element>();
+
     @Override
     public void put(String key, Object value, int timeToLive)
     {
@@ -22,6 +23,7 @@ public class ConcurrentMapCache implements CacheAopManager.Cache
             map.put(key, element);
         }
     }
+
     @Override
     public Object get(String key)
     {
@@ -47,11 +49,13 @@ public class ConcurrentMapCache implements CacheAopManager.Cache
             return null;
         }
     }
+
     @Override
     public void remove(String key)
     {
         map.remove(key);
     }
+
     @Override
     public void clear()
     {

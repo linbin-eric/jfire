@@ -17,6 +17,7 @@ import static org.junit.Assert.assertNotEquals;
 public class ContextTest
 {
     private static final Logger logger = LoggerFactory.getLogger(ContextTest.class);
+
     /**
      * 测试构造方法,并且测试单例的正确性与否
      */
@@ -26,6 +27,7 @@ public class ContextTest
         ApplicationContext context = new DefaultApplicationContext(ContextTestScan.class);
         baseTest(context);
     }
+
     private void baseTest(ApplicationContext context)
     {
         ImmutablePerson immutablePerson = context.getBean(ImmutablePerson.class);
@@ -38,6 +40,7 @@ public class ContextTest
         assertEquals(mutablePerson.getHome(), immutablePerson.getHome());
         assertEquals("林斌的房子", context.getBean(House.class).getName());
     }
+
     @Test
     public void testDirect()
     {
@@ -45,9 +48,9 @@ public class ContextTest
         context.register(House.class);
         context.register(MutablePerson.class);
         context.register(ImmutablePerson.class);
-        context.refresh();
         baseTest(context);
     }
+
     @Test
     public void testInit2()
     {

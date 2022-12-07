@@ -11,7 +11,7 @@ public class Person
     private final String name        = "林斌";
     private       int    invokeCount = 0;
     @Resource
-    private Home   home;
+    private       Home   home;
 
     public String sayHello(String word)
     {

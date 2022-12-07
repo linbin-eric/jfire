@@ -15,6 +15,7 @@ public class PropertyPathImporterTest
 {
     @PropertyRead
     private int age;
+
     /**
      * 使用classpath路径读取
      */
@@ -26,6 +27,7 @@ public class PropertyPathImporterTest
         PropertyPathImporterTest test = context.getBean(PropertyPathImporterTest.class);
         Assert.assertEquals(12, test.age);
     }
+
     /**
      * 使用文件路径读取
      */

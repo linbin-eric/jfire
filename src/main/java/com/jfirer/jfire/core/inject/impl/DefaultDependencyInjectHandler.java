@@ -87,7 +87,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
             AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
             AnnotationContext        annotationContext        = annotationContextFactory.get(field);
             Resource                 resource                 = annotationContext.getAnnotation(Resource.class);
-            String beanName = StringUtil.isNotBlank(resource.name()) ? resource.name() : field.getType().getName();
+            String                   beanName                 = StringUtil.isNotBlank(resource.name()) ? resource.name() : field.getType().getName();
             beanRegisterInfo = context.getBeanRegisterInfo(beanName);
             if (beanRegisterInfo == null && !annotationContext.isAnnotationPresent(CanBeNull.class))
             {
@@ -171,8 +171,8 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
     class CollectionInject implements Inject
     {
-        private static final int LIST = 1;
-        private static final int                SET  = 2;
+        private static final int                LIST      = 1;
+        private static final int                SET       = 2;
         private final        BeanRegisterInfo[] beanRegisterInfos;
         private              int                listOrSet = 0;
 

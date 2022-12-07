@@ -18,22 +18,25 @@ import javax.annotation.Resource;
 public class Data
 {
     @Resource(name = "house")
-    private House house;
+    private House  house;
     @Resource(name = "house2")
-    private House house2;
+    private House  house2;
     @PropertyRead("name")
     private String name;
+
     @Bean
     public Person person()
     {
         return new Person();
     }
+
     @Bean
     @Conditional(Person2Condition.class)
     public Person person2()
     {
         return new Person();
     }
+
     @Bean
     public Person person4()
     {
@@ -41,6 +44,7 @@ public class Data
         person.setName(name);
         return person;
     }
+
     @Bean
     public Person person5()
     {
@@ -48,6 +52,7 @@ public class Data
         person.setName(house.name());
         return person;
     }
+
     @Bean
     public Person person7()
     {

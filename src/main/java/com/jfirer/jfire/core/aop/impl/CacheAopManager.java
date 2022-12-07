@@ -14,16 +14,13 @@ import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.notated.cache.CacheDelete;
 import com.jfirer.jfire.core.aop.notated.cache.CacheGet;
 import com.jfirer.jfire.core.aop.notated.cache.CachePut;
-import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfireel.expression.Expression;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 public class CacheAopManager implements EnhanceManager
 {
@@ -33,18 +30,13 @@ public class CacheAopManager implements EnhanceManager
     public void scan(ApplicationContext context)
     {
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        record Wrapper(BeanRegisterInfo beanRegisterInfo, Stream<Method> s) {}
-        context.getAllBeanRegisterInfos().stream()//
-               .map(beanRegisterInfo -> new Wrapper(beanRegisterInfo, Arrays.stream(beanRegisterInfo.getType().getMethods())))//
-               .forEach(wrapper -> {
-                   wrapper.s.filter(method ->//
-                                    {
-                                        AnnotationContext annotationContext = annotationContextFactory.get(method);
-                                        return annotationContext.isAnnotationPresent(CacheDelete.class) || annotationContext.isAnnotationPresent(CacheGet.class) || annotationContext.isAnnotationPresent(CachePut.class);
-                                    })//
-                            .findAny()//
-                            .ifPresent(method -> wrapper.beanRegisterInfo.addEnhanceManager(CacheAopManager.this));
-               });
+        interlScan(context,//
+                   method ->//
+                   {
+                       AnnotationContext annotationContext = annotationContextFactory.get(method);
+                       return annotationContext.isAnnotationPresent(CacheDelete.class) || annotationContext.isAnnotationPresent(CacheGet.class) || annotationContext.isAnnotationPresent(CachePut.class);
+                   },//
+                   beanRegisterInfo -> beanRegisterInfo.addEnhanceManager(CacheAopManager.this));
         cacheManagerBeanName = Optional.ofNullable(context.getBeanRegisterInfo(CacheManager.class)).map(beanRegisterInfo -> beanRegisterInfo.getBeanName()).orElse(null);
     }
 

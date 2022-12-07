@@ -30,25 +30,20 @@ public class MethodBeanFactory implements BeanFactory
         method.setAccessible(true);
         Class<?>[] parameterTypes = method.getParameterTypes();
         Object[]   params         = new Object[parameterTypes.length];
-        if (params.length == 0)
+        try
         {
-            try
+            if (params.length == 0)
             {
                 return (E) method.invoke(hostBean, null);
             }
-            catch (Throwable e)
+            else
             {
-                ReflectUtil.throwException(e);
-                return null;
+                for (int i = 0; i < parameterTypes.length; i++)
+                {
+                    params[i] = applicationContext.getBean(parameterTypes[i]);
+                }
+                return (E) method.invoke(hostBean, params);
             }
-        }
-        for (int i = 0; i < parameterTypes.length; i++)
-        {
-            params[i] = applicationContext.getBean(parameterTypes[i]);
-        }
-        try
-        {
-            return (E) method.invoke(hostBean, params);
         }
         catch (Throwable e)
         {

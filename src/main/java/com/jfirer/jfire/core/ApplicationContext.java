@@ -12,15 +12,6 @@ public interface ApplicationContext
 
     <E> E getBean(String beanName);
 
-    /**
-     * 刷新上下文，动作包含：<br/>
-     * 1. 清空容器内的所有Bean实例。<br/>
-     * 2. 注册默认的Bean信息到容器。<br/>
-     * 2. 读取配置类信息，如果配置类注解了Import注解，则导入对应的类。并且将配置类注册为一个Bean。<br/>
-     * 3. 执行当前的预处理器处理链<br/>
-     */
-    void refresh();
-
     ////
     Environment getEnv();
 

@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /**
  * 不同的增强管理类实现不同的增强内容,该接口的实现类在容器中会直接以反射的形式被实例化，而不会经过容器的其他流程。
@@ -36,7 +35,6 @@ public interface EnhanceManager
 
     default void interlScan(ApplicationContext context, Predicate<Method> predicate, Consumer<BeanRegisterInfo> consumer)
     {
-        record Wrapper(BeanRegisterInfo beanRegisterInfo, Stream<Method> s) {}
         context.getAllBeanRegisterInfos().stream()//
                .forEach(beanRegisterInfo -> {
                    Optional<Method> any = Arrays.stream(beanRegisterInfo.getType().getMethods()).filter(predicate).findAny();

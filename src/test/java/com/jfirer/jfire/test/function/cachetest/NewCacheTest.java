@@ -14,7 +14,6 @@ public class NewCacheTest
         context.register(CacheTarget.class);
         context.register(DemoCache.class);
         context.register(CacheManagerTest.class);
-        context.refresh();
         CacheTarget cacheTarget = context.getBean(CacheTarget.class);
         House       house       = cacheTarget.get(5);
         System.out.println(house);

@@ -44,9 +44,12 @@ public class DefaultApplicationContext implements ApplicationContext
      * 因为目前简化为只支持Bean定义不断增多。
      */
     protected            Map<String, BeanRegisterInfo> beanRegisterInfoMap        = new HashMap<>();
-    protected     Map<String, BeanDefinition> beanDefinitionMap;
-    private final Environment                 environment  = new Environment.EnvironmentImpl();
-    private       boolean                     firstRefresh = false;
+    protected            Map<String, BeanDefinition>   beanDefinitionMap;
+    private final        Environment                   environment                = new Environment.EnvironmentImpl();
+    /**
+     * 容器是否刷新过。只有刷新过的容器才能对外提供完整服务。
+     */
+    private              boolean                       freshed                    = false;
 
     public DefaultApplicationContext(Class<?> bootStarpClass)
     {
@@ -63,35 +66,29 @@ public class DefaultApplicationContext implements ApplicationContext
 
     private void refreshIfNeed()
     {
-        if (!firstRefresh)
+        if (!freshed)
         {
             refresh();
         }
     }
-//    private void registerDefaultMethodBeanFatory()
-//    {
-//        InstanceDescriptor    instanceDescriptor = new ClassReflectInstanceDescriptor(MethodBeanFactory.class);
-//        DefaultBeanDefinition beanDefinition     = new DefaultBeanDefinition("defaultMethodBeanFactory", MethodBeanFactory.class, false, instanceDescriptor);
-//        beanRegisterInfoMap.put(beanDefinition.getBeanName(), beanDefinition);
-//    }
 
     private void registerApplicationContext()
     {
         registerBeanRegisterInfo(new OutterBeanRegisterInfo(this, "applicationContext"));
     }
 
-    @Override
-    public void refresh()
+    /**
+     * 刷新上下文，动作包含：<br/>
+     * 1. 清空容器内的所有Bean实例。<br/>
+     * 2. 注册默认的Bean信息到容器。<br/>
+     * 2. 读取配置类信息，如果配置类注解了Import注解，则导入对应的类。并且将配置类注册为一个Bean。<br/>
+     * 3. 执行当前的预处理器处理链<br/>
+     */
+    private void refresh()
     {
-        firstRefresh = true;
+        freshed = true;
         String traceId = TRACEID.currentTraceId();
-        registerApplicationContext();
-        register(AopEnhanceManager.class);
-        register(TransactionAopManager.class);
-        register(CacheAopManager.class);
-        register(ValidateAopManager.class);
-        register(ConfigurationProcessor.class);
-//        registerJfirePrepare(ConfigurationProcessor.class);
+        registerInternalClass();
         if (processConfigurationImports() == ApplicationContext.NeedRefresh.YES)
         {
             LOGGER.debug("traceId:{} 在配置类上处理Import注解，发现需要刷新容器", traceId);
@@ -104,12 +101,16 @@ public class DefaultApplicationContext implements ApplicationContext
             refresh();
             return;
         }
-        if (beanRegisterInfoMap.isEmpty())
-        {
-            return;
-        }
         LOGGER.debug("traceId:{} 准备获取所有的EnhanceManager，执行aopScan，并且执行BeanDefinition的initEnhance方法", traceId);
-        aopScan();
+        enhanceScan();
+        setBeanDefinitionMap();
+        LOGGER.debug("traceId:{} 准备获取所有的AwareContextInited接口实现，执行aware方法", traceId);
+        awareContextInit();
+        LOGGER.debug("traceId:{} 容器启动完毕", traceId);
+    }
+
+    private void setBeanDefinitionMap()
+    {
         for (BeanRegisterInfo each : beanRegisterInfoMap.values())
         {
             if (each instanceof AwareContextComplete)
@@ -120,9 +121,16 @@ public class DefaultApplicationContext implements ApplicationContext
         Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
         beanRegisterInfoMap.values().stream().forEach(beanRegisterInfo -> beanDefinitionMap.put(beanRegisterInfo.getBeanName(), beanRegisterInfo.get()));
         this.beanDefinitionMap = beanDefinitionMap;
-        LOGGER.debug("traceId:{} 准备获取所有的AwareContextInited接口实现，执行aware方法", traceId);
-        awareContextInit();
-        LOGGER.debug("traceId:{} 容器启动完毕", traceId);
+    }
+
+    private void registerInternalClass()
+    {
+        registerApplicationContext();
+        register(AopEnhanceManager.class);
+        register(TransactionAopManager.class);
+        register(CacheAopManager.class);
+        register(ValidateAopManager.class);
+        register(ConfigurationProcessor.class);
     }
 
     private NeedRefresh processContextPrepare()
@@ -145,6 +153,9 @@ public class DefaultApplicationContext implements ApplicationContext
                                                          .flatMap(importAnnotation -> Arrays.stream(importAnnotation.value()))//
                                                          .collect(Collectors.toSet());
         long count = importClasses.stream()//
+                                  .peek(ckass -> {
+                                      LOGGER.debug("traceId:{} 发现被导入的类:{}，准备进行导入", TRACEID.currentTraceId(), ckass);
+                                  })//
                                   .map(ckass -> register(ckass))//
                                   .filter(registerResult -> registerResult == RegisterResult.PREPARE || registerResult == RegisterResult.CONFIGURATION)//
                                   .count();
@@ -227,7 +238,7 @@ public class DefaultApplicationContext implements ApplicationContext
         });
     }
 
-    private void aopScan()
+    private void enhanceScan()
     {
         String traceId = TRACEID.currentTraceId();
         getBeanRegisterInfos(EnhanceManager.class).stream()//

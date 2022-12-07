@@ -12,6 +12,7 @@ public class Enhance
     private int    order;
     private String param;
     private Object result;
+
     public int getOrder()
     {
         return order;
@@ -42,15 +43,18 @@ public class Enhance
     {
         EnhanceForOrder.result += "enhance";
     }
+
     public Object getResult()
     {
         return result;
     }
+
     @AfterReturning("order2(String,int)")
     public void order22(ProceedPoint point)
     {
         result = point.getResult();
     }
+
     @Around("myName(String)")
     public void testMyname(ProceedPoint point)
     {
@@ -58,6 +62,7 @@ public class Enhance
         point.invoke();
         System.out.println("环绕增强后");
     }
+
     @Around("testForVoidReturn()")
     public void testForVoidReturn(ProceedPoint point)
     {
@@ -66,17 +71,20 @@ public class Enhance
         point.invoke();
         System.out.println("环绕增强后");
     }
+
     @AfterThrowable("throwe(*)")
     public void throwe(ProceedPoint point)
     {
         System.out.println("dada");
         Verify.equal("aaaa", point.getE().getMessage(), "捕获到正确的异常");
     }
+
     @Before("getHomeName()")
     public void home1(ProceedPoint point)
     {
         System.out.println("before getHomeName");
     }
+
     @Before("getHome()")
     public void home2(ProceedPoint point)
     {

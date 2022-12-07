@@ -14,6 +14,7 @@ import static org.junit.Assert.assertEquals;
 public class AnnodatationDatabaseTest
 {
     private final AnnotationContextFactory annotationDatabase = new DefaultAnnotationContextFactory();
+
     @Test
     public void test()
     {

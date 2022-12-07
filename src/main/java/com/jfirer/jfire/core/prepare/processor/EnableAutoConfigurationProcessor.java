@@ -93,9 +93,9 @@ public class EnableAutoConfigurationProcessor implements ContextPrepare
      */
     boolean registgerAutoConfigor(String className, ApplicationContext context) throws ClassNotFoundException
     {
-        String   traceId  = TRACEID.currentTraceId();
-        Class<?> configor = Thread.currentThread().getContextClassLoader().loadClass(className);
-        switch (context.register(configor))
+        String   traceId = TRACEID.currentTraceId();
+        Class<?> ckass   = Thread.currentThread().getContextClassLoader().loadClass(className);
+        switch (context.register(ckass))
         {
             case CONFIGURATION:
                 LOGGER.debug("traceId:{} 注册自动配置类:{}，其注解@Configuration。", traceId, className);

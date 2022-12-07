@@ -45,7 +45,7 @@ public class ConfigurationProcessor implements ContextPrepare
 //        logOrder(list);
         ErrorMessage             errorMessage             = new ErrorMessage();
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        List<Class<?>> list = context.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class)).map(beanRegisterInfo -> beanRegisterInfo.getType()).collect(Collectors.toList());
+        List<Class<?>>           list                     = context.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class)).map(beanRegisterInfo -> beanRegisterInfo.getType()).collect(Collectors.toList());
         for (Class<?> each : list)
         {
             errorMessage.clear();
@@ -76,8 +76,8 @@ public class ConfigurationProcessor implements ContextPrepare
                 registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
             });
             Arrays.stream(ckass.getDeclaredMethods()).filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class)).filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class)).filter(method -> {
-                AnnotationContext annotationContextOnMethod = annotationContextFactory.get(method);
-                Optional<AnnotationMetadata> notMatch = annotationContextOnMethod.getAnnotationMetadatas(Conditional.class).stream().filter(annotationMetadata -> !matchCondition(context, annotationMetadata, annotationContextOnMethod, errorMessage)).findAny();
+                AnnotationContext            annotationContextOnMethod = annotationContextFactory.get(method);
+                Optional<AnnotationMetadata> notMatch                  = annotationContextOnMethod.getAnnotationMetadatas(Conditional.class).stream().filter(annotationMetadata -> !matchCondition(context, annotationMetadata, annotationContextOnMethod, errorMessage)).findAny();
                 return !notMatch.isPresent();
             }).forEach(method -> {
                 registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
@@ -142,6 +142,7 @@ public class ConfigurationProcessor implements ContextPrepare
             }
         }
     }
+
     /**
      * 判断条件注解中的条件是否被符合
      *
@@ -174,6 +175,7 @@ public class ConfigurationProcessor implements ContextPrepare
         }
         return match;
     }
+
     private void registerMethodBeanDefinition(Method method, ApplicationContext context, AnnotationContext annotationContextOnMethod)
     {
         Bean             bean             = annotationContextOnMethod.getAnnotation(Bean.class);

@@ -13,7 +13,8 @@ import javax.annotation.Resource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @Testalis3(t = "sada")
 public class AliasTest
@@ -39,6 +40,7 @@ public class AliasTest
         resource = annotationContextFactory.get(field).getAnnotation(Resource.class);
         assertEquals("demo", resource.name());
     }
+
     @Test
     public void test2()
     {

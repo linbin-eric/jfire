@@ -19,12 +19,14 @@ public class ConditionTest
     {
         return new Demo2();
     }
+
     @Bean
     @ConditionOnMissBeanType(Demo2.class)
     public Demo1 demo1()
     {
         return new Demo1();
     }
+
     @Test
     public void test()
     {

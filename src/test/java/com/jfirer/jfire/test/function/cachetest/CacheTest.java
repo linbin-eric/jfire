@@ -16,7 +16,6 @@ public class CacheTest
         context.register(CacheTarget.class);
         context.register(DemoCache.class);
         context.register(CacheManagerTest.class);
-        context.refresh();
         CacheTarget cacheTarget = context.getBean(CacheTarget.class);
         House       house       = cacheTarget.get(1);
         House       second      = cacheTarget.get(1);
@@ -53,7 +52,6 @@ public class CacheTest
         context.register(CacheTarget.class);
         context.register(DemoCache.class);
         context.register(CacheManagerTest.class);
-        context.refresh();
         CacheTarget cacheTarget = context.getBean(CacheTarget.class);
         House       house       = cacheTarget.get2(6);
         House       second      = cacheTarget.get2(6);
@@ -70,7 +68,6 @@ public class CacheTest
         context.register(CacheTarget.class);
         context.register(DemoCache.class);
         context.register(CacheManagerTest.class);
-        context.refresh();
         CacheTarget cacheTarget = context.getBean(CacheTarget.class);
         House       house       = cacheTarget.get3(6);
         House       second      = cacheTarget.get3(6);
@@ -87,7 +84,6 @@ public class CacheTest
         context.register(CacheTarget.class);
         context.register(DemoCache.class);
         context.register(CacheManagerTest.class);
-        context.refresh();
         CacheTarget   cacheTarget = context.getBean(CacheTarget.class);
         MutablePerson person      = new MutablePerson();
         person.setAge(18);

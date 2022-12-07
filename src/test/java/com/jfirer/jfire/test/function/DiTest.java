@@ -25,6 +25,7 @@ public class DiTest
         Holder holder = context.getBean(Holder.class);
         Assert.assertEquals(2, holder.f.size());
     }
+
     /**
      * 接口带有名称的注入
      */
@@ -37,6 +38,7 @@ public class DiTest
         Holder2 holder = context.getBean(Holder2.class);
         Assert.assertNotNull(holder.di);
     }
+
     /**
      * 接口没有实现，但是允许为空
      */

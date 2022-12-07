@@ -23,6 +23,7 @@ public class ConfigBeanTest
         home.person = person;
         return home;
     }
+
     @Test
     public void test()
     {

@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ConfigurationOrderTest
 {
     public static AtomicInteger count = new AtomicInteger();
+
     @Test
     public void test()
     {
