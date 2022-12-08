@@ -11,5 +11,5 @@ public @interface SelectBeanFactory
 {
     String value() default "";
 
-    Class<?> beanFactoryType() default Object.class;
+    Class<? extends BeanFactory> beanFactoryType() default BeanFactory.class;
 }

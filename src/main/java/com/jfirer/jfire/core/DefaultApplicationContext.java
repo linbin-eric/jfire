@@ -192,9 +192,8 @@ public class DefaultApplicationContext implements ApplicationContext
         }
         if (ANNOTATION_CONTEXT_FACTORY.get(ckass).isAnnotationPresent(SelectBeanFactory.class))
         {
-            AnnotationMetadata annotationMetadata = ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotationMetadata(SelectBeanFactory.class);
-            String             beanFactoryName    = annotationMetadata.getAttribyte("value").getStringValue();
-            return registerBeanRegisterInfo(new DefaultBeanRegisterInfo(prototype, ckass, beanName, this, new SelectedBeanFactory(this, beanFactoryName)));
+            SelectBeanFactory  selectBeanFactory         = ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotation(SelectBeanFactory.class);
+            return registerBeanRegisterInfo(new DefaultBeanRegisterInfo(prototype, ckass, beanName, this, new SelectedBeanFactory(this,selectBeanFactory.value().equals("")?null:selectBeanFactory.value() , selectBeanFactory.beanFactoryType())));
         }
         else
         {
