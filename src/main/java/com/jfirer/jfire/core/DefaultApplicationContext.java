@@ -43,7 +43,6 @@ public class DefaultApplicationContext implements ApplicationContext
      * 因为目前简化为只支持Bean定义不断增多。
      */
     protected            Map<String, BeanRegisterInfo> beanRegisterInfoMap        = new HashMap<>();
-    protected            Map<String, BeanDefinition>   beanDefinitionMap;
     private final        Environment                   environment                = new Environment.EnvironmentImpl();
     /**
      * 容器是否刷新过。只有刷新过的容器才能对外提供完整服务。
@@ -95,26 +94,12 @@ public class DefaultApplicationContext implements ApplicationContext
             refresh();
             return;
         }
-        LOGGER.debug("traceId:{} 准备获取所有的EnhanceManager，执行aopScan，并且执行BeanDefinition的initEnhance方法", traceId);
+        LOGGER.debug("traceId:{} 准备获取所有的EnhanceManager，执行增强扫描", traceId);
         enhanceScan();
-        setBeanDefinitionMap();
+        beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> beanRegisterInfo instanceof AwareContextComplete).forEach(beanRegisterInfo -> ((AwareContextComplete) beanRegisterInfo).complete());
         LOGGER.debug("traceId:{} 准备获取所有的AwareContextInited接口实现，执行aware方法", traceId);
         awareContextInit();
         LOGGER.debug("traceId:{} 容器启动完毕", traceId);
-    }
-
-    private void setBeanDefinitionMap()
-    {
-        for (BeanRegisterInfo each : beanRegisterInfoMap.values())
-        {
-            if (each instanceof AwareContextComplete)
-            {
-                ((AwareContextComplete) each).complete();
-            }
-        }
-        Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
-        beanRegisterInfoMap.values().stream().forEach(beanRegisterInfo -> beanDefinitionMap.put(beanRegisterInfo.getBeanName(), beanRegisterInfo.get()));
-        this.beanDefinitionMap = beanDefinitionMap;
     }
 
     private void registerInternalClass()
@@ -223,10 +208,12 @@ public class DefaultApplicationContext implements ApplicationContext
     private void awareContextInit()
     {
         String traceId = TRACEID.currentTraceId();
-        beanDefinitionMap.values().stream().filter(beanDefinition -> AwareContextInited.class.isAssignableFrom(beanDefinition.getType())).forEach(beanDefinition -> {
-            ((AwareContextInited) beanDefinition.getBean()).aware(DefaultApplicationContext.this);
-            LOGGER.debug("traceId:{} Bean：{}执行aware方法", traceId, beanDefinition.getBeanName());
-        });
+        beanRegisterInfoMap.values().stream()//
+                           .filter(beanRegisterInfo -> AwareContextInited.class.isAssignableFrom(beanRegisterInfo.getType()))//
+                           .forEach(beanRegisterInfo -> {
+                               ((AwareContextInited) beanRegisterInfo.get().getBean()).aware(DefaultApplicationContext.this);
+                               LOGGER.debug("traceId:{} Bean：{}执行aware方法", traceId, beanRegisterInfo.getBeanName());
+                           });
     }
 
     private void enhanceScan()
@@ -271,7 +258,7 @@ public class DefaultApplicationContext implements ApplicationContext
     public <E> E getBean(Class<E> ckass)
     {
         refreshIfNeed();
-        Optional<BeanDefinition> any = beanDefinitionMap.values().stream().filter(beanDefinition -> ckass.isAssignableFrom(beanDefinition.getType())).findAny();
+        Optional<BeanDefinition> any = beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> ckass.isAssignableFrom(beanRegisterInfo.getType())).map(beanRegisterInfo -> beanRegisterInfo.get()).findAny();
         if (any.isPresent())
         {
             return (E) any.get().getBean();
@@ -292,19 +279,18 @@ public class DefaultApplicationContext implements ApplicationContext
     public <E> Collection<E> getBeans(Class<E> ckass)
     {
         refreshIfNeed();
-        Set<E> collect = beanDefinitionMap.values().stream().filter(beanDefinition -> ckass == beanDefinition.getType() || ckass.isAssignableFrom(beanDefinition.getType())).map(beanDefinition -> ((E) beanDefinition.getBean())).collect(Collectors.toSet());
-        return collect;
+        return (Set<E>) beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> ckass.isAssignableFrom(beanRegisterInfo.getType())).map(beanRegisterInfo -> (beanRegisterInfo.get().getBean())).collect(Collectors.toSet());
     }
 
     @Override
     public <E> E getBean(String beanName)
     {
         refreshIfNeed();
-        BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
-        if (beanDefinition == null)
+        BeanRegisterInfo beanRegisterInfo = beanRegisterInfoMap.get(beanName);
+        if (beanRegisterInfo == null)
         {
             throw new BeanDefinitionCanNotFindException(beanName);
         }
-        return (E) beanDefinition.getBean();
+        return (E) beanRegisterInfo.get().getBean();
     }
 }
