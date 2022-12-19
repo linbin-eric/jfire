@@ -8,11 +8,11 @@ import com.jfirer.jfire.core.ApplicationContext;
 public interface ContextPrepare
 {
     /**
-     * 执行预处理流程，如果返回true意味着需要中断后续流程，直接刷新容器。
+     * 执行预处理流程，返回本次是否注册了新的ContextPrepare接口的Bean
      *
      * @return
      */
-    ApplicationContext.NeedRefresh prepare(ApplicationContext context);
+    ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context);
 
     int order();
 }

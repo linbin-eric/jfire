@@ -1,11 +1,11 @@
 package com.jfirer.jfire.core.aop.support.cache;
 
-import com.jfirer.jfire.core.aop.impl.CacheAopManager;
+import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class ConcurrentMapCache implements CacheAopManager.Cache
+public class ConcurrentMapCache implements CacheEnhanceManager.Cache
 {
     private final ConcurrentMap<String, Element> map = new ConcurrentHashMap<String, Element>();
 

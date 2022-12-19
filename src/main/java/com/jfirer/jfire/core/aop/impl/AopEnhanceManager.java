@@ -23,24 +23,22 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class AopEnhanceManager implements EnhanceManager
 {
-
     private static final Logger logger = LoggerFactory.getLogger(AopEnhanceManager.class);
+    AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
 
     @Override
-    public void scan(ApplicationContext context)
+    public Predicate<BeanRegisterInfo> needEnhance(ApplicationContext context)
     {
-        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        context.getAllBeanRegisterInfos().stream()//
-               .map(beanDefinition -> annotationContextFactory.get(beanDefinition.getType()))//
-               .filter(annotationContext -> annotationContext.isAnnotationPresent(EnhanceClass.class))//
-               .map(annotationContext -> annotationContext.getAnnotationMetadata(EnhanceClass.class).getAttribyte("value").getStringValue())//
-               .flatMap(rule -> context.getAllBeanRegisterInfos().stream()//
-                                       .filter(beanDefinition -> StringUtil.match(beanDefinition.getType().getName(), rule)))//
-               .forEach(beanDefinition -> beanDefinition.addEnhanceManager(AopEnhanceManager.this));//
+        return beanRegisterInfo -> context.getAllBeanRegisterInfos().stream()//
+                                          .filter(other -> annotationContextFactory.get(other.getType()).isAnnotationPresent(EnhanceClass.class))//
+                                          .map(other -> annotationContextFactory.get(other.getType()).getAnnotation(EnhanceClass.class).value())//
+                                          .filter(rule -> StringUtil.match(beanRegisterInfo.getType().getName(), rule))//
+                                          .findAny().isPresent();
     }
 
     @Override

@@ -14,12 +14,12 @@ public class ProfileSelectorProcessor implements ContextPrepare
 {
 
     @Override
-    public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
+    public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
         String activeAttribute = context.getEnv().getProperty(ProfileSelector.activePropertyName);
         if (!StringUtil.isNotBlank(activeAttribute))
         {
-            return ApplicationContext.NeedRefresh.NO;
+            return ApplicationContext.FoundNewContextPrepare.NO;
         }
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
         context.getAllBeanRegisterInfos().stream()//
@@ -34,7 +34,7 @@ public class ProfileSelectorProcessor implements ContextPrepare
                        context.getEnv().putProperty(key, iniFile.getValue(key));
                    }
                });
-        return ApplicationContext.NeedRefresh.NO;
+        return ApplicationContext.FoundNewContextPrepare.NO;
     }
 
     @Override

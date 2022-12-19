@@ -1,6 +1,6 @@
 package com.jfirer.jfire.test.function.cachetest;
 
-import com.jfirer.jfire.core.aop.impl.CacheAopManager.Cache;
+import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager.Cache;
 
 import java.util.HashMap;
 

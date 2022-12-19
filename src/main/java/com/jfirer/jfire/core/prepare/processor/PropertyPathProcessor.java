@@ -16,7 +16,7 @@ public class PropertyPathProcessor implements ContextPrepare
 {
 
     @Override
-    public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
+    public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
         ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
@@ -32,7 +32,7 @@ public class PropertyPathProcessor implements ContextPrepare
                        context.getEnv().putProperty(property, iniFile.getValue(property));
                    }
                });
-        return ApplicationContext.NeedRefresh.NO;
+        return ApplicationContext.FoundNewContextPrepare.NO;
     }
 
     @Override

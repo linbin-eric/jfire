@@ -17,8 +17,6 @@ import com.jfirer.jfire.core.prepare.annotation.condition.Condition;
 import com.jfirer.jfire.core.prepare.annotation.condition.Conditional;
 import com.jfirer.jfire.core.prepare.annotation.condition.ErrorMessage;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Bean;
-import com.jfirer.jfire.core.prepare.annotation.configuration.ConfigAfter;
-import com.jfirer.jfire.core.prepare.annotation.configuration.ConfigBefore;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import com.jfirer.jfire.util.PrepareConstant;
 import org.slf4j.Logger;
@@ -28,7 +26,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ConfigurationProcessor implements ContextPrepare
@@ -36,91 +34,46 @@ public class ConfigurationProcessor implements ContextPrepare
     private static final Logger logger = LoggerFactory.getLogger(ConfigurationProcessor.class);
 
     @Override
-    public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
+    public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
-//        List<Class<?>> list = new ArrayList<Class<?>>(context.getConfigurationClassSet());
-//        logOrder(list);
-//        list = new SortList(list, context.getAnnotationContextFactory()).sort();
-//        logger.trace("traceId:{} 修正排序完毕", TRACEID.currentTraceId());
-//        logOrder(list);
         ErrorMessage             errorMessage             = new ErrorMessage();
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        List<Class<?>>           list                     = context.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class)).map(beanRegisterInfo -> beanRegisterInfo.getType()).collect(Collectors.toList());
-        for (Class<?> each : list)
-        {
-            errorMessage.clear();
-            AnnotationContext        annotationContextOnClass = annotationContextFactory.get(each);
-            List<AnnotationMetadata> conditionalAnnotations   = annotationContextOnClass.getAnnotationMetadatas(Conditional.class);
-            if (!conditionalAnnotations.isEmpty())
-            {
-                boolean pass = true;
-                for (AnnotationMetadata conditional : conditionalAnnotations)
-                {
-                    if (!matchCondition(context, conditional, annotationContextOnClass, errorMessage))
-                    {
-                        pass = false;
-                        break;
-                    }
-                }
-                if (!pass)
-                {
-                    for (String error : errorMessage.getList())
-                    {
-                        logger.debug("traceId:{} 配置类:{}不符合条件:{}", TRACEID.currentTraceId(), each, error);
-                    }
-                    continue;
-                }
-            }
-            Class<?> ckass = each;
-            Arrays.stream(ckass.getDeclaredMethods()).filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class)).filter(method -> !annotationContextFactory.get(method).isAnnotationPresent(Conditional.class)).forEach(method -> {
-                registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
-            });
-            Arrays.stream(ckass.getDeclaredMethods()).filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class)).filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class)).filter(method -> {
-                AnnotationContext            annotationContextOnMethod = annotationContextFactory.get(method);
-                Optional<AnnotationMetadata> notMatch                  = annotationContextOnMethod.getAnnotationMetadatas(Conditional.class).stream().filter(annotationMetadata -> !matchCondition(context, annotationMetadata, annotationContextOnMethod, errorMessage)).findAny();
-                return !notMatch.isPresent();
-            }).forEach(method -> {
-                registerMethodBeanDefinition(method, context, annotationContextFactory.get(method));
-            });
-//            for (Method method : ckass.getDeclaredMethods())
-//            {
-//                AnnotationContext annotationContextOnMethod = annotationContextFactory.get(method);
-//                if (annotationContextOnMethod.isAnnotationPresent(Bean.class) == false)
-//                {
-//                    continue;
-//                }
-//                // 没有包含条件的直接注册
-//                else if (annotationContextOnMethod.isAnnotationPresent(Conditional.class) == false)
-//                {
-//                    registerMethodBeanDefinition(method, context, annotationContextOnMethod);
-//                }
-//                // 判断条件是否成功
-//                else
-//                {
-//                    boolean pass = true;
-//                    for (AnnotationMetadata conditional : annotationContextOnMethod.getAnnotationMetadatas(Conditional.class))
-//                    {
-//                        if (matchCondition(context, conditional, annotationContextOnMethod, errorMessage) == false)
-//                        {
-//                            pass = false;
-//                            break;
-//                        }
-//                    }
-//                    if (pass)
-//                    {
-//                        registerMethodBeanDefinition(method, context, annotationContextOnMethod);
-//                    }
-//                    else
-//                    {
-//                        for (String error : errorMessage.getList())
-//                        {
-//                            logger.debug("traceId:{} 配置类:{}不符合条件:{}", TRACEID.currentTraceId(), each, error);
-//                        }
-//                    }
-//                }
-//            }
-        }
-        return ApplicationContext.NeedRefresh.NO;
+        Set<Method> methodWithBeanAnnotation = context.getAllBeanRegisterInfos().stream()//
+                                                      .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class))//
+                                                      .map(beanRegisterInfo -> beanRegisterInfo.getType())//
+                                                      .flatMap(ckass -> Arrays.stream(ckass.getDeclaredMethods()))//
+                                                      .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class))//
+                                                      .collect(Collectors.toSet());
+        methodWithBeanAnnotation.stream()//
+                                .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class) == false //
+                                                  && annotationContextFactory.get(method.getDeclaringClass()).isAnnotationPresent(Conditional.class) == false)//
+                                .forEach(method -> registerMethodBeanDefinition(method, context, annotationContextFactory.get(method)));
+        methodWithBeanAnnotation.stream()//
+                                .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class) ||//
+                                                  annotationContextFactory.get(method.getDeclaringClass()).isAnnotationPresent(Conditional.class))//
+                                .filter(method -> {
+                                    List<AnnotationMetadata> list = new LinkedList<>();
+                                    if (annotationContextFactory.get(method).isAnnotationPresent(Conditional.class))
+                                    {
+                                        list.addAll(annotationContextFactory.get(method).getAnnotationMetadatas(Conditional.class));
+                                    }
+                                    if (annotationContextFactory.get(method.getDeclaringClass()).isAnnotationPresent(Conditional.class))
+                                    {
+                                        list.addAll(annotationContextFactory.get(method.getDeclaringClass()).getAnnotationMetadatas(Conditional.class));
+                                    }
+                                    errorMessage.clear();
+                                    AnnotationContext annotationContext = annotationContextFactory.get(method);
+                                    for (AnnotationMetadata conditional : list)
+                                    {
+                                        if (matchCondition(context, conditional, annotationContext, errorMessage) == false)
+                                        {
+                                            return false;
+                                        }
+                                    }
+                                    return true;
+                                })//
+                                .forEach(method -> registerMethodBeanDefinition(method, context, annotationContextFactory.get(method)));
+        return ApplicationContext.FoundNewContextPrepare.NO;
     }
 
     @Override
@@ -129,19 +82,6 @@ public class ConfigurationProcessor implements ContextPrepare
         return PrepareConstant.CONFIGURATION_ORDER;
     }
 
-    private void logOrder(List<Class<?>> list)
-    {
-        if (logger.isDebugEnabled())
-        {
-            int    index   = 1;
-            String traceId = TRACEID.currentTraceId();
-            for (Class<?> each : list)
-            {
-                logger.trace("traceId:{} 顺序:{}为{}", traceId, index, each.getName());
-                index++;
-            }
-        }
-    }
 
     /**
      * 判断条件注解中的条件是否被符合
@@ -182,156 +122,6 @@ public class ConfigurationProcessor implements ContextPrepare
         String           beanName         = StringUtil.isNotBlank(bean.name()) ? bean.name() : method.getName();
         BeanRegisterInfo beanRegisterInfo = new DefaultBeanRegisterInfo(bean.prototype(), method.getReturnType(), beanName, context, new MethodBeanFactory(context, method));
         context.registerBeanRegisterInfo(beanRegisterInfo);
-//        InstanceDescriptor    instanceDescriptor   = new MethodInvokeInstanceDescriptor(method);
-//        DefaultBeanDefinition methodBeanDefinition = new DefaultBeanDefinition(beanName, method.getReturnType(), bean.prototype(), instanceDescriptor);
-//        context.registerBeanRegisterInfo(methodBeanDefinition);
         logger.debug("traceId:{} 注册方法Bean:{}", TRACEID.currentTraceId(), method.getDeclaringClass().getSimpleName() + "." + method.getName());
-    }
-
-    class SortList
-    {
-        SortList.SortEntry       head;
-        AnnotationContextFactory annotationContextFactory;
-
-        SortList(List<Class<?>> list, AnnotationContextFactory annotationContextFactory)
-        {
-            this.annotationContextFactory = annotationContextFactory;
-            for (Class<?> each : list)
-            {
-                if (head == null)
-                {
-                    head = new SortList.SortEntry(each);
-                }
-                else
-                {
-                    SortList.SortEntry newHead = new SortList.SortEntry(each);
-                    newHead.next = head;
-                    head.pre = newHead;
-                    head = newHead;
-                }
-            }
-        }
-
-        List<Class<?>> sort()
-        {
-            SortList.SortEntry entry = head;
-            logOrder();
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            while (entry != null)
-            {
-                AnnotationContext annotationContext = annotationContextFactory.get(entry.value, classLoader);
-                if (annotationContext.isAnnotationPresent(ConfigBefore.class))
-                {
-                    AnnotationMetadata configBefore = annotationContext.getAnnotationMetadata(ConfigBefore.class);
-                    SortList.SortEntry index        = entry.pre;
-                    String             targetClass  = configBefore.getAttribyte("value").getClassName();
-                    while (index != null && !index.value.getName().equals(targetClass))
-                    {
-                        index = index.pre;
-                    }
-                    if (index != null)
-                    {
-                        logger.trace("traceId:{}将{}移动到{}前面", TRACEID.currentTraceId(), entry.value, index.value);
-                        remove(entry);
-                        addBefore(entry, index);
-                        entry = head;
-                        continue;
-                    }
-                }
-                if (annotationContext.isAnnotationPresent(ConfigAfter.class))
-                {
-                    AnnotationMetadata configAfter = annotationContext.getAnnotationMetadata(ConfigAfter.class);
-                    SortList.SortEntry index       = entry.next;
-                    String             targetClass = configAfter.getAttribyte("value").getClassName();
-                    while (index != null && !index.value.getName().equals(targetClass))
-                    {
-                        index = index.next;
-                    }
-                    if (index != null)
-                    {
-                        logger.trace("traceId:{}将{}移动到{}前面", TRACEID.currentTraceId(), index.value, entry.value);
-                        remove(index);
-                        addBefore(index, entry);
-                        entry = head;
-                        continue;
-                    }
-                }
-                entry = entry.next;
-            }
-            entry = head;
-            List<Class<?>> list = new LinkedList<Class<?>>();
-            while (entry != null)
-            {
-                list.add(entry.value);
-                entry = entry.next;
-            }
-            return list;
-        }
-
-        void remove(SortList.SortEntry entry)
-        {
-            if (entry.pre == null)
-            {
-                head = entry.next;
-                head.pre = null;
-            }
-            else
-            {
-                SortList.SortEntry pre  = entry.pre;
-                SortList.SortEntry next = entry.next;
-                pre.next = next;
-                if (next != null)
-                {
-                    next.pre = pre;
-                }
-            }
-            entry.pre = entry.next = null;
-        }
-
-        void addBefore(SortList.SortEntry add, SortList.SortEntry index)
-        {
-            SortList.SortEntry pre = index.pre;
-            if (pre == null)
-            {
-                add.next = head;
-                head.pre = add;
-                head = add;
-            }
-            else
-            {
-                pre.next = add;
-                add.pre = pre;
-                add.next = index;
-                index.pre = add;
-            }
-        }
-
-        void logOrder()
-        {
-            if (logger.isDebugEnabled())
-            {
-                SortList.SortEntry head    = this.head;
-                String             traceId = TRACEID.currentTraceId();
-                int                index   = 1;
-                while (head != null)
-                {
-                    logger.trace("traceId:{} 顺序{}为{}", traceId, index, head.value);
-                    head = head.next;
-                    index++;
-                }
-            }
-        }
-
-        class SortEntry
-        {
-            SortList.SortEntry pre;
-            SortList.SortEntry next;
-            Class<?>           value;
-
-            public SortEntry(Class<?> value)
-            {
-                this.value = value;
-            }
-        }
     }
 }

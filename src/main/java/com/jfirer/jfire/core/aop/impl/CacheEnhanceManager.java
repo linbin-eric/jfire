@@ -14,30 +14,28 @@ import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.notated.cache.CacheDelete;
 import com.jfirer.jfire.core.aop.notated.cache.CacheGet;
 import com.jfirer.jfire.core.aop.notated.cache.CachePut;
+import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfireel.expression.Expression;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+import java.util.function.Predicate;
 
-public class CacheAopManager implements EnhanceManager
+public class CacheEnhanceManager implements EnhanceManager
 {
-    private String cacheManagerBeanName;
+    AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
 
     @Override
-    public void scan(ApplicationContext context)
+    public Predicate<BeanRegisterInfo> needEnhance(ApplicationContext context)
     {
-        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        interlScan(context,//
-                   method ->//
-                   {
-                       AnnotationContext annotationContext = annotationContextFactory.get(method);
-                       return annotationContext.isAnnotationPresent(CacheDelete.class) || annotationContext.isAnnotationPresent(CacheGet.class) || annotationContext.isAnnotationPresent(CachePut.class);
-                   },//
-                   beanRegisterInfo -> beanRegisterInfo.addEnhanceManager(CacheAopManager.this));
-        cacheManagerBeanName = Optional.ofNullable(context.getBeanRegisterInfo(CacheManager.class)).map(beanRegisterInfo -> beanRegisterInfo.getBeanName()).orElse(null);
+        return beanRegisterInfo -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods())//
+                                         .filter(method -> {
+                                             AnnotationContext annotationContext = annotationContextFactory.get(method);
+                                             return annotationContext.isAnnotationPresent(CacheDelete.class) || annotationContext.isAnnotationPresent(CacheGet.class) || annotationContext.isAnnotationPresent(CachePut.class);
+                                         }).findAny().isPresent();
     }
 
     @Override
@@ -49,16 +47,9 @@ public class CacheAopManager implements EnhanceManager
         classModel.addImport(String.class);
         classModel.addImport(Boolean.class);
         classModel.addImport(Cache.class);
-        String                     cacheManagerFieldName = generateCacheManagerField(classModel);
-        MethodModel.MethodModelKey key                   = new MethodModel.MethodModelKey();
-        key.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
-        key.setMethodName("setEnhanceFields");
-        key.setParamterTypes(new Class[]{ApplicationContext.class});
-        MethodModel setEnhanceFieldsMethod     = classModel.getMethodModel(key);
-        String      setEnhanceFieldsMethodBody = setEnhanceFieldsMethod.getBody();
-        setEnhanceFieldsMethodBody += cacheManagerFieldName + "=(" + SmcHelper.getReferenceName(CacheManager.class, classModel) + ")$0.getBean(\"" + cacheManagerBeanName + "\");\r\n";
-        setEnhanceFieldsMethod.setBody(setEnhanceFieldsMethodBody);
-        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
+        String cacheManagerFieldName = generateCacheManagerField(classModel);
+        addBodyToSetEnhanceFields(cacheManagerFieldName + "=(" + SmcHelper.getReferenceName(CacheManager.class, classModel) + ")$0.getBean(\"" + applicationContext.getBeanRegisterInfo(CacheManager.class).getBeanName() + "\");\r\n",//
+                                  classModel);
         for (Method method : type.getMethods())
         {
             if (Modifier.isFinal(method.getModifiers()))

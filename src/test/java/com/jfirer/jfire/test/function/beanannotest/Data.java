@@ -65,10 +65,10 @@ public class Data
     {
 
         @Override
-        public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
+        public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
         {
             context.getEnv().putProperty("name", "linbin");
-            return ApplicationContext.NeedRefresh.NO;
+            return ApplicationContext.FoundNewContextPrepare.NO;
         }
 
         @Override

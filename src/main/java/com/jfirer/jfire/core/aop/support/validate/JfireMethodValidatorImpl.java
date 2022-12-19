@@ -1,6 +1,6 @@
 package com.jfirer.jfire.core.aop.support.validate;
 
-import com.jfirer.jfire.core.aop.impl.ValidateAopManager;
+import com.jfirer.jfire.core.aop.impl.ValidateEnhanceManager;
 
 import javax.annotation.PostConstruct;
 import javax.validation.ConstraintViolation;
@@ -11,7 +11,7 @@ import javax.validation.executable.ExecutableValidator;
 import java.lang.reflect.Method;
 import java.util.Set;
 
-public class JfireMethodValidatorImpl implements ValidateAopManager.JfireMethodValidator
+public class JfireMethodValidatorImpl implements ValidateEnhanceManager.JfireMethodValidator
 {
     private Validator validator;
 

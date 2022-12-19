@@ -40,7 +40,7 @@ public interface ApplicationContext
      */
     RegisterResult registerBeanRegisterInfo(BeanRegisterInfo beanRegisterInfo);
 
-    enum NeedRefresh
+    enum FoundNewContextPrepare
     {
         YES,
         NO

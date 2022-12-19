@@ -2,15 +2,14 @@ package com.jfirer.jfire.core;
 
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.TRACEID;
-import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.bytecode.support.SupportOverrideAttributeAnnotationContextFactory;
 import com.jfirer.baseutil.smc.compiler.CompileHelper;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.impl.AopEnhanceManager;
-import com.jfirer.jfire.core.aop.impl.CacheAopManager;
-import com.jfirer.jfire.core.aop.impl.TransactionAopManager;
-import com.jfirer.jfire.core.aop.impl.ValidateAopManager;
+import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager;
+import com.jfirer.jfire.core.aop.impl.TransactionEnhanceManager;
+import com.jfirer.jfire.core.aop.impl.ValidateEnhanceManager;
 import com.jfirer.jfire.core.bean.AwareContextComplete;
 import com.jfirer.jfire.core.bean.BeanDefinition;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
@@ -89,13 +88,8 @@ public class DefaultApplicationContext implements ApplicationContext
         freshed = true;
         String traceId = TRACEID.currentTraceId();
         registerInternalClass();
-        if (processConfigurationImports() == ApplicationContext.NeedRefresh.YES)
-        {
-            LOGGER.debug("traceId:{} 在配置类上处理Import注解，发现需要刷新容器", traceId);
-            refresh();
-            return;
-        }
-        if (processContextPrepare() == ApplicationContext.NeedRefresh.YES)
+        processImports();
+        if (processContextPrepare() == FoundNewContextPrepare.YES)
         {
             LOGGER.debug("traceId:{} 执行ContextPrepare接口，发现需要刷新容器", traceId);
             refresh();
@@ -127,39 +121,35 @@ public class DefaultApplicationContext implements ApplicationContext
     {
         registerApplicationContext();
         register(AopEnhanceManager.class);
-        register(TransactionAopManager.class);
-        register(CacheAopManager.class);
-        register(ValidateAopManager.class);
+        register(TransactionEnhanceManager.class);
+        register(CacheEnhanceManager.class);
+        register(ValidateEnhanceManager.class);
         register(ConfigurationProcessor.class);
     }
 
-    private NeedRefresh processContextPrepare()
+    private FoundNewContextPrepare processContextPrepare()
     {
-        long count = beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> ContextPrepare.class.isAssignableFrom(beanRegisterInfo.getType()))//
+        long count = beanRegisterInfoMap.values().stream()//
+                                        .filter(beanRegisterInfo -> ContextPrepare.class.isAssignableFrom(beanRegisterInfo.getType()))//
                                         .map(beanRegisterInfo -> ((ContextPrepare) beanRegisterInfo.get().getBean()))//
                                         .sorted(Comparator.comparingInt(ContextPrepare::order))//
                                         .map(contextPrepare -> contextPrepare.prepare(DefaultApplicationContext.this))//
-                                        .filter(needRefresh -> needRefresh == NeedRefresh.YES)//
+                                        .filter(foundNewContextPrepare -> foundNewContextPrepare == FoundNewContextPrepare.YES)//
                                         .count();
-        return count > 0 ? NeedRefresh.YES : NeedRefresh.NO;
+        return count > 0 ? FoundNewContextPrepare.YES : FoundNewContextPrepare.NO;
     }
 
-    private NeedRefresh processConfigurationImports()
+    private void processImports()
     {
         Set<Class<?>> importClasses = beanRegisterInfoMap.values().stream()//
                                                          .map(beanRegisterInfo -> beanRegisterInfo.getType())//
                                                          .filter(ckass -> ANNOTATION_CONTEXT_FACTORY.get(ckass).isAnnotationPresent(Import.class))//
                                                          .flatMap(ckass -> ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotations(Import.class).stream())//
-                                                         .flatMap(importAnnotation -> Arrays.stream(importAnnotation.value()))//
-                                                         .collect(Collectors.toSet());
-        long count = importClasses.stream()//
-                                  .peek(ckass -> {
-                                      LOGGER.debug("traceId:{} 发现被导入的类:{}，准备进行导入", TRACEID.currentTraceId(), ckass);
-                                  })//
-                                  .map(ckass -> register(ckass))//
-                                  .filter(registerResult -> registerResult == RegisterResult.PREPARE || registerResult == RegisterResult.CONFIGURATION)//
-                                  .count();
-        return count > 0 ? NeedRefresh.YES : NeedRefresh.NO;
+                                                         .flatMap(importAnnotation -> Arrays.stream(importAnnotation.value())).collect(Collectors.toSet());//
+        //这里不能将两个Stream操作合并在一起，否则在遍历的过程中又添加新的元素到底层的map,会导致异常。
+        importClasses.stream()//
+                     .peek(ckass -> LOGGER.debug("traceId:{} 发现被导入的类:{}，准备进行导入", TRACEID.currentTraceId(), ckass))//
+                     .forEach(ckass -> register(ckass));//
     }
 
     @Override
@@ -188,12 +178,13 @@ public class DefaultApplicationContext implements ApplicationContext
         }
         if (beanRegisterInfoMap.containsKey(beanName))
         {
+            LOGGER.debug("traceId:{} beanName:{}已经存在，本次忽略", TRACEID.currentTraceId(), beanName);
             return RegisterResult.NODATA;
         }
         if (ANNOTATION_CONTEXT_FACTORY.get(ckass).isAnnotationPresent(SelectBeanFactory.class))
         {
-            SelectBeanFactory  selectBeanFactory         = ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotation(SelectBeanFactory.class);
-            return registerBeanRegisterInfo(new DefaultBeanRegisterInfo(prototype, ckass, beanName, this, new SelectedBeanFactory(this,selectBeanFactory.value().equals("")?null:selectBeanFactory.value() , selectBeanFactory.beanFactoryType())));
+            SelectBeanFactory selectBeanFactory = ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotation(SelectBeanFactory.class);
+            return registerBeanRegisterInfo(new DefaultBeanRegisterInfo(prototype, ckass, beanName, this, new SelectedBeanFactory(this, selectBeanFactory.value().equals("") ? null : selectBeanFactory.value(), selectBeanFactory.beanFactoryType())));
         }
         else
         {
@@ -207,6 +198,7 @@ public class DefaultApplicationContext implements ApplicationContext
         String beanName = beanRegisterInfo.getBeanName();
         if (beanRegisterInfoMap.containsKey(beanName))
         {
+            LOGGER.debug("traceId:{} beanName:{}已经存在，本次忽略", TRACEID.currentTraceId(), beanRegisterInfo.getBeanName());
             return RegisterResult.NODATA;
         }
         beanRegisterInfoMap.put(beanRegisterInfo.getBeanName(), beanRegisterInfo);

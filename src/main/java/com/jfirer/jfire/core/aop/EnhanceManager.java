@@ -1,14 +1,11 @@
 package com.jfirer.jfire.core.aop;
 
 import com.jfirer.baseutil.smc.model.ClassModel;
+import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -31,19 +28,12 @@ public interface EnhanceManager
     /**
      * 扫描环境中所有的BeanDefinition，如果发现其符合增强条件，则将自身放入其AopManager集合中。 该方法仅会在环境初始化时调用一次
      */
-    void scan(ApplicationContext context);
-
-    default void interlScan(ApplicationContext context, Predicate<Method> predicate, Consumer<BeanRegisterInfo> consumer)
+    default void scan(ApplicationContext context)
     {
-        context.getAllBeanRegisterInfos().stream()//
-               .forEach(beanRegisterInfo -> {
-                   Optional<Method> any = Arrays.stream(beanRegisterInfo.getType().getMethods()).filter(predicate).findAny();
-                   if (any.isPresent())
-                   {
-                       consumer.accept(beanRegisterInfo);
-                   }
-               });
+        context.getAllBeanRegisterInfos().stream().filter(needEnhance(context)).forEach(beanRegisterInfo -> beanRegisterInfo.addEnhanceManager(EnhanceManager.this));
     }
+
+    Predicate<BeanRegisterInfo> needEnhance(ApplicationContext context);
 
     /**
      * 执行增强操作
@@ -54,6 +44,18 @@ public interface EnhanceManager
      * @param hostFieldName 被增强类实例
      */
     void enhance(ClassModel classModel, Class<?> type, ApplicationContext context, String hostFieldName);
+
+    default void addBodyToSetEnhanceFields(String newBodyPart, ClassModel classModel)
+    {
+        MethodModel.MethodModelKey key1 = new MethodModel.MethodModelKey();
+        key1.setAccessLevel(MethodModel.AccessLevel.PUBLIC);
+        key1.setMethodName("setEnhanceFields");
+        key1.setParamterTypes(new Class[]{ApplicationContext.class});
+        MethodModel setEnhanceFieldsMethod = classModel.getMethodModel(key1);
+        String      origin                 = setEnhanceFieldsMethod.getBody();
+        origin += newBodyPart + "\r\n";
+        setEnhanceFieldsMethod.setBody(origin);
+    }
 
     /**
      * 该AOP生效顺序。数字越小生效越快

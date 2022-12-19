@@ -4,16 +4,16 @@ import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Bean;
-import com.jfirer.jfire.core.prepare.annotation.configuration.ConfigAfter;
-import com.jfirer.jfire.core.prepare.annotation.configuration.ConfigBefore;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.Resource;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Configuration
 @ComponentScan("com.jfirer.jfire.test.function:in~com.jfirer.jfire.test.function.ConfigurationOrderTest*")
+@Resource
 public class ConfigurationOrderTest
 {
     public static AtomicInteger count = new AtomicInteger();
@@ -45,6 +45,7 @@ public class ConfigurationOrderTest
         }
     }
 
+    @Resource
     @Configuration
     public static class Order_1
     {
@@ -63,6 +64,7 @@ public class ConfigurationOrderTest
         }
     }
 
+    @Resource
     @Configuration
     public static class Order_3
     {
@@ -81,9 +83,8 @@ public class ConfigurationOrderTest
         }
     }
 
+    @Resource
     @Configuration
-    @ConfigBefore(Order_3.class)
-    @ConfigAfter(Order_1.class)
     public static class Order_2
     {
         @Bean
@@ -101,9 +102,8 @@ public class ConfigurationOrderTest
         }
     }
 
+    @Resource
     @Configuration
-    @ConfigAfter(Order_3.class)
-    @ConfigBefore(Order_5.class)
     public static class Order_4
     {
         @Bean
@@ -121,6 +121,7 @@ public class ConfigurationOrderTest
         }
     }
 
+    @Resource
     @Configuration
     public static class Order_5
     {

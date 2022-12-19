@@ -14,7 +14,7 @@ public class AddPropertyProcessor implements ContextPrepare
 {
 
     @Override
-    public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
+    public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
         context.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class)).flatMap(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotations(AddProperty.class).stream()).flatMap(addProperty -> Arrays.stream(addProperty.value())).forEach(pair -> {
@@ -26,7 +26,7 @@ public class AddPropertyProcessor implements ContextPrepare
                 context.getEnv().putProperty(property, value);
             }
         });
-        return ApplicationContext.NeedRefresh.NO;
+        return ApplicationContext.FoundNewContextPrepare.NO;
 //        for (Class<?> each : context.getConfigurationClassSet())
 //        {
 //            AnnotationContext annotationContext = annotationContextFactory.get(each);

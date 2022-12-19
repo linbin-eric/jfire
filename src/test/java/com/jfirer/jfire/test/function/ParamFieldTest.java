@@ -81,7 +81,7 @@ public class ParamFieldTest
     {
 
         @Override
-        public ApplicationContext.NeedRefresh prepare(ApplicationContext context)
+        public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
         {
             Environment environment = context.getEnv();
             environment.putProperty("f1", "1,2");
@@ -98,7 +98,7 @@ public class ParamFieldTest
             environment.putProperty("f12", "xx,rr");
             environment.putProperty("f13", ParamFieldTest.class.getName());
             environment.putProperty("f14", "test1");
-            return ApplicationContext.NeedRefresh.NO;
+            return ApplicationContext.FoundNewContextPrepare.NO;
         }
 
         @Override
