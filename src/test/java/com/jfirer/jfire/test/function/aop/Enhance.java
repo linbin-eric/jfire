@@ -3,15 +3,18 @@ package com.jfirer.jfire.test.function.aop;
 import com.jfirer.baseutil.Verify;
 import com.jfirer.jfire.core.aop.ProceedPoint;
 import com.jfirer.jfire.core.aop.notated.*;
+import com.jfirer.jfire.core.aop.notated.support.MatchTargetMethod;
 import org.junit.Assert;
+
+import java.lang.reflect.Method;
 
 @EnhanceClass("com.jfirer.jfire.*.aop.Person")
 public class Enhance
 {
-
-    private int    order;
-    private String param;
-    private Object result;
+    private int     order;
+    private String  param;
+    private Object  result;
+    private boolean findTestForCustom = false;
 
     public int getOrder()
     {
@@ -91,6 +94,21 @@ public class Enhance
         System.out.println("before getHome");
     }
 
+    public static class findTestForCustom implements MatchTargetMethod
+    {
+        @Override
+        public boolean match(Method method)
+        {
+            return method.getName().equals("testForCustom");
+        }
+    }
+
+    @Before(custom = findTestForCustom.class)
+    public void findTestForCustom()
+    {
+        findTestForCustom = true;
+    }
+
     @EnhanceClass(value = "com.jfirer.jfire.*.aop.Person", order = 2)
     public static class EnhanceForOrder
     {
@@ -101,5 +119,10 @@ public class Enhance
         {
             result += "EnhanceForOrder_";
         }
+    }
+
+    public boolean isFindTestForCustom()
+    {
+        return findTestForCustom;
     }
 }

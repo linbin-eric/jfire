@@ -2,7 +2,7 @@ package com.jfirer.jfire.test.function.validate;
 
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
-import com.jfirer.jfire.core.aop.support.validate.JfireMethodValidatorImpl;
+import com.jfirer.jfire.core.aop.impl.support.validate.JfireMethodValidatorImpl;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -14,11 +14,14 @@ import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.ProceedPoint;
 import com.jfirer.jfire.core.aop.notated.*;
+import com.jfirer.jfire.core.aop.notated.support.MatchTargetMethod;
+import com.jfirer.jfire.core.aop.notated.support.impl.NameMatch;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -42,37 +45,37 @@ public class AopEnhanceManager implements EnhanceManager
     }
 
     @Override
-    public void enhance(ClassModel classModel, final Class<?> type, ApplicationContext applicationContext, String hostFieldName)
+    public void enhance(ClassModel classModel, final Class<?> originType, ApplicationContext applicationContext, String hostFieldName)
     {
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
         MethodModel              setEnhanceFieldsMethod   = getSetEnhanceFieldsMethod(classModel);
-        List<BeanRegisterInfo>   list                     = findAspectClass(type, applicationContext);
+        List<BeanRegisterInfo>   list                     = findAspectClass(originType, applicationContext);
         for (BeanRegisterInfo each : list)
         {
             String fieldName = "enhance_" + FIELD_NAME_COUNTER.getAndIncrement();
             addFiledAndBuildSet(classModel, setEnhanceFieldsMethod, each, fieldName);
             for (Method enhanceMethod : each.getType().getMethods())
             {
-                AnnotationContext annotationContext = annotationContextFactory.get(enhanceMethod);
-                if (annotationContext.isAnnotationPresent(Before.class))
+                AnnotationContext annotationContextOnEnhanceMethod = annotationContextFactory.get(enhanceMethod);
+                if (annotationContextOnEnhanceMethod.isAnnotationPresent(Before.class))
                 {
-                    processBeforeAdvice(classModel, type, annotationContext, hostFieldName, fieldName, enhanceMethod);
+                    processBeforeAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
                 }
-                else if (annotationContext.isAnnotationPresent(After.class))
+                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(After.class))
                 {
-                    processAfterAdvice(classModel, type, annotationContext, hostFieldName, fieldName, enhanceMethod);
+                    processAfterAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
                 }
-                else if (annotationContext.isAnnotationPresent(AfterReturning.class))
+                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterReturning.class))
                 {
-                    processAfterReturningAdvice(classModel, type, annotationContext, hostFieldName, fieldName, enhanceMethod);
+                    processAfterReturningAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
                 }
-                else if (annotationContext.isAnnotationPresent(AfterThrowable.class))
+                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterThrowable.class))
                 {
-                    processAfterThrowableAdvice(classModel, type, annotationContext, hostFieldName, fieldName, enhanceMethod);
+                    processAfterThrowableAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
                 }
-                else if (annotationContext.isAnnotationPresent(Around.class))
+                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(Around.class))
                 {
-                    processAroundAdvice(classModel, type, annotationContext, hostFieldName, fieldName, enhanceMethod);
+                    processAroundAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
                 }
             }
         }
@@ -97,26 +100,60 @@ public class AopEnhanceManager implements EnhanceManager
         return setEnhanceFieldsMethod;
     }
 
-    private void processBeforeAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
+    private void processBeforeAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, Before.class);
-        for (Method method : type.getMethods())
+        String            traceId           = TRACEID.currentTraceId();
+        Before            before            = annotationContextOnEnhanceMethod.getAnnotation(Before.class);
+        MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, before.value(), before.custom());
+        for (Method method : originType.getMethods())
         {
-            if (matchMethod(rule, method))
+            if (matchTargetMethod.match(method))
             {
-                logger.debug("traceId:{} 前置通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                logger.debug("traceId:{} 前置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                 MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                 MethodModel                methodModel = classModel.getMethodModel(key);
                 String                     originBody  = methodModel.getBody();
                 String                     pointName   = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
                 StringBuilder              cache       = new StringBuilder();
-                generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
-                generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
+                if (enhanceMethod.getParameterTypes().length == 0)
+                {
+                    cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("();\r\n");
+                }
+                else
+                {
+                    generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
+                    generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
+                }
                 cache.append(originBody);
                 methodModel.setBody(cache.toString());
             }
         }
+    }
+
+    private static MatchTargetMethod getMatchTargetMethod(Method enhanceMethod, String value, Class<? extends MatchTargetMethod> ckass)
+    {
+        if (value.equals("") && ckass.equals(MatchTargetMethod.class))
+        {
+            throw new IllegalArgumentException("在方法：" + enhanceMethod + "上的增强注解，value属性和custom属性必须有一个有值");
+        }
+        MatchTargetMethod matchTargetMethod;
+        if (value.isBlank())
+        {
+            try
+            {
+                matchTargetMethod = ckass.getDeclaredConstructor().newInstance();
+            }
+            catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                   NoSuchMethodException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+        else
+        {
+            matchTargetMethod = new NameMatch(value);
+        }
+        return matchTargetMethod;
     }
 
     private String getRule(AnnotationContext annotationContext, Method enhanceMethod, Class<? extends Annotation> type)
@@ -171,23 +208,31 @@ public class AopEnhanceManager implements EnhanceManager
         }
     }
 
-    private void processAfterAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
+    private void processAfterAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, After.class);
-        for (Method method : type.getMethods())
+        String            traceId           = TRACEID.currentTraceId();
+        After             after             = annotationContextOnEnhanceMethod.getAnnotation(After.class);
+        MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, after.value(), after.custom());
+        for (Method method : originType.getMethods())
         {
-            if (matchMethod(rule, method))
+            if (matchTargetMethod.match(method))
             {
-                logger.debug("traceId:{} 后置通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                logger.debug("traceId:{} 后置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                 MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                 MethodModel                methodModel = classModel.getMethodModel(key);
                 String                     originBody  = methodModel.getBody();
                 String                     pointName   = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
                 StringBuilder              cache       = new StringBuilder();
                 cache.append("try{\r\n").append(originBody).append("}\r\n").append("finally\r\n{\r\n");
-                generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
-                generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
+                if (enhanceMethod.getParameterTypes().length == 0)
+                {
+                    cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("();\r\n");
+                }
+                else
+                {
+                    generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
+                    generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
+                }
                 cache.append("}");
                 methodModel.setBody(cache.toString());
             }
@@ -199,15 +244,16 @@ public class AopEnhanceManager implements EnhanceManager
         cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("(").append(pointName).append(");\r\n");
     }
 
-    private void processAfterReturningAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
+    private void processAfterReturningAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, AfterReturning.class);
-        for (Method method : type.getMethods())
+        String            traceId           = TRACEID.currentTraceId();
+        AfterReturning    afterReturning    = annotationContextOnEnhanceMethod.getAnnotation(AfterReturning.class);
+        MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterReturning.value(), afterReturning.custom());
+        for (Method method : originType.getMethods())
         {
-            if (method.getReturnType() != void.class && matchMethod(rule, method))
+            if (method.getReturnType() != void.class && matchTargetMethod.match(method))
             {
-                logger.debug("traceId:{} 返回通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                logger.debug("traceId:{} 返回通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                 MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
                 MethodModel                origin = classModel.removeMethodModel(key);
                 MethodModel                newOne = new MethodModel(method, classModel);
@@ -232,16 +278,17 @@ public class AopEnhanceManager implements EnhanceManager
         return "point_" + FIELD_NAME_COUNTER.getAndIncrement();
     }
 
-    private void processAfterThrowableAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
+    private void processAfterThrowableAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, AfterThrowable.class);
+        String            traceId           = TRACEID.currentTraceId();
+        AfterThrowable    afterThrowable    = annotationContextOnEnhanceMethod.getAnnotation(AfterThrowable.class);
+        MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterThrowable.value(), afterThrowable.custom());
         classModel.addImport(ReflectUtil.class);
-        for (Method method : type.getMethods())
+        for (Method method : originType.getMethods())
         {
-            if (matchMethod(rule, method))
+            if (matchTargetMethod.match(method))
             {
-                logger.debug("traceId:{} 规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                logger.debug("traceId:{} 规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                 MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                 MethodModel                methodModel = classModel.getMethodModel(key);
                 String                     body        = methodModel.getBody();
@@ -274,15 +321,16 @@ public class AopEnhanceManager implements EnhanceManager
         }
     }
 
-    private void processAroundAdvice(ClassModel classModel, Class<?> type, AnnotationContext annotationContext, String hostFieldName, String fieldName, Method enhanceMethod)
+    private void processAroundAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String traceId = TRACEID.currentTraceId();
-        String rule    = getRule(annotationContext, enhanceMethod, Around.class);
-        for (Method method : type.getMethods())
+        String            traceId           = TRACEID.currentTraceId();
+        Around            around            = annotationContextOnEnhanceMethod.getAnnotation(Around.class);
+        MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, around.value(), around.custom());
+        for (Method method : originType.getMethods())
         {
-            if (matchMethod(rule, method))
+            if (matchTargetMethod.match(method))
             {
-                logger.debug("traceId:{} 环绕通知规则匹配成功，规则:{},方法:{},通知方法:{}", traceId, rule, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                logger.debug("traceId:{} 环绕通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                 MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                 MethodModel                methodModel = classModel.getMethodModel(key);
                 boolean[]                  flags       = new boolean[methodModel.getParamterTypes().length];
@@ -363,45 +411,6 @@ public class AopEnhanceManager implements EnhanceManager
             return StringUtil.match(type.getName(), rule);
         }).sorted(Comparator.comparingInt(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotation(EnhanceClass.class).order())).collect(Collectors.toList());
         return enhanceBeanRegisterList;
-    }
-
-    private boolean matchMethod(String rule, Method method)
-    {
-        String traceId = TRACEID.currentTraceId();
-        logger.trace("traceId:{} 准备匹配AOP方法拦截，规则:{},方法:{}", traceId, rule, method.toGenericString());
-        String methodNameRule = rule.substring(0, rule.indexOf('('));
-        if (!StringUtil.match(method.getName(), methodNameRule))
-        {
-            return false;
-        }
-        String paramRule = rule.substring(rule.indexOf('(') + 1, rule.length() - 1);
-        if ("*".equals(paramRule))
-        {
-            return true;
-        }
-        if ("".equals(paramRule))
-        {
-            return method.getParameterTypes().length == 0;
-        }
-        String[]   split          = paramRule.split(",");
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        if (split.length != parameterTypes.length)
-        {
-            return false;
-        }
-        for (int i = 0; i < split.length; i++)
-        {
-            String literals = split[i].trim();
-            if ("*".equals(literals))
-            {
-                continue;
-            }
-            if (!literals.equals(parameterTypes[i].getSimpleName()) && !literals.equals(parameterTypes[i].getName()))
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     @Override

@@ -30,32 +30,29 @@ public class ComponentScanProcessor implements ContextPrepare
     {
         AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
         ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
-        Collection<String>       classNames;
-        classNames = context.getAllBeanRegisterInfos().stream()//
+        long count = context.getAllBeanRegisterInfos().stream()//
                             .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(ComponentScan.class))//
                             .map(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotation(ComponentScan.class))//
                             .flatMap(componentScan -> Arrays.stream(componentScan.value()))//
                             .flatMap(scanPath -> Arrays.stream(PackageScan.scan(scanPath)))//
-                            .collect(Collectors.toSet());
-        //不能进行合并，否则在遍历的过程中注册新的Bean，会导致并发异常
-        long count = classNames.stream()//
-                               .map(className -> className.replace('.', '/'))//
-                               .filter(resourceName -> new ClassFileParser(BytecodeUtil.loadBytecode(classLoader, resourceName)).parse().isAnnotation() == false)//
-                               .filter(resourceName -> annotationContextFactory.get(resourceName).isAnnotationPresent(Resource.class))//
-                               .map(resourceName -> resourceName.replace('/', '.'))//
-                               .map(className -> {
-                                   try
-                                   {
-                                       Class<?> ckass = classLoader.loadClass(className);
-                                       LOGGER.debug("traceId:{} 扫描发现类:{}", TRACEID.currentTraceId(), className);
-                                       return context.register(ckass);
-                                   }
-                                   catch (ClassNotFoundException e)
-                                   {
-                                       throw new RuntimeException(e);
-                                   }
-                               })//
-                               .filter(registerResult -> registerResult == ApplicationContext.RegisterResult.PREPARE).count();
+                            .map(className -> className.replace('.', '/'))//
+                            .filter(resourceName -> new ClassFileParser(BytecodeUtil.loadBytecode(classLoader, resourceName)).parse().isAnnotation() == false)//
+                            .filter(resourceName -> annotationContextFactory.get(resourceName).isAnnotationPresent(Resource.class))//
+                            .map(resourceName -> resourceName.replace('/', '.'))//
+                            .collect(Collectors.toSet()).stream()//下面的代码会修改这个beanRegisternfos这个集合，因此如果直接跟上stream操作会导致并发异常。所以这里需要先将原来的内容收集为一个新的集合再重新创建流
+                            .map(className -> {
+                                try
+                                {
+                                    Class<?> ckass = classLoader.loadClass(className);
+                                    LOGGER.debug("traceId:{} 扫描发现类:{}", TRACEID.currentTraceId(), className);
+                                    return context.register(ckass);
+                                }
+                                catch (ClassNotFoundException e)
+                                {
+                                    throw new RuntimeException(e);
+                                }
+                            })//
+                            .filter(registerResult -> registerResult == ApplicationContext.RegisterResult.PREPARE).count();
         return count > 0 ? ApplicationContext.FoundNewContextPrepare.YES : ApplicationContext.FoundNewContextPrepare.NO;
     }
 

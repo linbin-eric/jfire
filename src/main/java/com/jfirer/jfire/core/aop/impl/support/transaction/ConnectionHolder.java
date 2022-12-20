@@ -1,4 +1,4 @@
-package com.jfirer.jfire.core.aop.impl.transaction;
+package com.jfirer.jfire.core.aop.impl.support.transaction;
 
 public interface ConnectionHolder
 {

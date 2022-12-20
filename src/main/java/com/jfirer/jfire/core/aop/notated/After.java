@@ -1,5 +1,7 @@
 package com.jfirer.jfire.core.aop.notated;
 
+import com.jfirer.jfire.core.aop.notated.support.MatchTargetMethod;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -11,4 +13,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface After
 {
     String value();
+
+    Class<? extends MatchTargetMethod> custom() default MatchTargetMethod.class;
 }

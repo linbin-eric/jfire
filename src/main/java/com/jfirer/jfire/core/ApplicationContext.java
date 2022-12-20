@@ -53,4 +53,14 @@ public interface ApplicationContext
         BEAN,
         NODATA
     }
+
+    static ApplicationContext boot(Class<?> bootClass)
+    {
+        return new DefaultApplicationContext(bootClass);
+    }
+
+    static ApplicationContext boot()
+    {
+        return new DefaultApplicationContext();
+    }
 }

@@ -1,6 +1,6 @@
 package com.jfirer.jfire.test.function.aop;
 
-import com.jfirer.jfire.core.aop.impl.transaction.Propagation;
+import com.jfirer.jfire.core.aop.impl.support.transaction.Propagation;
 import com.jfirer.jfire.core.aop.notated.Transactional;
 
 import javax.annotation.Resource;
@@ -100,5 +100,10 @@ public class Person
     public int invokeCount()
     {
         return invokeCount;
+    }
+
+
+    public void testForCustom(){
+
     }
 }

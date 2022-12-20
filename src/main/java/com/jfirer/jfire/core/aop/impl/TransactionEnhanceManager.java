@@ -10,9 +10,9 @@ import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceManager;
-import com.jfirer.jfire.core.aop.impl.transaction.Propagation;
-import com.jfirer.jfire.core.aop.impl.transaction.TransactionManager;
-import com.jfirer.jfire.core.aop.impl.transaction.TransactionState;
+import com.jfirer.jfire.core.aop.impl.support.transaction.Propagation;
+import com.jfirer.jfire.core.aop.impl.support.transaction.TransactionManager;
+import com.jfirer.jfire.core.aop.impl.support.transaction.TransactionState;
 import com.jfirer.jfire.core.aop.notated.Transactional;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 

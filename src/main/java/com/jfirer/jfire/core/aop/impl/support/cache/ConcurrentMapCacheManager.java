@@ -1,4 +1,4 @@
-package com.jfirer.jfire.core.aop.support.cache;
+package com.jfirer.jfire.core.aop.impl.support.cache;
 
 import javax.annotation.PostConstruct;
 

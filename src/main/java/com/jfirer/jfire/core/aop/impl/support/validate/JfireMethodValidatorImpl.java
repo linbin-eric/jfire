@@ -1,4 +1,4 @@
-package com.jfirer.jfire.core.aop.support.validate;
+package com.jfirer.jfire.core.aop.impl.support.validate;
 
 import com.jfirer.jfire.core.aop.impl.ValidateEnhanceManager;
 

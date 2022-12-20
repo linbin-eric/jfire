@@ -1,6 +1,4 @@
-package com.jfirer.jfire.core.aop.impl.transaction;
-
-import static com.jfirer.jfire.core.aop.impl.transaction.Propagation.*;
+package com.jfirer.jfire.core.aop.impl.support.transaction;
 
 public abstract class JdbcTransactionManager implements TransactionManager
 {
@@ -19,20 +17,20 @@ public abstract class JdbcTransactionManager implements TransactionManager
                 {
                     ConnectionHolder connectionHolder = openConnection();
                     connectionHolder.beginTransaction();
-                    JdbcTransactionState newState = new JdbcTransactionState(REQUIRED, true, true, true, prevState, connectionHolder);
+                    JdbcTransactionState newState = new JdbcTransactionState(Propagation.REQUIRED, true, true, true, prevState, connectionHolder);
                     CONTEXT.set(newState);
                     return newState;
                 }
                 else if (prevState.isInDatabaseTransaction())
                 {
-                    JdbcTransactionState currentState = new JdbcTransactionState(REQUIRED, false, false, true, prevState, prevState.getConnectionHolder());
+                    JdbcTransactionState currentState = new JdbcTransactionState(Propagation.REQUIRED, false, false, true, prevState, prevState.getConnectionHolder());
                     CONTEXT.set(currentState);
                     return currentState;
                 }
                 else
                 {
                     prevState.getConnectionHolder().beginTransaction();
-                    JdbcTransactionState currentState = new JdbcTransactionState(REQUIRED, false, true, true, prevState, prevState.getConnectionHolder());
+                    JdbcTransactionState currentState = new JdbcTransactionState(Propagation.REQUIRED, false, true, true, prevState, prevState.getConnectionHolder());
                     CONTEXT.set(currentState);
                     return currentState;
                 }
@@ -43,13 +41,13 @@ public abstract class JdbcTransactionManager implements TransactionManager
                 if (prevState == null)
                 {
                     ConnectionHolder     connectionHolder = openConnection();
-                    JdbcTransactionState newState         = new JdbcTransactionState(SUPPORTS, true, false, false, prevState, connectionHolder);
+                    JdbcTransactionState newState         = new JdbcTransactionState(Propagation.SUPPORTS, true, false, false, prevState, connectionHolder);
                     CONTEXT.set(newState);
                     return newState;
                 }
                 else
                 {
-                    JdbcTransactionState newState = new JdbcTransactionState(SUPPORTS, false, false, prevState.isInDatabaseTransaction(), prevState, prevState.getConnectionHolder());
+                    JdbcTransactionState newState = new JdbcTransactionState(Propagation.SUPPORTS, false, false, prevState.isInDatabaseTransaction(), prevState, prevState.getConnectionHolder());
                     CONTEXT.set(newState);
                     return newState;
                 }
@@ -63,7 +61,7 @@ public abstract class JdbcTransactionManager implements TransactionManager
                 }
                 else
                 {
-                    JdbcTransactionState newState = new JdbcTransactionState(MANDATORY, false, false, prevState.isInDatabaseTransaction(), prevState, prevState.getConnectionHolder());
+                    JdbcTransactionState newState = new JdbcTransactionState(Propagation.MANDATORY, false, false, prevState.isInDatabaseTransaction(), prevState, prevState.getConnectionHolder());
                     CONTEXT.set(newState);
                     return newState;
                 }
@@ -72,7 +70,7 @@ public abstract class JdbcTransactionManager implements TransactionManager
                 JdbcTransactionState prevState = CONTEXT.get();
                 ConnectionHolder newConnection = openConnection();
                 newConnection.beginTransaction();
-                JdbcTransactionState newState = new JdbcTransactionState(REQUIRES_NEW, true, true, true, prevState, newConnection);
+                JdbcTransactionState newState = new JdbcTransactionState(Propagation.REQUIRES_NEW, true, true, true, prevState, newConnection);
                 CONTEXT.set(newState);
                 return newState;
             default:

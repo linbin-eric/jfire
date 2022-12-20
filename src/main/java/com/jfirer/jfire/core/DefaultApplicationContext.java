@@ -70,11 +70,6 @@ public class DefaultApplicationContext implements ApplicationContext
         }
     }
 
-    private void registerApplicationContext()
-    {
-        registerBeanRegisterInfo(new OutterBeanRegisterInfo(this, "applicationContext"));
-    }
-
     /**
      * 刷新上下文，动作包含：<br/>
      * 1. 清空容器内的所有Bean实例。<br/>
@@ -104,7 +99,7 @@ public class DefaultApplicationContext implements ApplicationContext
 
     private void registerInternalClass()
     {
-        registerApplicationContext();
+        registerBeanRegisterInfo(new OutterBeanRegisterInfo(this, "applicationContext"));
         register(AopEnhanceManager.class);
         register(TransactionEnhanceManager.class);
         register(CacheEnhanceManager.class);
@@ -117,6 +112,7 @@ public class DefaultApplicationContext implements ApplicationContext
         long count = beanRegisterInfoMap.values().stream()//
                                         .filter(beanRegisterInfo -> ContextPrepare.class.isAssignableFrom(beanRegisterInfo.getType()))//
                                         .map(beanRegisterInfo -> ((ContextPrepare) beanRegisterInfo.get().getBean()))//
+                                        .collect(Collectors.toList()).stream()//
                                         .sorted(Comparator.comparingInt(ContextPrepare::order))//
                                         .map(contextPrepare -> contextPrepare.prepare(DefaultApplicationContext.this))//
                                         .filter(foundNewContextPrepare -> foundNewContextPrepare == FoundNewContextPrepare.YES)//

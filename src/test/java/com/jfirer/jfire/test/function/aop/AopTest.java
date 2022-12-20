@@ -8,8 +8,7 @@ import com.jfirer.jfire.test.function.aop.Enhance.EnhanceForOrder;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class AopTest
 {
@@ -115,10 +114,17 @@ public class AopTest
         assertNotNull(person.getHome());
     }
 
+    @Test
+    public void testForCustom()
+    {
+        ApplicationContext context = new DefaultApplicationContext(AopTtestScan.class);
+        Person             person  = context.getBean(Person.class);
+        person.testForCustom();
+        assertTrue(context.getBean(Enhance.class).isFindTestForCustom());
+    }
+
     @Configuration
     @ComponentScan("com.jfirer.jfire.test.function.aop")
     public static class AopTtestScan
-    {
-
-    }
+    {}
 }
