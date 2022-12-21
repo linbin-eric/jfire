@@ -15,7 +15,7 @@ import java.lang.annotation.*;
 @Resource
 public @interface EnhanceClass
 {
-    String value();
+    String value() default "";
 
     Class<? extends MatchTargetMethod> custom() default MatchTargetMethod.class;
 

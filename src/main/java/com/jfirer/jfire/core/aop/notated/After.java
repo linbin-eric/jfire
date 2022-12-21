@@ -12,7 +12,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target(METHOD)
 public @interface After
 {
-    String value();
+    String value() default "";
 
     Class<? extends MatchTargetMethod> custom() default MatchTargetMethod.class;
 }
