@@ -37,11 +37,72 @@ public class AopEnhanceManager implements EnhanceManager
     @Override
     public Predicate<BeanRegisterInfo> needEnhance(ApplicationContext context)
     {
+        record Data(BeanRegisterInfo beanRegisterInfo, EnhanceClass enhanceClass) {}
         return beanRegisterInfo -> context.getAllBeanRegisterInfos().stream()//
                                           .filter(other -> annotationContextFactory.get(other.getType()).isAnnotationPresent(EnhanceClass.class))//
-                                          .map(other -> annotationContextFactory.get(other.getType()).getAnnotation(EnhanceClass.class).value())//
-                                          .filter(rule -> StringUtil.match(beanRegisterInfo.getType().getName(), rule))//
-                                          .findAny().isPresent();
+                                          .map(other -> new Data(other, annotationContextFactory.get(other.getType()).getAnnotation(EnhanceClass.class)))//
+                                          .filter(data -> StringUtil.match(beanRegisterInfo.getType().getName(), data.enhanceClass.value()))//
+                                          .anyMatch(data -> Arrays.stream(data.beanRegisterInfo.getType().getDeclaredMethods())//
+                                                                  .filter(method -> {
+                                                                      AnnotationContext annotationContext = annotationContextFactory.get(method);
+                                                                      if (annotationContext.isAnnotationPresent(Before.class))
+                                                                      {
+                                                                          return true;
+                                                                      }
+                                                                      else if (annotationContext.isAnnotationPresent(After.class))
+                                                                      {
+                                                                          return true;
+                                                                      }
+                                                                      else if (annotationContext.isAnnotationPresent(AfterReturning.class))
+                                                                      {
+                                                                          return true;
+                                                                      }
+                                                                      else if (annotationContext.isAnnotationPresent(AfterThrowable.class))
+                                                                      {
+                                                                          return true;
+                                                                      }
+                                                                      else if (annotationContext.isAnnotationPresent(Around.class))
+                                                                      {
+                                                                          return true;
+                                                                      }
+                                                                      else
+                                                                      {
+                                                                          return false;
+                                                                      }
+                                                                  })//
+                                                                  .map(method -> {
+                                                                      AnnotationContext annotationContext = annotationContextFactory.get(method);
+                                                                      if (annotationContext.isAnnotationPresent(Before.class))
+                                                                      {
+                                                                          Before before = annotationContext.getAnnotation(Before.class);
+                                                                          return getMatchTargetMethod(method, before.value(), before.custom());
+                                                                      }
+                                                                      else if (annotationContext.isAnnotationPresent(After.class))
+                                                                      {
+                                                                          After after = annotationContext.getAnnotation(After.class);
+                                                                          return getMatchTargetMethod(method, after.value(), after.custom());
+                                                                      }
+                                                                      else if (annotationContext.isAnnotationPresent(AfterReturning.class))
+                                                                      {
+                                                                          AfterReturning afterReturning = annotationContext.getAnnotation(AfterReturning.class);
+                                                                          return getMatchTargetMethod(method, afterReturning.value(), afterReturning.custom());
+                                                                      }
+                                                                      else if (annotationContext.isAnnotationPresent(AfterThrowable.class))
+                                                                      {
+                                                                          AfterThrowable afterThrowable = annotationContext.getAnnotation(AfterThrowable.class);
+                                                                          return getMatchTargetMethod(method, afterThrowable.value(), afterThrowable.custom());
+                                                                      }
+                                                                      else if (annotationContext.isAnnotationPresent(Around.class))
+                                                                      {
+                                                                          Around around = annotationContext.getAnnotation(Around.class);
+                                                                          return getMatchTargetMethod(method, around.value(), around.custom());
+                                                                      }
+                                                                      else
+                                                                      {
+                                                                          throw new IllegalArgumentException();
+                                                                      }
+                                                                  })//
+                                                                  .anyMatch(matchTargetMethod -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods()).anyMatch(matchTargetMethod::match)));
     }
 
     @Override
@@ -52,31 +113,50 @@ public class AopEnhanceManager implements EnhanceManager
         List<BeanRegisterInfo>   list                     = findAspectClass(originType, applicationContext);
         for (BeanRegisterInfo each : list)
         {
-            String fieldName = "enhance_" + FIELD_NAME_COUNTER.getAndIncrement();
-            addFiledAndBuildSet(classModel, setEnhanceFieldsMethod, each, fieldName);
+            String  fieldName   = "enhance_" + FIELD_NAME_COUNTER.getAndIncrement();
+            boolean realEnhance = false;
             for (Method enhanceMethod : each.getType().getMethods())
             {
                 AnnotationContext annotationContextOnEnhanceMethod = annotationContextFactory.get(enhanceMethod);
                 if (annotationContextOnEnhanceMethod.isAnnotationPresent(Before.class))
                 {
-                    processBeforeAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
+                    if (processBeforeAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                    {
+                        realEnhance = true;
+                    }
                 }
                 else if (annotationContextOnEnhanceMethod.isAnnotationPresent(After.class))
                 {
-                    processAfterAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
+                    if (processAfterAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                    {
+                        realEnhance = true;
+                    }
                 }
                 else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterReturning.class))
                 {
-                    processAfterReturningAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
+                    if (processAfterReturningAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                    {
+                        realEnhance = true;
+                    }
                 }
                 else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterThrowable.class))
                 {
-                    processAfterThrowableAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
+                    if (processAfterThrowableAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                    {
+                        realEnhance = true;
+                    }
                 }
                 else if (annotationContextOnEnhanceMethod.isAnnotationPresent(Around.class))
                 {
-                    processAroundAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod);
+                    if (processAroundAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                    {
+                        realEnhance = true;
+                    }
                 }
+            }
+            if (realEnhance)
+            {
+                addFiledAndBuildSet(classModel, setEnhanceFieldsMethod, each, fieldName);
             }
         }
     }
@@ -100,34 +180,31 @@ public class AopEnhanceManager implements EnhanceManager
         return setEnhanceFieldsMethod;
     }
 
-    private void processBeforeAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
+    private boolean processBeforeAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String            traceId           = TRACEID.currentTraceId();
         Before            before            = annotationContextOnEnhanceMethod.getAnnotation(Before.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, before.value(), before.custom());
-        for (Method method : originType.getMethods())
-        {
-            if (matchTargetMethod.match(method))
-            {
-                logger.debug("traceId:{} 前置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
-                MethodModel                methodModel = classModel.getMethodModel(key);
-                String                     originBody  = methodModel.getBody();
-                String                     pointName   = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
-                StringBuilder              cache       = new StringBuilder();
-                if (enhanceMethod.getParameterTypes().length == 0)
-                {
-                    cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("();\r\n");
-                }
-                else
-                {
-                    generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
-                    generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
-                }
-                cache.append(originBody);
-                methodModel.setBody(cache.toString());
-            }
-        }
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+                     .peek(method -> {
+                         logger.debug("traceId:{} 前置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
+                         MethodModel                methodModel = classModel.getMethodModel(key);
+                         String                     originBody  = methodModel.getBody();
+                         String                     pointName   = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
+                         StringBuilder              cache       = new StringBuilder();
+                         if (enhanceMethod.getParameterTypes().length == 0)
+                         {
+                             cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("();\r\n");
+                         }
+                         else
+                         {
+                             generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
+                             generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
+                         }
+                         cache.append(originBody);
+                         methodModel.setBody(cache.toString());
+                     }).count() > 0;
     }
 
     private static MatchTargetMethod getMatchTargetMethod(Method enhanceMethod, String value, Class<? extends MatchTargetMethod> ckass)
@@ -208,35 +285,32 @@ public class AopEnhanceManager implements EnhanceManager
         }
     }
 
-    private void processAfterAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
+    private boolean processAfterAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String            traceId           = TRACEID.currentTraceId();
         After             after             = annotationContextOnEnhanceMethod.getAnnotation(After.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, after.value(), after.custom());
-        for (Method method : originType.getMethods())
-        {
-            if (matchTargetMethod.match(method))
-            {
-                logger.debug("traceId:{} 后置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
-                MethodModel                methodModel = classModel.getMethodModel(key);
-                String                     originBody  = methodModel.getBody();
-                String                     pointName   = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
-                StringBuilder              cache       = new StringBuilder();
-                cache.append("try{\r\n").append(originBody).append("}\r\n").append("finally\r\n{\r\n");
-                if (enhanceMethod.getParameterTypes().length == 0)
-                {
-                    cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("();\r\n");
-                }
-                else
-                {
-                    generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
-                    generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
-                }
-                cache.append("}");
-                methodModel.setBody(cache.toString());
-            }
-        }
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+                     .peek(method -> {
+                         logger.debug("traceId:{} 后置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
+                         MethodModel                methodModel = classModel.getMethodModel(key);
+                         String                     originBody  = methodModel.getBody();
+                         String                     pointName   = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
+                         StringBuilder              cache       = new StringBuilder();
+                         cache.append("try{\r\n").append(originBody).append("}\r\n").append("finally\r\n{\r\n");
+                         if (enhanceMethod.getParameterTypes().length == 0)
+                         {
+                             cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("();\r\n");
+                         }
+                         else
+                         {
+                             generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
+                             generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
+                         }
+                         cache.append("}");
+                         methodModel.setBody(cache.toString());
+                     }).count() > 0;
     }
 
     private void generateEnhanceMethodInvoke(String fieldName, Method enhanceMethod, String pointName, StringBuilder cache)
@@ -244,33 +318,30 @@ public class AopEnhanceManager implements EnhanceManager
         cache.append(fieldName).append(".").append(enhanceMethod.getName()).append("(").append(pointName).append(");\r\n");
     }
 
-    private void processAfterReturningAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
+    private boolean processAfterReturningAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String            traceId           = TRACEID.currentTraceId();
         AfterReturning    afterReturning    = annotationContextOnEnhanceMethod.getAnnotation(AfterReturning.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterReturning.value(), afterReturning.custom());
-        for (Method method : originType.getMethods())
-        {
-            if (method.getReturnType() != void.class && matchTargetMethod.match(method))
-            {
-                logger.debug("traceId:{} 返回通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
-                MethodModel                origin = classModel.removeMethodModel(key);
-                MethodModel                newOne = new MethodModel(method, classModel);
-                origin.setAccessLevel(MethodModel.AccessLevel.PRIVATE);
-                origin.setMethodName(origin.getMethodName() + "_" + METHOD_NAME_COUNTER.getAndIncrement());
-                classModel.putMethodModel(origin);
-                StringBuilder cache = new StringBuilder();
-                cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = ").append(origin.generateInvoke()).append(";\r\n");
-                String pointName = generatePointName();
-                generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
-                cache.append(pointName).append(".setResult(result);\r\n");
-                generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
-                cache.append("return result;\r\n");
-                newOne.setBody(cache.toString());
-                classModel.putMethodModel(newOne);
-            }
-        }
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+                     .peek(method -> {
+                         logger.debug("traceId:{} 返回通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
+                         MethodModel                origin = classModel.removeMethodModel(key);
+                         MethodModel                newOne = new MethodModel(method, classModel);
+                         origin.setAccessLevel(MethodModel.AccessLevel.PRIVATE);
+                         origin.setMethodName(origin.getMethodName() + "_" + METHOD_NAME_COUNTER.getAndIncrement());
+                         classModel.putMethodModel(origin);
+                         StringBuilder cache = new StringBuilder();
+                         cache.append(SmcHelper.getReferenceName(method.getReturnType(), classModel)).append(" result = ").append(origin.generateInvoke()).append(";\r\n");
+                         String pointName = generatePointName();
+                         generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
+                         cache.append(pointName).append(".setResult(result);\r\n");
+                         generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
+                         cache.append("return result;\r\n");
+                         newOne.setBody(cache.toString());
+                         classModel.putMethodModel(newOne);
+                     }).count() > 0;
     }
 
     private String generatePointName()
@@ -278,128 +349,122 @@ public class AopEnhanceManager implements EnhanceManager
         return "point_" + FIELD_NAME_COUNTER.getAndIncrement();
     }
 
-    private void processAfterThrowableAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
+    private boolean processAfterThrowableAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String            traceId           = TRACEID.currentTraceId();
         AfterThrowable    afterThrowable    = annotationContextOnEnhanceMethod.getAnnotation(AfterThrowable.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterThrowable.value(), afterThrowable.custom());
         classModel.addImport(ReflectUtil.class);
-        for (Method method : originType.getMethods())
-        {
-            if (matchTargetMethod.match(method))
-            {
-                logger.debug("traceId:{} 规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
-                MethodModel                methodModel = classModel.getMethodModel(key);
-                String                     body        = methodModel.getBody();
-                StringBuilder              cache       = new StringBuilder();
-                cache.append("try\r\n{\r\n").append(body).append("}\r\ncatch(java.lang.Throwable e)\r\n{");
-                String pointName = generatePointName();
-                generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
-                cache.append(pointName).append(".setE(e);\r\n");
-                generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
-                cache.append("ReflectUtil.throwException(e);\r\n");
-                if (method.getReturnType().isPrimitive())
-                {
-                    if (method.getReturnType() == boolean.class)
-                    {
-                        cache.append("return false;\r\n");
-                    }
-                    else if (method.getReturnType() != void.class)
-                    {
-                        cache.append("return 0;\r\n");
-                    }
-                }
-                else
-                {
-                    cache.append("return null;\r\n");
-                }
-                cache.append("}\r\n");
-                methodModel.setBody(cache.toString());
-                classModel.putMethodModel(methodModel);
-            }
-        }
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+                     .peek(method -> {
+                         logger.debug("traceId:{} 规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
+                         MethodModel                methodModel = classModel.getMethodModel(key);
+                         String                     body        = methodModel.getBody();
+                         StringBuilder              cache       = new StringBuilder();
+                         cache.append("try\r\n{\r\n").append(body).append("}\r\ncatch(java.lang.Throwable e)\r\n{");
+                         String pointName = generatePointName();
+                         generateProceedPointImpl(classModel, hostFieldName, method, pointName, cache, false);
+                         cache.append(pointName).append(".setE(e);\r\n");
+                         generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
+                         cache.append("ReflectUtil.throwException(e);\r\n");
+                         if (method.getReturnType().isPrimitive())
+                         {
+                             if (method.getReturnType() == boolean.class)
+                             {
+                                 cache.append("return false;\r\n");
+                             }
+                             else if (method.getReturnType() != void.class)
+                             {
+                                 cache.append("return 0;\r\n");
+                             }
+                         }
+                         else
+                         {
+                             cache.append("return null;\r\n");
+                         }
+                         cache.append("}\r\n");
+                         methodModel.setBody(cache.toString());
+                         classModel.putMethodModel(methodModel);
+                     }).count() > 0;
     }
 
-    private void processAroundAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
+    private boolean processAroundAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
         String            traceId           = TRACEID.currentTraceId();
         Around            around            = annotationContextOnEnhanceMethod.getAnnotation(Around.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, around.value(), around.custom());
-        for (Method method : originType.getMethods())
-        {
-            if (matchTargetMethod.match(method))
-            {
-                logger.debug("traceId:{} 环绕通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
-                MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
-                MethodModel                methodModel = classModel.getMethodModel(key);
-                boolean[]                  flags       = new boolean[methodModel.getParamterTypes().length];
-                Arrays.fill(flags, true);
-                methodModel.setParamterFinals(flags);
-                String        body      = methodModel.getBody();
-                String        pointName = generatePointName();
-                StringBuilder cache     = new StringBuilder();
-                generateProceedPointImplWithInvokeinternal(classModel, hostFieldName, method, pointName, cache, body);
-                Class<?> returnType = method.getReturnType();
-                generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
-                if (returnType == void.class)
-                {
-                }
-                else if (returnType.isPrimitive())
-                {
-                    if (returnType == int.class)
-                    {
-                        classModel.addImport(Integer.class);
-                        cache.append("return (Integer)").append(pointName).append(".getResult();\r\n");
-                    }
-                    else if (returnType == short.class)
-                    {
-                        classModel.addImport(Short.class);
-                        cache.append("return (Short)").append(pointName).append(".getResult();\r\n");
-                    }
-                    else if (returnType == long.class)
-                    {
-                        classModel.addImport(Long.class);
-                        cache.append("return (Long)").append(pointName).append(".getResult();\r\n");
-                    }
-                    else if (returnType == float.class)
-                    {
-                        classModel.addImport(Float.class);
-                        cache.append("return (Float)").append(pointName).append(".getResult();\r\n");
-                    }
-                    else if (returnType == double.class)
-                    {
-                        classModel.addImport(Double.class);
-                        cache.append("return (Double)").append(pointName).append(".getResult();\r\n");
-                    }
-                    else if (returnType == byte.class)
-                    {
-                        classModel.addImport(Byte.class);
-                        cache.append("return (Byte)").append(pointName).append(".getResult();\r\n");
-                    }
-                    else if (returnType == char.class)
-                    {
-                        classModel.addImport(Character.class);
-                        cache.append("return (Character)").append(pointName).append(".getResult();\r\n");
-                    }
-                    else if (returnType == boolean.class)
-                    {
-                        classModel.addImport(Boolean.class);
-                        cache.append("return (Boolean)").append(pointName).append(".getResult();\r\n");
-                    }
-                    else
-                    {
-                        throw new UnsupportedOperationException();
-                    }
-                }
-                else
-                {
-                    cache.append("return (").append(SmcHelper.getReferenceName(returnType, classModel)).append(")").append(pointName).append(".getResult();\r\n");
-                }
-                methodModel.setBody(cache.toString());
-                classModel.putMethodModel(methodModel);
-            }
-        }
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+                     .peek(method -> {
+                         logger.debug("traceId:{} 环绕通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
+                         MethodModel                methodModel = classModel.getMethodModel(key);
+                         boolean[]                  flags       = new boolean[methodModel.getParamterTypes().length];
+                         Arrays.fill(flags, true);
+                         methodModel.setParamterFinals(flags);
+                         String        body      = methodModel.getBody();
+                         String        pointName = generatePointName();
+                         StringBuilder cache     = new StringBuilder();
+                         generateProceedPointImplWithInvokeinternal(classModel, hostFieldName, method, pointName, cache, body);
+                         Class<?> returnType = method.getReturnType();
+                         generateEnhanceMethodInvoke(fieldName, enhanceMethod, pointName, cache);
+                         if (returnType == void.class)
+                         {
+                         }
+                         else if (returnType.isPrimitive())
+                         {
+                             if (returnType == int.class)
+                             {
+                                 classModel.addImport(Integer.class);
+                                 cache.append("return (Integer)").append(pointName).append(".getResult();\r\n");
+                             }
+                             else if (returnType == short.class)
+                             {
+                                 classModel.addImport(Short.class);
+                                 cache.append("return (Short)").append(pointName).append(".getResult();\r\n");
+                             }
+                             else if (returnType == long.class)
+                             {
+                                 classModel.addImport(Long.class);
+                                 cache.append("return (Long)").append(pointName).append(".getResult();\r\n");
+                             }
+                             else if (returnType == float.class)
+                             {
+                                 classModel.addImport(Float.class);
+                                 cache.append("return (Float)").append(pointName).append(".getResult();\r\n");
+                             }
+                             else if (returnType == double.class)
+                             {
+                                 classModel.addImport(Double.class);
+                                 cache.append("return (Double)").append(pointName).append(".getResult();\r\n");
+                             }
+                             else if (returnType == byte.class)
+                             {
+                                 classModel.addImport(Byte.class);
+                                 cache.append("return (Byte)").append(pointName).append(".getResult();\r\n");
+                             }
+                             else if (returnType == char.class)
+                             {
+                                 classModel.addImport(Character.class);
+                                 cache.append("return (Character)").append(pointName).append(".getResult();\r\n");
+                             }
+                             else if (returnType == boolean.class)
+                             {
+                                 classModel.addImport(Boolean.class);
+                                 cache.append("return (Boolean)").append(pointName).append(".getResult();\r\n");
+                             }
+                             else
+                             {
+                                 throw new UnsupportedOperationException();
+                             }
+                         }
+                         else
+                         {
+                             cache.append("return (").append(SmcHelper.getReferenceName(returnType, classModel)).append(")").append(pointName).append(".getResult();\r\n");
+                         }
+                         methodModel.setBody(cache.toString());
+                         classModel.putMethodModel(methodModel);
+                     }).count() > 0;
     }
 
     private List<BeanRegisterInfo> findAspectClass(Class<?> type, ApplicationContext applicationContext)
