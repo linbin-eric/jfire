@@ -43,7 +43,7 @@ public class ComponentScanProcessor implements ContextPrepare
                             .map(className -> {
                                 try
                                 {
-                                    Class<?> ckass = classLoader.loadClass(className);
+                                       Class<?> ckass = classLoader.loadClass(className);
                                     LOGGER.debug("traceId:{} 扫描发现类:{}", TRACEID.currentTraceId(), className);
                                     return context.register(ckass);
                                 }

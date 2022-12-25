@@ -79,7 +79,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
     class InstacenInject implements Inject
     {
-        private final BeanRegisterInfo beanRegisterInfo;
+        private BeanRegisterInfo beanRegisterInfo;
 
         InstacenInject()
         {
@@ -89,9 +89,13 @@ public class DefaultDependencyInjectHandler implements InjectHandler
             Resource                 resource                 = annotationContext.getAnnotation(Resource.class);
             String                   beanName                 = StringUtil.isNotBlank(resource.name()) ? resource.name() : field.getType().getName();
             beanRegisterInfo = context.getBeanRegisterInfo(beanName);
+            if (beanRegisterInfo == null)
+            {
+                beanRegisterInfo = context.getBeanRegisterInfo(field.getType());
+            }
             if (beanRegisterInfo == null && !annotationContext.isAnnotationPresent(CanBeNull.class))
             {
-                throw new InjectValueException("无法找到属性:" + field.getDeclaringClass().getSimpleName() + "." + field.getName() + "可以注入的bean，需要的bean名称:" + beanName);
+                throw new InjectValueException("无法找到属性:" + field.getDeclaringClass().getSimpleName() + "." + field.getName() + "可以注入的bean");
             }
         }
 
