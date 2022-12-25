@@ -143,6 +143,7 @@ public class PrototypeBeanDefinition implements BeanDefinition
                 }
                 else
                 {
+                    cycDependStack.add(current);
                     break;
                 }
             }

@@ -4,6 +4,7 @@ import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Bean;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
+import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Resource;
@@ -49,6 +50,14 @@ public class CyclicDependenceTest
     public void test()
     {
         ApplicationContext applicationContext = ApplicationContext.boot(CyclicDependenceTest.class);
-        applicationContext.getBean(A.class);
+        try
+        {
+            applicationContext.getBean(A.class);
+            Assert.fail();
+        }
+        catch (Exception e)
+        {
+            Assert.assertTrue(e instanceof IllegalStateException);
+        }
     }
 }

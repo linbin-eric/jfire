@@ -5,6 +5,7 @@ import com.jfirer.jfire.test.function.aop.AopTest;
 import com.jfirer.jfire.test.function.base.ContextTest;
 import com.jfirer.jfire.test.function.beanannotest.BeanAnnoTest;
 import com.jfirer.jfire.test.function.cachetest.CacheTest;
+import com.jfirer.jfire.test.function.cyclicDependenceTest.CyclicDependenceTest;
 import com.jfirer.jfire.test.function.initmethod.InitMethodTest;
 import com.jfirer.jfire.test.function.loader.HolderTest;
 import com.jfirer.jfire.test.function.map.MapTest;
@@ -30,6 +31,7 @@ import org.junit.runners.Suite;
         ParamFieldTest.class, //
         PropertyPathImporterTest.class, //
         StarterTest.class, //
+        CyclicDependenceTest.class,//
         AnnodatationDatabaseTest.class,//
 })
 public class Coverage
