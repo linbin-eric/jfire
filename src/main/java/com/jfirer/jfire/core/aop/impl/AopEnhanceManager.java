@@ -2,6 +2,7 @@ package com.jfirer.jfire.core.aop.impl;
 
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.TRACEID;
+import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.reflect.ReflectUtil;
@@ -23,9 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -34,75 +33,74 @@ public class AopEnhanceManager implements EnhanceManager
     private static final Logger logger = LoggerFactory.getLogger(AopEnhanceManager.class);
     AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
 
+    record EnhanceClassData(EnhanceClass enhanceClass, Collection<MatchTargetMethod> collection) {}
+
+    List<EnhanceClassData> list;
+
     @Override
     public Predicate<BeanRegisterInfo> needEnhance(ApplicationContext context)
     {
-        record Data(BeanRegisterInfo beanRegisterInfo, EnhanceClass enhanceClass) {}
-        return beanRegisterInfo -> context.getAllBeanRegisterInfos().stream()//
-                                          .filter(other -> annotationContextFactory.get(other.getType()).isAnnotationPresent(EnhanceClass.class))//
-                                          .map(other -> new Data(other, annotationContextFactory.get(other.getType()).getAnnotation(EnhanceClass.class)))//
-                                          .filter(data -> StringUtil.match(beanRegisterInfo.getType().getName(), data.enhanceClass.value()))//
-                                          .anyMatch(data -> Arrays.stream(data.beanRegisterInfo.getType().getDeclaredMethods())//
-                                                                  .filter(method -> {
-                                                                      AnnotationContext annotationContext = annotationContextFactory.get(method);
-                                                                      if (annotationContext.isAnnotationPresent(Before.class))
-                                                                      {
-                                                                          return true;
-                                                                      }
-                                                                      else if (annotationContext.isAnnotationPresent(After.class))
-                                                                      {
-                                                                          return true;
-                                                                      }
-                                                                      else if (annotationContext.isAnnotationPresent(AfterReturning.class))
-                                                                      {
-                                                                          return true;
-                                                                      }
-                                                                      else if (annotationContext.isAnnotationPresent(AfterThrowable.class))
-                                                                      {
-                                                                          return true;
-                                                                      }
-                                                                      else if (annotationContext.isAnnotationPresent(Around.class))
-                                                                      {
-                                                                          return true;
-                                                                      }
-                                                                      else
-                                                                      {
-                                                                          return false;
-                                                                      }
-                                                                  })//
-                                                                  .map(method -> {
-                                                                      AnnotationContext annotationContext = annotationContextFactory.get(method);
-                                                                      if (annotationContext.isAnnotationPresent(Before.class))
-                                                                      {
-                                                                          Before before = annotationContext.getAnnotation(Before.class);
-                                                                          return getMatchTargetMethod(method, before.value(), before.custom());
-                                                                      }
-                                                                      else if (annotationContext.isAnnotationPresent(After.class))
-                                                                      {
-                                                                          After after = annotationContext.getAnnotation(After.class);
-                                                                          return getMatchTargetMethod(method, after.value(), after.custom());
-                                                                      }
-                                                                      else if (annotationContext.isAnnotationPresent(AfterReturning.class))
-                                                                      {
-                                                                          AfterReturning afterReturning = annotationContext.getAnnotation(AfterReturning.class);
-                                                                          return getMatchTargetMethod(method, afterReturning.value(), afterReturning.custom());
-                                                                      }
-                                                                      else if (annotationContext.isAnnotationPresent(AfterThrowable.class))
-                                                                      {
-                                                                          AfterThrowable afterThrowable = annotationContext.getAnnotation(AfterThrowable.class);
-                                                                          return getMatchTargetMethod(method, afterThrowable.value(), afterThrowable.custom());
-                                                                      }
-                                                                      else if (annotationContext.isAnnotationPresent(Around.class))
-                                                                      {
-                                                                          Around around = annotationContext.getAnnotation(Around.class);
-                                                                          return getMatchTargetMethod(method, around.value(), around.custom());
-                                                                      }
-                                                                      else
-                                                                      {
-                                                                          throw new IllegalArgumentException();
-                                                                      }
-                                                                  })//
-                                                                  .anyMatch(matchTargetMethod -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods()).anyMatch(matchTargetMethod::match)));
+        if (list == null)
+        {
+            list = new LinkedList<>();
+            context.getAllBeanRegisterInfos().stream()//
+                   .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(EnhanceClass.class))//
+                   .map(beanRegisterInfo -> beanRegisterInfo.getType())//
+                   .forEach(ckass -> {
+                       EnhanceClass enhanceClass = annotationContextFactory.get(ckass).getAnnotation(EnhanceClass.class);
+                       Set<MatchTargetMethod> collect = Arrays.stream(ckass.getDeclaredMethods()).filter(method -> {
+                                                              AnnotationContext annotationContext = annotationContextFactory.get(method);
+                                                              if (annotationContext.isAnnotationPresent(Before.class) //
+                                                                  || annotationContext.isAnnotationPresent(After.class)//
+                                                                  || annotationContext.isAnnotationPresent(AfterReturning.class)//
+                                                                  || annotationContext.isAnnotationPresent(AfterThrowable.class)//
+                                                                  || annotationContext.isAnnotationPresent(Around.class))
+                                                              {
+                                                                  return true;
+                                                              }
+                                                              else
+                                                              {
+                                                                  return false;
+                                                              }
+                                                          })//
+                                                          .map(method -> {
+                                                              AnnotationMetadata annotationMetadata = null;
+                                                              AnnotationContext  annotationContext  = annotationContextFactory.get(method);
+                                                              if (annotationContext.isAnnotationPresent(Before.class))
+                                                              {
+                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(Before.class);
+                                                              }
+                                                              else if (annotationContext.isAnnotationPresent(After.class))
+                                                              {
+                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(After.class);
+                                                              }
+                                                              else if (annotationContext.isAnnotationPresent(AfterReturning.class))
+                                                              {
+                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(AfterReturning.class);
+                                                              }
+                                                              else if (annotationContext.isAnnotationPresent(AfterThrowable.class))
+                                                              {
+                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(AfterThrowable.class);
+                                                              }
+                                                              else
+                                                              {
+                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(Around.class);
+                                                              }
+                                                              try
+                                                              {
+                                                                  String   value  = annotationMetadata.getAttribyte("value").getStringValue();
+                                                                  Class<?> custom = Thread.currentThread().getContextClassLoader().loadClass(annotationMetadata.getAttribyte("custom").getClassName());
+                                                                  return getMatchTargetMethod(method, value, (Class<? extends MatchTargetMethod>) custom);
+                                                              }
+                                                              catch (ClassNotFoundException e)
+                                                              {
+                                                                  throw new RuntimeException(e);
+                                                              }
+                                                          }).collect(Collectors.toSet());
+                       list.add(new EnhanceClassData(enhanceClass,collect));
+                   });
+        }
+        return beanRegisterInfo -> list.stream().filter(v -> StringUtil.match(beanRegisterInfo.getType().getName(), v.enhanceClass.value())).flatMap(v -> v.collection().stream()).anyMatch(matchTargetMethod -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods()).anyMatch(matchTargetMethod::match));
     }
 
     @Override
