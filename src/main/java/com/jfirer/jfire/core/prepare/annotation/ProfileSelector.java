@@ -14,7 +14,5 @@ public @interface ProfileSelector
 {
     String activePropertyName = "jfire.profile.active";
 
-    String protocol() default "file";
-
-    String prefix() default "application_";
+    String[] value();
 }

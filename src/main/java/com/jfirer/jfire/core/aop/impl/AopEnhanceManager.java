@@ -49,55 +49,55 @@ public class AopEnhanceManager implements EnhanceManager
                    .forEach(ckass -> {
                        EnhanceClass enhanceClass = annotationContextFactory.get(ckass).getAnnotation(EnhanceClass.class);
                        Set<MatchTargetMethod> collect = Arrays.stream(ckass.getDeclaredMethods()).filter(method -> {
-                                                              AnnotationContext annotationContext = annotationContextFactory.get(method);
-                                                              if (annotationContext.isAnnotationPresent(Before.class) //
-                                                                  || annotationContext.isAnnotationPresent(After.class)//
-                                                                  || annotationContext.isAnnotationPresent(AfterReturning.class)//
-                                                                  || annotationContext.isAnnotationPresent(AfterThrowable.class)//
-                                                                  || annotationContext.isAnnotationPresent(Around.class))
-                                                              {
-                                                                  return true;
-                                                              }
-                                                              else
-                                                              {
-                                                                  return false;
-                                                              }
-                                                          })//
-                                                          .map(method -> {
-                                                              AnnotationMetadata annotationMetadata = null;
-                                                              AnnotationContext  annotationContext  = annotationContextFactory.get(method);
-                                                              if (annotationContext.isAnnotationPresent(Before.class))
-                                                              {
-                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(Before.class);
-                                                              }
-                                                              else if (annotationContext.isAnnotationPresent(After.class))
-                                                              {
-                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(After.class);
-                                                              }
-                                                              else if (annotationContext.isAnnotationPresent(AfterReturning.class))
-                                                              {
-                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(AfterReturning.class);
-                                                              }
-                                                              else if (annotationContext.isAnnotationPresent(AfterThrowable.class))
-                                                              {
-                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(AfterThrowable.class);
-                                                              }
-                                                              else
-                                                              {
-                                                                  annotationMetadata = annotationContext.getAnnotationMetadata(Around.class);
-                                                              }
-                                                              try
-                                                              {
-                                                                  String   value  = annotationMetadata.getAttribyte("value").getStringValue();
-                                                                  Class<?> custom = Thread.currentThread().getContextClassLoader().loadClass(annotationMetadata.getAttribyte("custom").getClassName());
-                                                                  return getMatchTargetMethod(method, value, (Class<? extends MatchTargetMethod>) custom);
-                                                              }
-                                                              catch (ClassNotFoundException e)
-                                                              {
-                                                                  throw new RuntimeException(e);
-                                                              }
-                                                          }).collect(Collectors.toSet());
-                       list.add(new EnhanceClassData(enhanceClass,collect));
+                                                                  AnnotationContext annotationContext = annotationContextFactory.get(method);
+                                                                  if (annotationContext.isAnnotationPresent(Before.class) //
+                                                                      || annotationContext.isAnnotationPresent(After.class)//
+                                                                      || annotationContext.isAnnotationPresent(AfterReturning.class)//
+                                                                      || annotationContext.isAnnotationPresent(AfterThrowable.class)//
+                                                                      || annotationContext.isAnnotationPresent(Around.class))
+                                                                  {
+                                                                      return true;
+                                                                  }
+                                                                  else
+                                                                  {
+                                                                      return false;
+                                                                  }
+                                                              })//
+                                                              .map(method -> {
+                                                                  AnnotationMetadata annotationMetadata = null;
+                                                                  AnnotationContext  annotationContext  = annotationContextFactory.get(method);
+                                                                  if (annotationContext.isAnnotationPresent(Before.class))
+                                                                  {
+                                                                      annotationMetadata = annotationContext.getAnnotationMetadata(Before.class);
+                                                                  }
+                                                                  else if (annotationContext.isAnnotationPresent(After.class))
+                                                                  {
+                                                                      annotationMetadata = annotationContext.getAnnotationMetadata(After.class);
+                                                                  }
+                                                                  else if (annotationContext.isAnnotationPresent(AfterReturning.class))
+                                                                  {
+                                                                      annotationMetadata = annotationContext.getAnnotationMetadata(AfterReturning.class);
+                                                                  }
+                                                                  else if (annotationContext.isAnnotationPresent(AfterThrowable.class))
+                                                                  {
+                                                                      annotationMetadata = annotationContext.getAnnotationMetadata(AfterThrowable.class);
+                                                                  }
+                                                                  else
+                                                                  {
+                                                                      annotationMetadata = annotationContext.getAnnotationMetadata(Around.class);
+                                                                  }
+                                                                  try
+                                                                  {
+                                                                      String   value  = annotationMetadata.getAttribyte("value").getStringValue();
+                                                                      Class<?> custom = Thread.currentThread().getContextClassLoader().loadClass(annotationMetadata.getAttribyte("custom").getClassName());
+                                                                      return getMatchTargetMethod(method, value, (Class<? extends MatchTargetMethod>) custom);
+                                                                  }
+                                                                  catch (ClassNotFoundException e)
+                                                                  {
+                                                                      throw new RuntimeException(e);
+                                                                  }
+                                                              }).collect(Collectors.toSet());
+                       list.add(new EnhanceClassData(enhanceClass, collect));
                    });
         }
         return beanRegisterInfo -> list.stream().filter(v -> StringUtil.match(beanRegisterInfo.getType().getName(), v.enhanceClass.value())).flatMap(v -> v.collection().stream()).anyMatch(matchTargetMethod -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods()).anyMatch(matchTargetMethod::match));
@@ -183,7 +183,8 @@ public class AopEnhanceManager implements EnhanceManager
         String            traceId           = TRACEID.currentTraceId();
         Before            before            = annotationContextOnEnhanceMethod.getAnnotation(Before.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, before.value(), before.custom());
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+        return Arrays.stream(originType.getDeclaredMethods())//
+                     .filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("traceId:{} 前置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
@@ -288,7 +289,7 @@ public class AopEnhanceManager implements EnhanceManager
         String            traceId           = TRACEID.currentTraceId();
         After             after             = annotationContextOnEnhanceMethod.getAnnotation(After.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, after.value(), after.custom());
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("traceId:{} 后置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
@@ -321,7 +322,7 @@ public class AopEnhanceManager implements EnhanceManager
         String            traceId           = TRACEID.currentTraceId();
         AfterReturning    afterReturning    = annotationContextOnEnhanceMethod.getAnnotation(AfterReturning.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterReturning.value(), afterReturning.custom());
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("traceId:{} 返回通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
@@ -353,7 +354,7 @@ public class AopEnhanceManager implements EnhanceManager
         AfterThrowable    afterThrowable    = annotationContextOnEnhanceMethod.getAnnotation(AfterThrowable.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterThrowable.value(), afterThrowable.custom());
         classModel.addImport(ReflectUtil.class);
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge()).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("traceId:{} 规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
@@ -392,7 +393,7 @@ public class AopEnhanceManager implements EnhanceManager
         String            traceId           = TRACEID.currentTraceId();
         Around            around            = annotationContextOnEnhanceMethod.getAnnotation(Around.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, around.value(), around.custom());
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> matchTargetMethod.match(method))//
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("traceId:{} 环绕通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);

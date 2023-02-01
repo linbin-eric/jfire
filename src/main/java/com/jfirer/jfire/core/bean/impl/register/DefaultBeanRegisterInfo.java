@@ -33,13 +33,12 @@ import java.util.stream.Collectors;
 
 public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implements AwareContextComplete
 {
-    private final boolean            prototype;
+    private final boolean             prototype;
     // 该Bean的类
-    private final Class<?>           type;
-    private final String             beanName;
-    private final BeanFactory        beanFactory;
-    private final ApplicationContext context;
-
+    private final Class<?>            type;
+    private final String              beanName;
+    private final BeanFactory         beanFactory;
+    private final ApplicationContext  context;
     private       boolean             complete        = false;
     private final Set<EnhanceManager> enhanceManagers = new HashSet<EnhanceManager>();
 
@@ -255,7 +254,7 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
     {
         for (Method each : type.getMethods())
         {
-            if (Modifier.isFinal(each.getModifiers()))
+            if (Modifier.isFinal(each.getModifiers()) || each.isBridge())
             {
                 continue;
             }

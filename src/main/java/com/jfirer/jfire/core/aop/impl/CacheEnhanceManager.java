@@ -52,7 +52,7 @@ public class CacheEnhanceManager implements EnhanceManager
                                   classModel);
         for (Method method : type.getMethods())
         {
-            if (Modifier.isFinal(method.getModifiers()))
+            if (Modifier.isFinal(method.getModifiers()) || method.isBridge())
             {
                 continue;
             }

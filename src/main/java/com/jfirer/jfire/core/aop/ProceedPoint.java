@@ -60,12 +60,12 @@ public interface ProceedPoint
             this.paramTypes = paramTypes;
         }
 
-        String methodName()
+        public String methodName()
         {
             return methodName;
         }
 
-        Class<?>[] getParamTypes()
+        public Class<?>[] getParamTypes()
         {
             return paramTypes;
         }

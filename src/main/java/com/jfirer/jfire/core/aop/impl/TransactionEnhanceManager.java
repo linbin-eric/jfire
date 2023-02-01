@@ -43,7 +43,7 @@ public class TransactionEnhanceManager implements EnhanceManager
         for (Method method : type.getMethods())
         {
             AnnotationContext annotationContext = annotationContextFactory.get(method);
-            if (Modifier.isFinal(method.getModifiers()) || !annotationContext.isAnnotationPresent(Transactional.class))
+            if (Modifier.isFinal(method.getModifiers()) || !annotationContext.isAnnotationPresent(Transactional.class) || method.isBridge())
             {
                 continue;
             }

@@ -1,6 +1,5 @@
 package com.jfirer.jfire.core.prepare.processor;
 
-import com.jfirer.baseutil.IniReader;
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
@@ -14,7 +13,6 @@ import java.util.Arrays;
 
 public class PropertyPathProcessor implements ContextPrepare
 {
-
     @Override
     public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
@@ -25,13 +23,7 @@ public class PropertyPathProcessor implements ContextPrepare
                .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(PropertyPath.class))//
                .flatMap(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotations(PropertyPath.class).stream())//
                .flatMap(propertyPath -> Arrays.stream(propertyPath.value()))//
-               .forEach(path -> {
-                   IniReader.IniFile iniFile = Utils.processPath(path);
-                   for (String property : iniFile.keySet())
-                   {
-                       context.getEnv().putProperty(property, iniFile.getValue(property));
-                   }
-               });
+               .forEach(path -> Utils.readPropertyFile().accept(path, context));
         return ApplicationContext.FoundNewContextPrepare.NO;
     }
 
