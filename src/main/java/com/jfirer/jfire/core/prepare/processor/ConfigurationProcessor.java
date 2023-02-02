@@ -24,8 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,20 +50,19 @@ public class ConfigurationProcessor implements ContextPrepare
                                 .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class) ||//
                                                   annotationContextFactory.get(method.getDeclaringClass()).isAnnotationPresent(Conditional.class))//
                                 .filter(method -> {
-                                    List<AnnotationMetadata> list = new LinkedList<>();
+                                    errorMessage.clear();
                                     if (annotationContextFactory.get(method).isAnnotationPresent(Conditional.class))
                                     {
-                                        list.addAll(annotationContextFactory.get(method).getAnnotationMetadatas(Conditional.class));
+                                        AnnotationContext annotationContext = annotationContextFactory.get(method);
+                                        if (annotationContext.getAnnotationMetadatas(Conditional.class).stream().anyMatch(conditional -> matchCondition(context, conditional, annotationContext, errorMessage) == false))
+                                        {
+                                            return false;
+                                        }
                                     }
-                                    if (annotationContextFactory.get(method.getDeclaringClass()).isAnnotationPresent(Conditional.class))
+                                    AnnotationContext annotationContextOnMethodDeclaringClass = annotationContextFactory.get(method.getDeclaringClass());
+                                    if (annotationContextOnMethodDeclaringClass.isAnnotationPresent(Conditional.class))
                                     {
-                                        list.addAll(annotationContextFactory.get(method.getDeclaringClass()).getAnnotationMetadatas(Conditional.class));
-                                    }
-                                    errorMessage.clear();
-                                    AnnotationContext annotationContext = annotationContextFactory.get(method);
-                                    for (AnnotationMetadata conditional : list)
-                                    {
-                                        if (matchCondition(context, conditional, annotationContext, errorMessage) == false)
+                                        if (annotationContextOnMethodDeclaringClass.getAnnotationMetadatas(Conditional.class).stream().anyMatch(conditional -> matchCondition(context, conditional, annotationContextOnMethodDeclaringClass, errorMessage) == false))
                                         {
                                             return false;
                                         }
@@ -81,7 +78,6 @@ public class ConfigurationProcessor implements ContextPrepare
     {
         return PrepareConstant.CONFIGURATION_ORDER;
     }
-
 
     /**
      * 判断条件注解中的条件是否被符合
