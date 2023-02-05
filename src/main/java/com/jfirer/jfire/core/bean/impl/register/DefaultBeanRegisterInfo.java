@@ -254,7 +254,7 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
     {
         for (Method each : type.getMethods())
         {
-            if (Modifier.isFinal(each.getModifiers()) || each.isBridge())
+            if (Modifier.isFinal(each.getModifiers()) || each.isBridge() || Modifier.isStatic(each.getModifiers()))
             {
                 continue;
             }

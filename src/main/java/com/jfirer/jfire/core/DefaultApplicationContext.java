@@ -48,6 +48,7 @@ public class DefaultApplicationContext implements ApplicationContext
      * 容器是否刷新过。只有刷新过的容器才能对外提供完整服务。
      */
     private              boolean                       freshed                    = false;
+    private              long                          t0                         = System.nanoTime();
 
     public DefaultApplicationContext(Class<?> bootStarpClass)
     {
@@ -94,7 +95,7 @@ public class DefaultApplicationContext implements ApplicationContext
         beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> beanRegisterInfo instanceof AwareContextComplete).forEach(beanRegisterInfo -> ((AwareContextComplete) beanRegisterInfo).complete());
         LOGGER.debug("traceId:{} 准备获取所有的AwareContextInited接口实现，执行aware方法", traceId);
         awareContextInit();
-        LOGGER.debug("traceId:{} 容器启动完毕", traceId);
+        LOGGER.info("traceId:{} 容器启动完毕,启动耗时:{} ms", traceId,(System.nanoTime()-t0)/1000000);
     }
 
     private void registerInternalClass()
