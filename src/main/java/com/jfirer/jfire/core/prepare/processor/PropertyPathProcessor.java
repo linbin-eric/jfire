@@ -1,5 +1,6 @@
 package com.jfirer.jfire.core.prepare.processor;
 
+import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
@@ -17,11 +18,10 @@ public class PropertyPathProcessor implements ContextPrepare
     public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
         ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
-        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
         context.getAllBeanRegisterInfos().stream()//
-               .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class))//
-               .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(PropertyPath.class))//
-               .flatMap(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotations(PropertyPath.class).stream())//
+               .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Configuration.class,beanRegisterInfo.getType()))//
+               .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(PropertyPath.class,beanRegisterInfo.getType()))//
+               .flatMap(beanRegisterInfo -> AnnotationContext.getAnnotations(PropertyPath.class,beanRegisterInfo.getType()).stream())//
                .flatMap(propertyPath -> Arrays.stream(propertyPath.value()))//
                .forEach(path -> Utils.readPropertyFile().accept(path, context));
         return ApplicationContext.FoundNewContextPrepare.NO;

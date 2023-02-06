@@ -2,8 +2,7 @@ package com.jfirer.jfire.core;
 
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.TRACEID;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
-import com.jfirer.baseutil.bytecode.support.SupportOverrideAttributeAnnotationContextFactory;
+import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.smc.compiler.CompileHelper;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.impl.AopEnhanceManager;
@@ -34,25 +33,24 @@ import java.util.stream.Collectors;
 
 public class DefaultApplicationContext implements ApplicationContext
 {
-    public static final  AnnotationContextFactory      ANNOTATION_CONTEXT_FACTORY = new SupportOverrideAttributeAnnotationContextFactory();
-    public static final  CompileHelper                 COMPILE_HELPER             = new CompileHelper();
-    private static final Logger                        LOGGER                     = LoggerFactory.getLogger(DefaultApplicationContext.class);
+    public static final  CompileHelper                 COMPILE_HELPER      = new CompileHelper();
+    private static final Logger                        LOGGER              = LoggerFactory.getLogger(DefaultApplicationContext.class);
     /**
      * 只有Configuration注解下并且有Conditional注解的情况下，才会有Bean是否被注册的可能。
      * 如果支持每一轮刷新都根据不同的环境变量或者其他条件满足来增减Bean定义会变得较为复杂，而且实际上也没有遇到这样的场景。
      * 因为目前简化为只支持Bean定义不断增多。
      */
-    protected            Map<String, BeanRegisterInfo> beanRegisterInfoMap        = new HashMap<>();
-    private final        Environment                   environment                = new Environment.EnvironmentImpl();
+    protected            Map<String, BeanRegisterInfo> beanRegisterInfoMap = new HashMap<>();
+    private final        Environment                   environment         = new Environment.EnvironmentImpl();
     /**
      * 容器是否刷新过。只有刷新过的容器才能对外提供完整服务。
      */
-    private              boolean                       freshed                    = false;
-    private              long                          t0                         = System.nanoTime();
+    private              boolean                       freshed             = false;
+    private              long                          t0                  = System.nanoTime();
 
     public DefaultApplicationContext(Class<?> bootStarpClass)
     {
-        if (!ANNOTATION_CONTEXT_FACTORY.get(bootStarpClass).isAnnotationPresent(Configuration.class))
+        if (AnnotationContext.isAnnotationPresent(Configuration.class, bootStarpClass) == false)
         {
             throw new IllegalArgumentException("启动的配置类，一定要有Configuration注解");
         }
@@ -95,7 +93,7 @@ public class DefaultApplicationContext implements ApplicationContext
         beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> beanRegisterInfo instanceof AwareContextComplete).forEach(beanRegisterInfo -> ((AwareContextComplete) beanRegisterInfo).complete());
         LOGGER.debug("traceId:{} 准备获取所有的AwareContextInited接口实现，执行aware方法", traceId);
         awareContextInit();
-        LOGGER.info("traceId:{} 容器启动完毕,启动耗时:{} ms", traceId,(System.nanoTime()-t0)/1000000);
+        LOGGER.info("traceId:{} 容器启动完毕,启动耗时:{} ms", traceId, (System.nanoTime() - t0) / 1000000);
     }
 
     private void registerInternalClass()
@@ -125,8 +123,8 @@ public class DefaultApplicationContext implements ApplicationContext
     {
         Set<Class<?>> importClasses = beanRegisterInfoMap.values().stream()//
                                                          .map(beanRegisterInfo -> beanRegisterInfo.getType())//
-                                                         .filter(ckass -> ANNOTATION_CONTEXT_FACTORY.get(ckass).isAnnotationPresent(Import.class))//
-                                                         .flatMap(ckass -> ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotations(Import.class).stream())//
+                                                         .filter(ckass -> AnnotationContext.isAnnotationPresent(Import.class, ckass))//
+                                                         .flatMap(ckass -> AnnotationContext.getAnnotations(Import.class, ckass).stream())//
                                                          .flatMap(importAnnotation -> Arrays.stream(importAnnotation.value())).collect(Collectors.toSet());//
         //这里不能将两个Stream操作合并在一起，否则在遍历的过程中又添加新的元素到底层的map,会导致异常。
         importClasses.stream()//
@@ -147,9 +145,9 @@ public class DefaultApplicationContext implements ApplicationContext
         }
         String  beanName;
         boolean prototype;
-        if (ANNOTATION_CONTEXT_FACTORY.get(ckass).isAnnotationPresent(Resource.class))
+        if (AnnotationContext.isAnnotationPresent(Resource.class, ckass))
         {
-            Resource resource = ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotation(Resource.class);
+            Resource resource = AnnotationContext.getAnnotation(Resource.class, ckass);
             beanName = StringUtil.isNotBlank(resource.name()) ? resource.name() : ckass.getName();
             prototype = !resource.shareable();
         }
@@ -163,9 +161,9 @@ public class DefaultApplicationContext implements ApplicationContext
             LOGGER.debug("traceId:{} beanName:{}已经存在，本次忽略", TRACEID.currentTraceId(), beanName);
             return RegisterResult.NODATA;
         }
-        if (ANNOTATION_CONTEXT_FACTORY.get(ckass).isAnnotationPresent(SelectBeanFactory.class))
+        if (AnnotationContext.isAnnotationPresent(SelectBeanFactory.class, ckass))
         {
-            SelectBeanFactory selectBeanFactory = ANNOTATION_CONTEXT_FACTORY.get(ckass).getAnnotation(SelectBeanFactory.class);
+            SelectBeanFactory selectBeanFactory = AnnotationContext.getAnnotation(SelectBeanFactory.class, ckass);
             return registerBeanRegisterInfo(new DefaultBeanRegisterInfo(prototype, ckass, beanName, this, new SelectedBeanFactory(this, selectBeanFactory.value().equals("") ? null : selectBeanFactory.value(), selectBeanFactory.beanFactoryType())));
         }
         else
@@ -190,7 +188,7 @@ public class DefaultApplicationContext implements ApplicationContext
             LOGGER.debug("traceId:{} 注册bean:{}，其实现了ContextPrepare接口", TRACEID.currentTraceId(), beanRegisterInfo.getBeanName());
             return RegisterResult.PREPARE;
         }
-        else if (ANNOTATION_CONTEXT_FACTORY.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class))
+        else if (AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))
         {
             LOGGER.debug("traceId:{} 注册bean:{}，其标记了Configuration注解", TRACEID.currentTraceId(), beanRegisterInfo.getBeanName());
             return RegisterResult.CONFIGURATION;

@@ -2,9 +2,8 @@ package com.jfirer.jfire.core.prepare.annotation.condition.provide;
 
 import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
 import com.jfirer.baseutil.bytecode.annotation.ValuePair;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
+import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.condition.Conditional;
 import com.jfirer.jfire.core.prepare.annotation.condition.ErrorMessage;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
@@ -21,7 +20,6 @@ public @interface ConditionOnAnnotation
 
     class OnAnnotation extends BaseCondition
     {
-
         public OnAnnotation()
         {
             super(ConditionOnAnnotation.class);
@@ -30,9 +28,8 @@ public @interface ConditionOnAnnotation
         @Override
         protected boolean handleSelectAnnoType(ApplicationContext context, AnnotationMetadata metadata, ErrorMessage errorMessage)
         {
-            ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
-            ValuePair[]              value                    = metadata.getAttribyte("value").getArray();
-            AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            ValuePair[] value       = metadata.getAttribyte("value").getArray();
             for (ValuePair each : value)
             {
                 Class<? extends Annotation> aClass;
@@ -45,16 +42,8 @@ public @interface ConditionOnAnnotation
                     errorMessage.addErrorMessage("注解:" + each + "不存在于类路径");
                     return false;
                 }
-                boolean has = context.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class)).filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(aClass)).findAny().isPresent();
-//                for (Class<?> configurationClass : context.getConfigurationClassSet())
-//                {
-//                    AnnotationContext annotationContext = annotationContextFactory.get(configurationClass, classLoader);
-//                    if (annotationContext.isAnnotationPresent(aClass))
-//                    {
-//                        has = true;
-//                        break;
-//                    }
-//                }
+                boolean has = context.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))//
+                                     .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(aClass, beanRegisterInfo.getType())).findAny().isPresent();
                 if (!has)
                 {
                     errorMessage.addErrorMessage("注解:" + each + "没有标注在配置类上");

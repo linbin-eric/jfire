@@ -1,13 +1,11 @@
 package com.jfirer.jfire.core.aop.impl;
 
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.smc.SmcHelper;
 import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 
@@ -23,13 +21,11 @@ import java.util.function.Predicate;
 
 public class ValidateEnhanceManager implements EnhanceManager
 {
-    AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-
     @Override
     public Predicate<BeanRegisterInfo> needEnhance(ApplicationContext context)
     {
         return beanRegisterInfo -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods())//
-                                         .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(ValidateOnExecution.class)).findAny().isPresent();
+                                         .filter(method -> AnnotationContext.isAnnotationPresent(ValidateOnExecution.class, method)).findAny().isPresent();
     }
 
     @Override
@@ -45,7 +41,7 @@ public class ValidateEnhanceManager implements EnhanceManager
             {
                 continue;
             }
-            AnnotationContext annotationContext = annotationContextFactory.get(method);
+            AnnotationContext annotationContext = AnnotationContext.getInstanceOn(method);
             if (annotationContext.isAnnotationPresent(ValidateOnExecution.class))
             {
                 if (hasConstraintBeforeMethodExecute(method, annotationContext))

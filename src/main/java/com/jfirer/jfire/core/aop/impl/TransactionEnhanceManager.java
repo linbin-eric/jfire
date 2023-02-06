@@ -1,14 +1,12 @@
 package com.jfirer.jfire.core.aop.impl;
 
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.reflect.ReflectUtil;
 import com.jfirer.baseutil.smc.SmcHelper;
 import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.impl.support.transaction.Propagation;
 import com.jfirer.jfire.core.aop.impl.support.transaction.TransactionManager;
@@ -23,12 +21,10 @@ import java.util.function.Predicate;
 
 public class TransactionEnhanceManager implements EnhanceManager
 {
-    AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-
     @Override
     public Predicate<BeanRegisterInfo> needEnhance(ApplicationContext context)
     {
-        return beanRegisterInfo -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods()).filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Transactional.class)).findAny().isPresent();
+        return beanRegisterInfo -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods()).filter(method -> AnnotationContext.isAnnotationPresent(Transactional.class, method)).findAny().isPresent();
     }
 
     @Override
@@ -42,7 +38,7 @@ public class TransactionEnhanceManager implements EnhanceManager
                                   classModel);
         for (Method method : type.getMethods())
         {
-            AnnotationContext annotationContext = annotationContextFactory.get(method);
+            AnnotationContext annotationContext = AnnotationContext.getInstanceOn(method);
             if (Modifier.isFinal(method.getModifiers()) || !annotationContext.isAnnotationPresent(Transactional.class) || method.isBridge())
             {
                 continue;

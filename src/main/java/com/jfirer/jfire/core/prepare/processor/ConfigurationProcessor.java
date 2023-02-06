@@ -5,10 +5,8 @@ import com.jfirer.baseutil.TRACEID;
 import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
 import com.jfirer.baseutil.bytecode.annotation.ValuePair;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.reflect.ReflectUtil;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.bean.impl.register.DefaultBeanRegisterInfo;
 import com.jfirer.jfire.core.beanfactory.impl.MethodBeanFactory;
@@ -34,42 +32,41 @@ public class ConfigurationProcessor implements ContextPrepare
     @Override
     public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
-        ErrorMessage             errorMessage             = new ErrorMessage();
-        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
+        ErrorMessage errorMessage = new ErrorMessage();
         Set<Method> methodWithBeanAnnotation = context.getAllBeanRegisterInfos().stream()//
-                                                      .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class))//
+                                                      .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))//
                                                       .map(beanRegisterInfo -> beanRegisterInfo.getType())//
                                                       .flatMap(ckass -> Arrays.stream(ckass.getDeclaredMethods()))//
-                                                      .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Bean.class))//
+                                                      .filter(method -> AnnotationContext.isAnnotationPresent(Bean.class, method))//
                                                       .collect(Collectors.toSet());
         methodWithBeanAnnotation.stream()//
-                                .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class) == false //
-                                                  && annotationContextFactory.get(method.getDeclaringClass()).isAnnotationPresent(Conditional.class) == false)//
-                                .forEach(method -> registerMethodBeanDefinition(method, context, annotationContextFactory.get(method)));
+                                .filter(method -> AnnotationContext.isAnnotationPresent(Conditional.class, method) == false //
+                                                  && AnnotationContext.isAnnotationPresent(Conditional.class, method.getDeclaringClass()) == false)//
+                                .forEach(method -> registerMethodBeanDefinition(method, context, AnnotationContext.getInstanceOn(method)));
         methodWithBeanAnnotation.stream()//
-                                .filter(method -> annotationContextFactory.get(method).isAnnotationPresent(Conditional.class) ||//
-                                                  annotationContextFactory.get(method.getDeclaringClass()).isAnnotationPresent(Conditional.class))//
+                                .filter(method -> AnnotationContext.isAnnotationPresent(Conditional.class, method) ||//
+                                                  AnnotationContext.isAnnotationPresent(Conditional.class, method.getDeclaringClass()))//
                                 .filter(method -> {
                                     errorMessage.clear();
-                                    if (annotationContextFactory.get(method).isAnnotationPresent(Conditional.class))
+                                    if (AnnotationContext.isAnnotationPresent(Conditional.class, method))
                                     {
-                                        AnnotationContext annotationContext = annotationContextFactory.get(method);
-                                        if (annotationContext.getAnnotationMetadatas(Conditional.class).stream().anyMatch(conditional -> matchCondition(context, conditional, annotationContext, errorMessage) == false))
+                                        AnnotationContext annotationContext = AnnotationContext.getInstanceOn(method);
+                                        if (AnnotationContext.getAnnotationMetadatas(Conditional.class, method).stream().anyMatch(conditional -> matchCondition(context, conditional, annotationContext, errorMessage) == false))
                                         {
                                             return false;
                                         }
                                     }
-                                    AnnotationContext annotationContextOnMethodDeclaringClass = annotationContextFactory.get(method.getDeclaringClass());
-                                    if (annotationContextOnMethodDeclaringClass.isAnnotationPresent(Conditional.class))
+                                    if (AnnotationContext.isAnnotationPresent(Conditional.class, method.getDeclaringClass()))
                                     {
-                                        if (annotationContextOnMethodDeclaringClass.getAnnotationMetadatas(Conditional.class).stream().anyMatch(conditional -> matchCondition(context, conditional, annotationContextOnMethodDeclaringClass, errorMessage) == false))
+                                        AnnotationContext annotationContext = AnnotationContext.getInstanceOn(method.getDeclaringClass());
+                                        if (AnnotationContext.getAnnotationMetadatas(Conditional.class, method.getDeclaringClass()).stream().anyMatch(conditional -> matchCondition(context, conditional, annotationContext, errorMessage) == false))
                                         {
                                             return false;
                                         }
                                     }
                                     return true;
                                 })//
-                                .forEach(method -> registerMethodBeanDefinition(method, context, annotationContextFactory.get(method)));
+                                .forEach(method -> registerMethodBeanDefinition(method, context, AnnotationContext.getInstanceOn(method)));
         return ApplicationContext.FoundNewContextPrepare.NO;
     }
 

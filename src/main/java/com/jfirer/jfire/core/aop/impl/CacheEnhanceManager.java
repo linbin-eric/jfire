@@ -2,14 +2,12 @@ package com.jfirer.jfire.core.aop.impl;
 
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.bytecode.util.BytecodeUtil;
 import com.jfirer.baseutil.smc.SmcHelper;
 import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
 import com.jfirer.baseutil.smc.model.MethodModel;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.notated.cache.CacheDelete;
 import com.jfirer.jfire.core.aop.notated.cache.CacheGet;
@@ -26,14 +24,12 @@ import java.util.function.Predicate;
 
 public class CacheEnhanceManager implements EnhanceManager
 {
-    AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-
     @Override
     public Predicate<BeanRegisterInfo> needEnhance(ApplicationContext context)
     {
         return beanRegisterInfo -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods())//
                                          .filter(method -> {
-                                             AnnotationContext annotationContext = annotationContextFactory.get(method);
+                                             AnnotationContext annotationContext = AnnotationContext.getInstanceOn(method);
                                              return annotationContext.isAnnotationPresent(CacheDelete.class) || annotationContext.isAnnotationPresent(CacheGet.class) || annotationContext.isAnnotationPresent(CachePut.class);
                                          }).findAny().isPresent();
     }
@@ -56,7 +52,7 @@ public class CacheEnhanceManager implements EnhanceManager
             {
                 continue;
             }
-            AnnotationContext annotationContext = annotationContextFactory.get(method);
+            AnnotationContext annotationContext = AnnotationContext.getInstanceOn(method);
             if (!method.getReturnType().isPrimitive() //
                 && method.getReturnType() != Void.class //
                 && annotationContext.isAnnotationPresent(CacheGet.class))

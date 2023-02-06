@@ -2,11 +2,9 @@ package com.jfirer.jfire.core.inject.impl;
 
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.encrypt.Base64Tool;
 import com.jfirer.baseutil.reflect.ValueAccessor;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.inject.InjectHandler;
 import com.jfirer.jfire.core.inject.notated.PropertyRead;
 import com.jfirer.jfire.exception.InjectTypeException;
@@ -28,10 +26,9 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     public void init(Field field, ApplicationContext applicationContext)
     {
         valueAccessor = new ValueAccessor(field);
-        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        AnnotationContext        annotationContext        = annotationContextFactory.get(field);
-        PropertyRead             propertyRead             = annotationContext.getAnnotation(PropertyRead.class);
-        String                   propertyName             = StringUtil.isNotBlank(propertyRead.value()) ? propertyRead.value() : field.getName();
+        AnnotationContext annotationContext = AnnotationContext.getInstanceOn(field);
+        PropertyRead      propertyRead      = annotationContext.getAnnotation(PropertyRead.class);
+        String            propertyName      = StringUtil.isNotBlank(propertyRead.value()) ? propertyRead.value() : field.getName();
         if (StringUtil.isNotBlank(System.getProperty(propertyName)))
         {
             propertyValue = System.getProperty(propertyName);
@@ -270,7 +267,6 @@ public class DefaultPropertyInjectHandler implements InjectHandler
 
     class EnumInject extends AbstractInject
     {
-
         @SuppressWarnings({"unchecked", "rawtypes"})
         EnumInject(Field field)
         {

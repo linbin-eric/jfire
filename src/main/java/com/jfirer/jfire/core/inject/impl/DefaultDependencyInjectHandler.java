@@ -2,10 +2,8 @@ package com.jfirer.jfire.core.inject.impl;
 
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
 import com.jfirer.baseutil.reflect.ValueAccessor;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.inject.InjectHandler;
 import com.jfirer.jfire.core.inject.notated.CanBeNull;
@@ -83,11 +81,10 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
         InstacenInject()
         {
-            Field                    field                    = valueAccessor.getField();
-            AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-            AnnotationContext        annotationContext        = annotationContextFactory.get(field);
-            Resource                 resource                 = annotationContext.getAnnotation(Resource.class);
-            String                   beanName                 = StringUtil.isNotBlank(resource.name()) ? resource.name() : field.getType().getName();
+            Field             field             = valueAccessor.getField();
+            AnnotationContext annotationContext = AnnotationContext.getInstanceOn(field);
+            Resource          resource          = annotationContext.getAnnotation(Resource.class);
+            String            beanName          = StringUtil.isNotBlank(resource.name()) ? resource.name() : field.getType().getName();
             beanRegisterInfo = context.getBeanRegisterInfo(beanName);
             if (beanRegisterInfo == null)
             {
@@ -119,11 +116,10 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
         AbstractInject()
         {
-            Field                    field                    = valueAccessor.getField();
-            Class<?>                 fieldType                = field.getType();
-            AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-            AnnotationContext        annotationContext        = annotationContextFactory.get(field);
-            Resource                 resource                 = annotationContext.getAnnotation(Resource.class);
+            Field             field             = valueAccessor.getField();
+            Class<?>          fieldType         = field.getType();
+            AnnotationContext annotationContext = AnnotationContext.getInstanceOn(field);
+            Resource          resource          = annotationContext.getAnnotation(Resource.class);
             // 如果定义了名称，就寻找特定名称的Bean
             if (StringUtil.isNotBlank(resource.name()))
             {
@@ -256,7 +252,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
             }
             Class<?> rawType = (Class<?>) ((ParameterizedType) genericType).getActualTypeArguments()[1];
             beanRegisterInfos = context.getBeanRegisterInfos(rawType).stream().toArray(BeanRegisterInfo[]::new);
-            AnnotationContext annotationContext = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY.get(field);
+            AnnotationContext annotationContext = AnnotationContext.getInstanceOn(field);
             if (annotationContext.isAnnotationPresent(MapKeyMethodName.class))
             {
                 mapKeyType = MapKeyType.METHOD;
@@ -285,7 +281,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                 Map<Object, Object> value = (Map<Object, Object>) valueAccessor.get(instance);
                 if (value == null)
                 {
-                    value = new HashMap<Object, Object>();
+                    value = new HashMap<>();
                     valueAccessor.setObject(instance, value);
                 }
                 switch (mapKeyType)

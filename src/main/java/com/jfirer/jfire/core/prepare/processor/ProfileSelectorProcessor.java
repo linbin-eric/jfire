@@ -2,9 +2,8 @@ package com.jfirer.jfire.core.prepare.processor;
 
 import com.jfirer.baseutil.Formatter;
 import com.jfirer.baseutil.StringUtil;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
+import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
 import com.jfirer.jfire.core.prepare.annotation.ProfileSelector;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
@@ -23,11 +22,10 @@ public class ProfileSelectorProcessor implements ContextPrepare
         {
             return ApplicationContext.FoundNewContextPrepare.NO;
         }
-        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
         context.getAllBeanRegisterInfos().stream()//
-               .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(Configuration.class))//
-               .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(ProfileSelector.class))//
-               .map(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotation(ProfileSelector.class))//
+               .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))//
+               .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(ProfileSelector.class, beanRegisterInfo.getType()))//
+               .map(beanRegisterInfo -> AnnotationContext.getAnnotation(ProfileSelector.class, beanRegisterInfo.getType()))//
                .flatMap(profileSelector -> Arrays.stream(profileSelector.value()))//
                .map(profile -> Formatter.format(profile, activeAttribute))//
                .forEach(path -> Utils.readPropertyFile().accept(path, context));

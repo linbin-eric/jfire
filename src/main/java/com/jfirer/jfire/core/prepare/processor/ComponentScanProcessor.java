@@ -3,10 +3,9 @@ package com.jfirer.jfire.core.prepare.processor;
 import com.jfirer.baseutil.PackageScan;
 import com.jfirer.baseutil.TRACEID;
 import com.jfirer.baseutil.bytecode.ClassFileParser;
-import com.jfirer.baseutil.bytecode.support.AnnotationContextFactory;
+import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.bytecode.util.BytecodeUtil;
 import com.jfirer.jfire.core.ApplicationContext;
-import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
 import com.jfirer.jfire.util.PrepareConstant;
@@ -15,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
@@ -28,22 +26,21 @@ public class ComponentScanProcessor implements ContextPrepare
     @Override
     public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
-        AnnotationContextFactory annotationContextFactory = DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY;
-        ClassLoader              classLoader              = Thread.currentThread().getContextClassLoader();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         long count = context.getAllBeanRegisterInfos().stream()//
-                            .filter(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).isAnnotationPresent(ComponentScan.class))//
-                            .map(beanRegisterInfo -> annotationContextFactory.get(beanRegisterInfo.getType()).getAnnotation(ComponentScan.class))//
+                            .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(ComponentScan.class, beanRegisterInfo.getType()))//
+                            .map(beanRegisterInfo -> AnnotationContext.getAnnotation(ComponentScan.class, beanRegisterInfo.getType()))//
                             .flatMap(componentScan -> Arrays.stream(componentScan.value()))//
                             .flatMap(scanPath -> Arrays.stream(PackageScan.scan(scanPath)))//
                             .map(className -> className.replace('.', '/'))//
                             .filter(resourceName -> new ClassFileParser(BytecodeUtil.loadBytecode(classLoader, resourceName)).parse().isAnnotation() == false)//
-                            .filter(resourceName -> annotationContextFactory.get(resourceName).isAnnotationPresent(Resource.class))//
+                            .filter(resourceName -> AnnotationContext.get(resourceName).isAnnotationPresent(Resource.class))//
                             .map(resourceName -> resourceName.replace('/', '.'))//
                             .collect(Collectors.toSet()).stream()//下面的代码会修改这个beanRegisternfos这个集合，因此如果直接跟上stream操作会导致并发异常。所以这里需要先将原来的内容收集为一个新的集合再重新创建流
                             .map(className -> {
                                 try
                                 {
-                                       Class<?> ckass = classLoader.loadClass(className);
+                                    Class<?> ckass = classLoader.loadClass(className);
                                     LOGGER.debug("traceId:{} 扫描发现类:{}", TRACEID.currentTraceId(), className);
                                     return context.register(ckass);
                                 }

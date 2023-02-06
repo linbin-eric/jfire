@@ -1,5 +1,6 @@
 package com.jfirer.jfire.core.bean.impl.register;
 
+import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.smc.SmcHelper;
 import com.jfirer.baseutil.smc.model.ClassModel;
 import com.jfirer.baseutil.smc.model.FieldModel;
@@ -142,7 +143,7 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         Class ckass = type;
         while (ckass != Object.class)
         {
-            Optional<Method> any = Arrays.stream(ckass.getDeclaredMethods()).filter(method -> DefaultApplicationContext.ANNOTATION_CONTEXT_FACTORY.get(method).isAnnotationPresent(PostConstruct.class)).findAny();
+            Optional<Method> any = Arrays.stream(ckass.getDeclaredMethods()).filter(method -> AnnotationContext.getInstanceOn(method).isAnnotationPresent(PostConstruct.class)).findAny();
             if (any.isPresent())
             {
                 Method method = any.get();
