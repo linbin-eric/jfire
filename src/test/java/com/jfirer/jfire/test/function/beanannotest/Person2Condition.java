@@ -1,15 +1,15 @@
 package com.jfirer.jfire.test.function.beanannotest;
 
-import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.condition.Condition;
 import com.jfirer.jfire.core.prepare.annotation.condition.ErrorMessage;
 
+import java.lang.reflect.AnnotatedElement;
+
 public class Person2Condition implements Condition
 {
-
     @Override
-    public boolean match(ApplicationContext context, AnnotationContext annotationContext, ErrorMessage errorMessage)
+    public boolean match(ApplicationContext context, AnnotatedElement element, ErrorMessage errorMessage)
     {
         if ("pass".equals(context.getEnv().getProperty("person2")))
         {

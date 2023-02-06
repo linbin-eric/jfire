@@ -1,9 +1,9 @@
 package com.jfirer.jfire.core.prepare.annotation.condition.provide;
 
-import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
 import com.jfirer.baseutil.bytecode.annotation.ValuePair;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.prepare.annotation.condition.Condition;
 import com.jfirer.jfire.core.prepare.annotation.condition.Conditional;
 import com.jfirer.jfire.core.prepare.annotation.condition.ErrorMessage;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
@@ -11,6 +11,7 @@ import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.AnnotatedElement;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Conditional(ConditionOnAnnotation.OnAnnotation.class)
@@ -18,18 +19,13 @@ public @interface ConditionOnAnnotation
 {
     Class<? extends Annotation>[] value();
 
-    class OnAnnotation extends BaseCondition
+    class OnAnnotation implements Condition
     {
-        public OnAnnotation()
-        {
-            super(ConditionOnAnnotation.class);
-        }
-
         @Override
-        protected boolean handleSelectAnnoType(ApplicationContext context, AnnotationMetadata metadata, ErrorMessage errorMessage)
+        public boolean match(ApplicationContext context, AnnotatedElement element, ErrorMessage errorMessage)
         {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            ValuePair[] value       = metadata.getAttribyte("value").getArray();
+            ValuePair[] value       = AnnotationContext.getAnnotationMetadata(ConditionOnAnnotation.class, element).getAttribyte("value").getArray();
             for (ValuePair each : value)
             {
                 Class<? extends Annotation> aClass;

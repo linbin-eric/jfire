@@ -1,14 +1,16 @@
 package com.jfirer.jfire.core.prepare.annotation.condition.provide;
 
-import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
 import com.jfirer.baseutil.bytecode.annotation.ValuePair;
+import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.jfire.core.ApplicationContext;
+import com.jfirer.jfire.core.prepare.annotation.condition.Condition;
 import com.jfirer.jfire.core.prepare.annotation.condition.Conditional;
 import com.jfirer.jfire.core.prepare.annotation.condition.ErrorMessage;
 import com.jfirer.jfire.core.prepare.annotation.condition.provide.ConditionOnMissBeanType.OnMissBeanType;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.AnnotatedElement;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Conditional(OnMissBeanType.class)
@@ -16,19 +18,13 @@ public @interface ConditionOnMissBeanType
 {
     Class<?>[] value();
 
-    class OnMissBeanType extends BaseCondition
+    class OnMissBeanType implements Condition
     {
-
-        public OnMissBeanType()
-        {
-            super(ConditionOnMissBeanType.class);
-        }
-
         @Override
-        protected boolean handleSelectAnnoType(ApplicationContext applicationContext, AnnotationMetadata metadata, ErrorMessage errorMessage)
+        public boolean match(ApplicationContext context, AnnotatedElement element, ErrorMessage errorMessage)
         {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            ValuePair[] value       = metadata.getAttribyte("value").getArray();
+            ValuePair[] value       = AnnotationContext.getAnnotationMetadata(ConditionOnMissBeanType.class, element).getAttribyte("value").getArray();
             for (ValuePair each : value)
             {
                 Class<?> aClass;
@@ -40,7 +36,7 @@ public @interface ConditionOnMissBeanType
                 {
                     continue;
                 }
-                if (applicationContext.getBeanRegisterInfo(aClass) != null)
+                if (context.getBeanRegisterInfo(aClass) != null)
                 {
                     errorMessage.addErrorMessage("已经存在类型:" + each + "的Bean");
                     return false;

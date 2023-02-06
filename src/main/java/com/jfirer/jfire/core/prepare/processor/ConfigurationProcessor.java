@@ -2,8 +2,6 @@ package com.jfirer.jfire.core.prepare.processor;
 
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.TRACEID;
-import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
-import com.jfirer.baseutil.bytecode.annotation.ValuePair;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.reflect.ReflectUtil;
 import com.jfirer.jfire.core.ApplicationContext;
@@ -20,6 +18,7 @@ import com.jfirer.jfire.util.PrepareConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Set;
@@ -50,16 +49,14 @@ public class ConfigurationProcessor implements ContextPrepare
                                     errorMessage.clear();
                                     if (AnnotationContext.isAnnotationPresent(Conditional.class, method))
                                     {
-                                        AnnotationContext annotationContext = AnnotationContext.getInstanceOn(method);
-                                        if (AnnotationContext.getAnnotationMetadatas(Conditional.class, method).stream().anyMatch(conditional -> matchCondition(context, conditional, annotationContext, errorMessage) == false))
+                                        if (AnnotationContext.getAnnotations(Conditional.class, method).stream().anyMatch(conditional -> matchCondition(context, conditional, method, errorMessage) == false))
                                         {
                                             return false;
                                         }
                                     }
                                     if (AnnotationContext.isAnnotationPresent(Conditional.class, method.getDeclaringClass()))
                                     {
-                                        AnnotationContext annotationContext = AnnotationContext.getInstanceOn(method.getDeclaringClass());
-                                        if (AnnotationContext.getAnnotationMetadatas(Conditional.class, method.getDeclaringClass()).stream().anyMatch(conditional -> matchCondition(context, conditional, annotationContext, errorMessage) == false))
+                                        if (AnnotationContext.getAnnotations(Conditional.class, method.getDeclaringClass()).stream().anyMatch(conditional -> matchCondition(context, conditional, method.getDeclaringClass(), errorMessage) == false))
                                         {
                                             return false;
                                         }
@@ -81,21 +78,19 @@ public class ConfigurationProcessor implements ContextPrepare
      *
      * @param context
      * @param conditional
-     * @param annotationContext 在元素上的注解集合。元素可能为class也可能为member
+     * @param element
      * @param errorMessage
      * @return
      */
-    private boolean matchCondition(ApplicationContext context, AnnotationMetadata conditional, AnnotationContext annotationContext, ErrorMessage errorMessage)
+    private boolean matchCondition(ApplicationContext context, Conditional conditional, AnnotatedElement element, ErrorMessage errorMessage)
     {
-        boolean     match       = true;
-        ValuePair[] value       = conditional.getAttribyte("value").getArray();
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (ValuePair each : value)
+        boolean match = true;
+        for (Class<? extends Condition> each : conditional.value())
         {
             try
             {
-                Condition instance = (Condition) (classLoader.loadClass(each.getClassName())).newInstance();
-                if (!instance.match(context, annotationContext, errorMessage))
+                Condition instance = each.getDeclaredConstructor().newInstance();
+                if (!instance.match(context, element, errorMessage))
                 {
                     match = false;
                     break;
