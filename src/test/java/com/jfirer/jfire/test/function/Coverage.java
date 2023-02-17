@@ -32,9 +32,8 @@ import org.junit.runners.Suite;
         PropertyPathImporterTest.class, //
         StarterTest.class, //
         CyclicDependenceTest.class,//
+        BeanHolderTest.class,//
         AnnodatationDatabaseTest.class,//
 })
 public class Coverage
-{
-
-}
+{}

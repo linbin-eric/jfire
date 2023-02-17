@@ -121,7 +121,11 @@ public class PrototypeBeanDefinition implements BeanDefinition
     {
         if (cycDependStack.contains(current))
         {
-            //代码运行到这一步，意味着在map中的对象发生了循环引用。框架能支持的循环引用只有循环引用的Bean都是因为属性被注入，且Bean的生成方式都是反射的时候才可以。
+            /**
+             * 代码运行到这一步，意味着在map中的对象发生了循环引用。
+             * 框架能支持的循环引用只有循环引用的Bean都是因为属性被注入，且Bean的生成方式都是反射的时候才可以。
+             * 因此，整体的检查逻辑就是从依赖堆栈不断往前检查，如果直到循环依赖为止，引用的Bean都是反射生成的就没有问题；如果有出现一个不是的，则进行报错
+             */
             int index = cycDependStack.size() - 1;
             do
             {

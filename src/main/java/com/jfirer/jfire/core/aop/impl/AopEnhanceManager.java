@@ -97,7 +97,9 @@ public class AopEnhanceManager implements EnhanceManager
                        list.add(new EnhanceClassData(enhanceClass, collect));
                    });
         }
-        return beanRegisterInfo -> list.stream().filter(v -> StringUtil.match(beanRegisterInfo.getType().getName(), v.enhanceClass.value())).flatMap(v -> v.collection().stream()).anyMatch(matchTargetMethod -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods()).anyMatch(matchTargetMethod::match));
+        return beanRegisterInfo -> list.stream().filter(v -> StringUtil.match(beanRegisterInfo.getType().getName(), v.enhanceClass.value()))//
+                                       .flatMap(v -> v.collection().stream())//
+                                       .anyMatch(matchTargetMethod -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods()).anyMatch(matchTargetMethod::match));
     }
 
     @Override

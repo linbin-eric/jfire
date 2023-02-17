@@ -1,10 +1,12 @@
 package com.jfirer.jfire.core.inject.impl;
 
+import com.jfirer.baseutil.Formatter;
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.reflect.ValueAccessor;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
+import com.jfirer.jfire.core.inject.BeanHolder;
 import com.jfirer.jfire.core.inject.InjectHandler;
 import com.jfirer.jfire.core.inject.notated.CanBeNull;
 import com.jfirer.jfire.core.inject.notated.MapKeyMethodName;
@@ -48,6 +50,10 @@ public class DefaultDependencyInjectHandler implements InjectHandler
         {
             inject = new CollectionInject();
         }
+        else if (BeanHolder.class.isAssignableFrom(fieldType))
+        {
+            inject = new BeanHolderInject();
+        }
         else if (fieldType.isInterface() || Modifier.isAbstract(fieldType.getModifiers()))
         {
             inject = new AbstractInject();
@@ -73,6 +79,49 @@ public class DefaultDependencyInjectHandler implements InjectHandler
     interface Inject
     {
         void inject(Object instance);
+    }
+
+    class BeanHolderImpl<T> implements BeanHolder<T>
+    {
+        private final T instance;
+
+        BeanHolderImpl(T instance) {this.instance = instance;}
+
+        @Override
+        public T getSelf()
+        {
+            return instance;
+        }
+    }
+
+    class BeanHolderInject implements Inject
+    {
+        private BeanRegisterInfo beanRegisterInfo;
+
+        public BeanHolderInject()
+        {
+            Field    field              = valueAccessor.getField();
+            Class<?> declaringClass     = field.getDeclaringClass();
+            Type     actualTypeArgument = ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+            if (declaringClass.equals(actualTypeArgument) == false)
+            {
+                throw new IllegalArgumentException(Formatter.format("请检查类:{}的字段:{}，BeanHolder字段的泛型必须要匹配该字段所在的类", declaringClass.getName(), field.getName()));
+            }
+            beanRegisterInfo = context.getBeanRegisterInfo(declaringClass);
+            if (beanRegisterInfo == null)
+            {
+                //不应该出现这种情况
+                throw new IllegalStateException();
+            }
+        }
+
+        @Override
+        public void inject(Object instance)
+        {
+            Object                 bean       = beanRegisterInfo.get().getBean();
+            BeanHolderImpl<Object> beanHolder = new BeanHolderImpl<>(bean);
+            valueAccessor.setObject(instance, beanHolder);
+        }
     }
 
     class InstacenInject implements Inject
