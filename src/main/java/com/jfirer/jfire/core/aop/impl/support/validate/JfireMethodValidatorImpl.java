@@ -16,7 +16,7 @@ public class JfireMethodValidatorImpl implements ValidateEnhanceManager.JfireMet
     private Validator validator;
 
     @PostConstruct
-    protected void initialize()
+    public void initialize()
     {
         validator = Validation.buildDefaultValidatorFactory().getValidator();
     }

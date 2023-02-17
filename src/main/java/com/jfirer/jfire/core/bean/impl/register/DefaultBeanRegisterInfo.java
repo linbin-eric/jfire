@@ -1,5 +1,6 @@
 package com.jfirer.jfire.core.bean.impl.register;
 
+import com.jfirer.baseutil.Formatter;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.smc.SmcHelper;
 import com.jfirer.baseutil.smc.model.ClassModel;
@@ -147,6 +148,10 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
             if (any.isPresent())
             {
                 Method method = any.get();
+                if (Modifier.isPublic(method.getModifiers()) == false)
+                {
+                    throw new IllegalStateException(Formatter.format("PostConstruct标记的方法应该是public，请检查{}.{}", method.getDeclaringClass().getName(), method.getName()));
+                }
                 method.setAccessible(true);
                 return method;
             }
