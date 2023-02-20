@@ -9,7 +9,6 @@ import com.jfirer.jfire.core.aop.impl.AopEnhanceManager;
 import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager;
 import com.jfirer.jfire.core.aop.impl.TransactionEnhanceManager;
 import com.jfirer.jfire.core.aop.impl.ValidateEnhanceManager;
-import com.jfirer.jfire.core.bean.AwareContextComplete;
 import com.jfirer.jfire.core.bean.BeanDefinition;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.bean.impl.register.ContextPrepareBeanRegisterInfo;
@@ -90,7 +89,7 @@ public class DefaultApplicationContext implements ApplicationContext
         }
         LOGGER.debug("traceId:{} 准备获取所有的EnhanceManager，执行增强扫描", traceId);
         enhanceScan();
-        beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> beanRegisterInfo instanceof AwareContextComplete).forEach(beanRegisterInfo -> ((AwareContextComplete) beanRegisterInfo).complete());
+        beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> beanRegisterInfo instanceof DefaultBeanRegisterInfo).forEach(beanRegisterInfo -> ((DefaultBeanRegisterInfo) beanRegisterInfo).complete());
         LOGGER.debug("traceId:{} 准备获取所有的AwareContextInited接口实现，执行aware方法", traceId);
         awareContextInit();
         LOGGER.info("traceId:{} 容器启动完毕,启动耗时:{} ms", traceId, (System.nanoTime() - t0) / 1000000);

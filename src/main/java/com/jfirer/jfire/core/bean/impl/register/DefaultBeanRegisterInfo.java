@@ -12,7 +12,6 @@ import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.EnhanceWrapper;
 import com.jfirer.jfire.core.aop.ProceedPoint;
 import com.jfirer.jfire.core.aop.ProceedPointImpl;
-import com.jfirer.jfire.core.bean.AwareContextComplete;
 import com.jfirer.jfire.core.bean.BeanDefinition;
 import com.jfirer.jfire.core.bean.impl.definition.PrototypeBeanDefinition;
 import com.jfirer.jfire.core.bean.impl.definition.SingletonBeanDefinition;
@@ -33,7 +32,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implements AwareContextComplete
+public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder
 {
     private final boolean             prototype;
     // 该Bean的类
@@ -67,13 +66,11 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder implement
         return list.toArray(new InjectHandler[list.size()]);
     }
 
-    @Override
     public void complete()
     {
         complete = true;
     }
 
-    @Override
     public void check()
     {
         if (!complete)
