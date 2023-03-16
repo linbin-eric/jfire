@@ -9,6 +9,7 @@ import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.inject.BeanHolder;
 import com.jfirer.jfire.core.inject.InjectHandler;
 import com.jfirer.jfire.core.inject.notated.CanBeNull;
+import com.jfirer.jfire.core.inject.notated.MapKeyBySimpleClassName;
 import com.jfirer.jfire.core.inject.notated.MapKeyMethodName;
 import com.jfirer.jfire.exception.BeanDefinitionCanNotFindException;
 import com.jfirer.jfire.exception.InjectTypeException;
@@ -73,6 +74,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
     enum MapKeyType
     {
         BEAN_NAME,
+        SIMPLE_CLASSNAME,
         METHOD
     }
 
@@ -315,6 +317,10 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                     throw new MapKeyMethodCanNotFindException(methodName, rawType, e);
                 }
             }
+            else if (annotationContext.isAnnotationPresent(MapKeyBySimpleClassName.class))
+            {
+                mapKeyType = MapKeyType.SIMPLE_CLASSNAME;
+            }
             else
             {
                 mapKeyType = MapKeyType.BEAN_NAME;
@@ -335,24 +341,37 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                 }
                 switch (mapKeyType)
                 {
-                    case METHOD:
+                    case SIMPLE_CLASSNAME ->
+                    {
+                        for (BeanRegisterInfo each : beanRegisterInfos)
+                        {
+                            Object entryValue = each.get().getBean();
+                            String entryKey   = each.getType().getSimpleName();
+                            value.put(entryKey, entryValue);
+                        }
+                    }
+                    case METHOD ->
+                    {
                         for (BeanRegisterInfo each : beanRegisterInfos)
                         {
                             Object entryValue = each.get().getBean();
                             Object entryKey   = method.invoke(entryValue);
                             value.put(entryKey, entryValue);
                         }
-                        break;
-                    case BEAN_NAME:
+                    }
+                    case BEAN_NAME ->
+                    {
                         for (BeanRegisterInfo each : beanRegisterInfos)
                         {
                             Object entryValue = each.get().getBean();
                             String entryKey   = each.getBeanName();
                             value.put(entryKey, entryValue);
                         }
-                        break;
-                    default:
-                        break;
+                    }
+                    default ->
+                    {
+                        ;
+                    }
                 }
             }
             catch (Exception e)
