@@ -178,13 +178,12 @@ public class AopEnhanceManager implements EnhanceManager
 
     private boolean processBeforeAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String            traceId           = TRACEID.currentTraceId();
         Before            before            = annotationContextOnEnhanceMethod.getAnnotation(Before.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, before.value(), before.custom());
         return Arrays.stream(originType.getDeclaredMethods())//
                      .filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
-                         logger.debug("traceId:{} 前置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         logger.debug("前置通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                          MethodModel                methodModel = classModel.getMethodModel(key);
                          String                     originBody  = methodModel.getBody();
@@ -284,12 +283,11 @@ public class AopEnhanceManager implements EnhanceManager
 
     private boolean processAfterAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String            traceId           = TRACEID.currentTraceId();
         After             after             = annotationContextOnEnhanceMethod.getAnnotation(After.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, after.value(), after.custom());
         return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
-                         logger.debug("traceId:{} 后置通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         logger.debug("后置通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                          MethodModel                methodModel = classModel.getMethodModel(key);
                          String                     originBody  = methodModel.getBody();
@@ -317,12 +315,11 @@ public class AopEnhanceManager implements EnhanceManager
 
     private boolean processAfterReturningAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String            traceId           = TRACEID.currentTraceId();
         AfterReturning    afterReturning    = annotationContextOnEnhanceMethod.getAnnotation(AfterReturning.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterReturning.value(), afterReturning.custom());
         return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
-                         logger.debug("traceId:{} 返回通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         logger.debug("返回通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
                          MethodModel                origin = classModel.removeMethodModel(key);
                          MethodModel                newOne = new MethodModel(method, classModel);
@@ -348,13 +345,12 @@ public class AopEnhanceManager implements EnhanceManager
 
     private boolean processAfterThrowableAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String            traceId           = TRACEID.currentTraceId();
         AfterThrowable    afterThrowable    = annotationContextOnEnhanceMethod.getAnnotation(AfterThrowable.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterThrowable.value(), afterThrowable.custom());
         classModel.addImport(ReflectUtil.class);
         return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge()).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
-                         logger.debug("traceId:{} 规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         logger.debug("规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                          MethodModel                methodModel = classModel.getMethodModel(key);
                          String                     body        = methodModel.getBody();
@@ -388,12 +384,11 @@ public class AopEnhanceManager implements EnhanceManager
 
     private boolean processAroundAdvice(ClassModel classModel, Class<?> originType, AnnotationContext annotationContextOnEnhanceMethod, String hostFieldName, String fieldName, Method enhanceMethod)
     {
-        String            traceId           = TRACEID.currentTraceId();
         Around            around            = annotationContextOnEnhanceMethod.getAnnotation(Around.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, around.value(), around.custom());
         return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
-                         logger.debug("traceId:{} 环绕通知规则匹配成功，方法:{},通知方法:{}", traceId, method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
+                         logger.debug("环绕通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                          MethodModel                methodModel = classModel.getMethodModel(key);
                          boolean[]                  flags       = new boolean[methodModel.getParamterTypes().length];

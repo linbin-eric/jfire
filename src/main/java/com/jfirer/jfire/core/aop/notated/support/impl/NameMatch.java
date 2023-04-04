@@ -21,8 +21,7 @@ public class NameMatch implements MatchTargetMethod
     @Override
     public boolean match(Method method)
     {
-        String traceId = TRACEID.currentTraceId();
-        logger.trace("traceId:{} 准备匹配AOP方法拦截，规则:{},方法:{}", traceId, rule, method.toGenericString());
+        logger.trace("准备匹配AOP方法拦截，规则:{},方法:{}",  rule, method.toGenericString());
         String methodNameRule = rule.substring(0, rule.indexOf('('));
         if (!StringUtil.match(method.getName(), methodNameRule))
         {

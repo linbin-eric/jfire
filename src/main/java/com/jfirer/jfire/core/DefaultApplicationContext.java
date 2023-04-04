@@ -4,6 +4,8 @@ import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.TRACEID;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.smc.compiler.CompileHelper;
+import com.jfirer.baseutil.time.NanoTimeWatch;
+import com.jfirer.baseutil.time.Timewatch;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.impl.AopEnhanceManager;
 import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager;
@@ -18,6 +20,7 @@ import com.jfirer.jfire.core.bean.impl.register.OutterBeanRegisterInfo;
 import com.jfirer.jfire.core.beanfactory.SelectBeanFactory;
 import com.jfirer.jfire.core.beanfactory.impl.ClassBeanFactory;
 import com.jfirer.jfire.core.beanfactory.impl.SelectedBeanFactory;
+import com.jfirer.jfire.core.listener.ApplicationContextEvent;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
 import com.jfirer.jfire.core.prepare.annotation.Import;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
@@ -28,24 +31,26 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class DefaultApplicationContext implements ApplicationContext
 {
-    public static final  CompileHelper                 COMPILE_HELPER      = new CompileHelper();
-    private static final Logger                        LOGGER              = LoggerFactory.getLogger(DefaultApplicationContext.class);
+    public static final  CompileHelper                     COMPILE_HELPER      = new CompileHelper();
+    private static final Logger                            LOGGER              = LoggerFactory.getLogger(DefaultApplicationContext.class);
     /**
      * 只有Configuration注解下并且有Conditional注解的情况下，才会有Bean是否被注册的可能。
      * 如果支持每一轮刷新都根据不同的环境变量或者其他条件满足来增减Bean定义会变得较为复杂，而且实际上也没有遇到这样的场景。
      * 因为目前简化为只支持Bean定义不断增多。
      */
-    protected            Map<String, BeanRegisterInfo> beanRegisterInfoMap = new HashMap<>();
-    private final        Environment                   environment         = new Environment.EnvironmentImpl();
+    protected            Map<String, BeanRegisterInfo>     beanRegisterInfoMap = new HashMap<>();
+    private final        Environment                       environment         = new Environment.EnvironmentImpl();
     /**
      * 容器是否刷新过。只有刷新过的容器才能对外提供完整服务。
      */
-    private              boolean                       freshed             = false;
-    private              long                          t0                  = System.nanoTime();
+    private              boolean                           freshed             = false;
+    private              Consumer<ApplicationContextEvent> consumer            = v -> {};
+    private              NanoTimeWatch                     timewatch           = new NanoTimeWatch();
 
     public DefaultApplicationContext(Class<?> bootStarpClass)
     {
@@ -64,6 +69,7 @@ public class DefaultApplicationContext implements ApplicationContext
     {
         if (!freshed)
         {
+            consumer.accept(new ApplicationContextEvent.RefreshStart());
             refresh();
         }
     }
@@ -78,21 +84,20 @@ public class DefaultApplicationContext implements ApplicationContext
     private void refresh()
     {
         freshed = true;
-        String traceId = TRACEID.currentTraceId();
         registerInternalClass();
         processImports();
         if (processContextPrepare() == FoundNewContextPrepare.YES)
         {
-            LOGGER.debug("traceId:{} 执行ContextPrepare接口，发现需要刷新容器", traceId);
+            LOGGER.debug("执行ContextPrepare接口，发现需要刷新容器");
             refresh();
             return;
         }
-        LOGGER.debug("traceId:{} 准备获取所有的EnhanceManager，执行增强扫描", traceId);
+        LOGGER.debug("准备获取所有的EnhanceManager，执行增强扫描");
         enhanceScan();
         beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> beanRegisterInfo instanceof DefaultBeanRegisterInfo).forEach(beanRegisterInfo -> ((DefaultBeanRegisterInfo) beanRegisterInfo).complete());
-        LOGGER.debug("traceId:{} 准备获取所有的AwareContextInited接口实现，执行aware方法", traceId);
+        LOGGER.debug("准备获取所有的AwareContextInited接口实现，执行aware方法");
         awareContextInit();
-        LOGGER.info("traceId:{} 容器启动完毕,启动耗时:{} ms", traceId, (System.nanoTime() - t0) / 1000000);
+        consumer.accept(new ApplicationContextEvent.RefreshEnd());
     }
 
     private void registerInternalClass()
@@ -112,7 +117,13 @@ public class DefaultApplicationContext implements ApplicationContext
                                         .map(beanRegisterInfo -> ((ContextPrepare) beanRegisterInfo.get().getBean()))//
                                         .collect(Collectors.toList()).stream()//
                                         .sorted(Comparator.comparingInt(ContextPrepare::order))//
-                                        .map(contextPrepare -> contextPrepare.prepare(DefaultApplicationContext.this))//
+                                        .map(contextPrepare -> {
+                                            timewatch.start();
+                                            FoundNewContextPrepare prepare = contextPrepare.prepare(DefaultApplicationContext.this);
+                                            timewatch.end();
+                                            consumer.accept(new ApplicationContextEvent.ExecuteContextPrepare(contextPrepare, (int) timewatch.getTotal()));
+                                            return prepare;
+                                        })//
                                         .filter(foundNewContextPrepare -> foundNewContextPrepare == FoundNewContextPrepare.YES)//
                                         .count();
         return count > 0 ? FoundNewContextPrepare.YES : FoundNewContextPrepare.NO;
@@ -127,7 +138,7 @@ public class DefaultApplicationContext implements ApplicationContext
                                                          .flatMap(importAnnotation -> Arrays.stream(importAnnotation.value())).collect(Collectors.toSet());//
         //这里不能将两个Stream操作合并在一起，否则在遍历的过程中又添加新的元素到底层的map,会导致异常。
         importClasses.stream()//
-                     .peek(ckass -> LOGGER.debug("traceId:{} 发现被导入的类:{}，准备进行导入", TRACEID.currentTraceId(), ckass))//
+                     .peek(ckass -> LOGGER.debug("发现被导入的类:{}，准备进行导入", ckass))//
                      .forEach(ckass -> register(ckass));//
     }
 
@@ -157,7 +168,7 @@ public class DefaultApplicationContext implements ApplicationContext
         }
         if (beanRegisterInfoMap.containsKey(beanName))
         {
-            LOGGER.debug("traceId:{} beanName:{}已经存在，本次忽略", TRACEID.currentTraceId(), beanName);
+            LOGGER.debug("beanName:{}已经存在，本次忽略", beanName);
             return RegisterResult.NODATA;
         }
         if (AnnotationContext.isAnnotationPresent(SelectBeanFactory.class, ckass))
@@ -177,49 +188,60 @@ public class DefaultApplicationContext implements ApplicationContext
         String beanName = beanRegisterInfo.getBeanName();
         if (beanRegisterInfoMap.containsKey(beanName))
         {
-            LOGGER.debug("traceId:{} beanName:{}已经存在，本次忽略", TRACEID.currentTraceId(), beanRegisterInfo.getBeanName());
+            LOGGER.debug("beanName:{}已经存在，本次忽略", beanRegisterInfo.getBeanName());
             return RegisterResult.NODATA;
         }
+        consumer.accept(new ApplicationContextEvent.BeanRegister(beanRegisterInfo));
         beanRegisterInfoMap.put(beanRegisterInfo.getBeanName(), beanRegisterInfo);
         Class<?> type = beanRegisterInfo.getType();
         if (ContextPrepare.class.isAssignableFrom(type))
         {
-            LOGGER.debug("traceId:{} 注册bean:{}，其实现了ContextPrepare接口", TRACEID.currentTraceId(), beanRegisterInfo.getBeanName());
+            LOGGER.debug("注册bean:{}，其实现了ContextPrepare接口", beanRegisterInfo.getBeanName());
             return RegisterResult.PREPARE;
         }
         else if (AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))
         {
-            LOGGER.debug("traceId:{} 注册bean:{}，其标记了Configuration注解", TRACEID.currentTraceId(), beanRegisterInfo.getBeanName());
+            LOGGER.debug("注册bean:{}，其标记了Configuration注解", beanRegisterInfo.getBeanName());
             return RegisterResult.CONFIGURATION;
         }
         else
         {
-            LOGGER.debug("traceId:{} 注册bean:{}", TRACEID.currentTraceId(), beanRegisterInfo.getBeanName());
+            LOGGER.debug("注册bean:{}", beanRegisterInfo.getBeanName());
             return RegisterResult.BEAN;
         }
     }
 
+    @Override
+    public void publishEvent(ApplicationContextEvent event)
+    {
+        consumer.accept(event);
+    }
+
     private void awareContextInit()
     {
-        String traceId = TRACEID.currentTraceId();
         beanRegisterInfoMap.values().stream()//
                            .filter(beanRegisterInfo -> AwareContextInited.class.isAssignableFrom(beanRegisterInfo.getType()))//
                            .forEach(beanRegisterInfo -> {
+                               timewatch.start();
                                ((AwareContextInited) beanRegisterInfo.get().getBean()).aware(DefaultApplicationContext.this);
-                               LOGGER.debug("traceId:{} Bean：{}执行aware方法", traceId, beanRegisterInfo.getBeanName());
+                               timewatch.end();
+                               consumer.accept(new ApplicationContextEvent.ExecuteAwareContextInit(beanRegisterInfo, (int) timewatch.getTotal()));
+                               LOGGER.debug("Bean：{}执行aware方法", beanRegisterInfo.getBeanName());
                            });
     }
 
     private void enhanceScan()
     {
-        String traceId = TRACEID.currentTraceId();
         getBeanRegisterInfos(EnhanceManager.class).stream()//
                                                   .map(beanRegisterInfo -> ((EnhanceManager) beanRegisterInfo.get().getBean()))//
                                                   .sorted(((o1, o2) -> o1.order() > o2.order() ? 1 : o1.order() == o2.order() ? 0 : -1))//
                                                   .forEach(enhanceManager ->//
                                                            {
-                                                               LOGGER.debug("traceId:{} 增强类:{}执行AOP扫描", traceId, enhanceManager.getClass().getName());
+                                                               LOGGER.debug("增强类:{}执行AOP扫描", enhanceManager.getClass().getName());
+                                                               timewatch.start();
                                                                enhanceManager.scan(DefaultApplicationContext.this);
+                                                               timewatch.end();
+                                                               consumer.accept(new ApplicationContextEvent.ExecuteEnhanceManager(enhanceManager, (int) timewatch.getTotal()));
                                                            });
     }
 
@@ -286,5 +308,10 @@ public class DefaultApplicationContext implements ApplicationContext
             throw new BeanDefinitionCanNotFindException(beanName);
         }
         return (E) beanRegisterInfo.get().getBean();
+    }
+
+    public void setConsumer(Consumer<ApplicationContextEvent> consumer)
+    {
+        this.consumer = consumer;
     }
 }

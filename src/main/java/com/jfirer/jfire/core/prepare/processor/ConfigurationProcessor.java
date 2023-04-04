@@ -110,6 +110,6 @@ public class ConfigurationProcessor implements ContextPrepare
         String           beanName         = StringUtil.isNotBlank(bean.name()) ? bean.name() : method.getName();
         BeanRegisterInfo beanRegisterInfo = new DefaultBeanRegisterInfo(bean.prototype(), method.getReturnType(), beanName, context, new MethodBeanFactory(context, method));
         context.registerBeanRegisterInfo(beanRegisterInfo);
-        logger.debug("traceId:{} 注册方法Bean:{}", TRACEID.currentTraceId(), method.getDeclaringClass().getSimpleName() + "." + method.getName());
+        logger.debug("注册方法Bean:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName());
     }
 }

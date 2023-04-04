@@ -6,10 +6,7 @@ import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.reflect.ReflectUtil;
 import com.jfirer.jfire.core.ApplicationContext;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +19,7 @@ public class Utils
     public static BiConsumer<String, ApplicationContext> readPropertyFile()
     {
         return (String path, ApplicationContext context) -> {
-            if (path.endsWith("ini")|| path.endsWith("properties"))
+            if (path.endsWith("ini") || path.endsWith("properties"))
             {
                 IniReader.IniFile iniFile = Utils.readIniFile(path);
                 for (String property : iniFile.keySet())
@@ -68,51 +65,41 @@ public class Utils
 
     private static <R> R processPath(String path, Function<InputStream, R> function)
     {
-        InputStream inputStream = null;
-        try
+        if (path.startsWith("classpath:"))
         {
-            if (path.startsWith("classpath:"))
+            path = path.substring(10);
+            if (Utils.class.getClassLoader().getResource(path) == null)
             {
-                path = path.substring(10);
-                if (Utils.class.getClassLoader().getResource(path) == null)
-                {
-                    throw new NullPointerException(StringUtil.format("资源:{}不存在", path));
-                }
-                inputStream = Utils.class.getClassLoader().getResourceAsStream(path);
+                throw new NullPointerException(StringUtil.format("资源:{}不存在", path));
             }
-            else if (path.startsWith("file:"))
+            try (InputStream inputStream = Utils.class.getClassLoader().getResourceAsStream(path))
             {
-                path = path.substring(5);
-                if (!new File(path).exists())
-                {
-                    throw new NullPointerException(StringUtil.format("资源:{}不存在", path));
-                }
-                inputStream = new FileInputStream(new File(path));
-            }
-            else
-            {
-                throw new UnsupportedOperationException("不支持的资源识别前缀:" + path);
-            }
-            return function.apply(inputStream);
-        }
-        catch (Exception e)
-        {
-            ReflectUtil.throwException(e);
-            return null;
-        }
-        finally
-        {
-            try
-            {
-                if (inputStream != null)
-                {
-                    inputStream.close();
-                    inputStream = null;
-                }
+                return function.apply(inputStream);
             }
             catch (IOException e)
             {
+                throw new RuntimeException(e);
             }
+        }
+        else if (path.startsWith("file:"))
+        {
+            path = path.substring(5);
+            if (!new File(path).exists())
+            {
+                throw new NullPointerException(StringUtil.format("资源:{}不存在", path));
+            }
+            try (InputStream inputStream = new FileInputStream(new File(path)))
+            {
+                return function.apply(inputStream);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+        else
+        {
+            throw new UnsupportedOperationException("不支持的资源识别前缀:" + path);
         }
     }
 }

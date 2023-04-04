@@ -1,8 +1,10 @@
 package com.jfirer.jfire.core;
 
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
+import com.jfirer.jfire.core.listener.ApplicationContextEvent;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 
 public interface ApplicationContext
 {
@@ -40,6 +42,8 @@ public interface ApplicationContext
      */
     RegisterResult registerBeanRegisterInfo(BeanRegisterInfo beanRegisterInfo);
 
+    void publishEvent(ApplicationContextEvent event);
+
     enum FoundNewContextPrepare
     {
         YES,
@@ -62,5 +66,19 @@ public interface ApplicationContext
     static ApplicationContext boot()
     {
         return new DefaultApplicationContext();
+    }
+
+    static ApplicationContext boot(Class<?> bootClass, Consumer<ApplicationContextEvent> consumer)
+    {
+        DefaultApplicationContext applicationContext = new DefaultApplicationContext(bootClass);
+        applicationContext.setConsumer(consumer);
+        return applicationContext;
+    }
+
+    static ApplicationContext boot(Consumer<ApplicationContextEvent> consumer)
+    {
+        DefaultApplicationContext applicationContext = new DefaultApplicationContext();
+        applicationContext.setConsumer(consumer);
+        return applicationContext;
     }
 }

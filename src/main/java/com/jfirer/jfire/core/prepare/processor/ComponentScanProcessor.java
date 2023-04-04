@@ -41,7 +41,7 @@ public class ComponentScanProcessor implements ContextPrepare
                                 try
                                 {
                                     Class<?> ckass = classLoader.loadClass(className);
-                                    LOGGER.debug("traceId:{} 扫描发现类:{}", TRACEID.currentTraceId(), className);
+                                    LOGGER.debug("扫描发现类:{}", className);
                                     return context.register(ckass);
                                 }
                                 catch (ClassNotFoundException e)

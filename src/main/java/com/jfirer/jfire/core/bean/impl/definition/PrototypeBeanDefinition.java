@@ -7,6 +7,7 @@ import com.jfirer.jfire.core.bean.BeanDefinition;
 import com.jfirer.jfire.core.beanfactory.BeanFactory;
 import com.jfirer.jfire.core.beanfactory.impl.ClassBeanFactory;
 import com.jfirer.jfire.core.inject.InjectHandler;
+import com.jfirer.jfire.core.listener.ApplicationContextEvent;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
 import com.jfirer.jfire.exception.NewBeanInstanceException;
 import com.jfirer.jfire.exception.PostConstructMethodException;
@@ -53,6 +54,7 @@ public class PrototypeBeanDefinition implements BeanDefinition
 
     protected synchronized Object buildInstance()
     {
+        long                t0             = System.nanoTime();
         List<CycData>       cycDependStack = cyclicDependenceQueue.get();
         CycData             current        = new CycData(beanName, beanFactory);
         Map<String, Object> map            = tmpBeanInstanceMap.get();
@@ -94,6 +96,7 @@ public class PrototypeBeanDefinition implements BeanDefinition
                 //由于设置增强属性也带来依赖，因此这一步的设置必须在 map.put(getBeanName(), instance)调用之后执行
                 wrapper.setEnhanceFields(context);
             }
+            long t1 = System.nanoTime();
             if (postConstructMethod != null)
             {
                 try
@@ -104,6 +107,11 @@ public class PrototypeBeanDefinition implements BeanDefinition
                 {
                     throw new PostConstructMethodException(e);
                 }
+                context.publishEvent(new ApplicationContextEvent.BeanBuildInstance(beanName, type, (int) (t1 - t0), (int) (System.nanoTime() - t1)));
+            }
+            else
+            {
+                context.publishEvent(new ApplicationContextEvent.BeanBuildInstance(beanName, type, (int) (t1 - t0), 0));
             }
             return instance;
         }
