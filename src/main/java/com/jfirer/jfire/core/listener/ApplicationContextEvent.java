@@ -1,13 +1,14 @@
 package com.jfirer.jfire.core.listener;
 
-import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
+import lombok.Builder;
+import lombok.Data;
 
 public interface ApplicationContextEvent
 {
-    public static class RefreshStart implements ApplicationContextEvent
+    class RefreshStart implements ApplicationContextEvent
     {}
 
     class RefreshEnd implements ApplicationContextEvent
@@ -31,9 +32,9 @@ public interface ApplicationContextEvent
     class ExecuteContextPrepare implements ApplicationContextEvent
     {
         ContextPrepare contextPrepare;
-        int            cost;
+        long           cost;
 
-        public ExecuteContextPrepare(ContextPrepare contextPrepare, int cost)
+        public ExecuteContextPrepare(ContextPrepare contextPrepare, long cost)
         {
             this.contextPrepare = contextPrepare;
             this.cost = cost;
@@ -44,7 +45,7 @@ public interface ApplicationContextEvent
             return contextPrepare;
         }
 
-        public int getCost()
+        public long getCost()
         {
             return cost;
         }
@@ -53,9 +54,9 @@ public interface ApplicationContextEvent
     class ExecuteEnhanceManager implements ApplicationContextEvent
     {
         EnhanceManager enhanceManager;
-        int            cost;
+        long           cost;
 
-        public ExecuteEnhanceManager(EnhanceManager enhanceManager, int cost)
+        public ExecuteEnhanceManager(EnhanceManager enhanceManager, long cost)
         {
             this.enhanceManager = enhanceManager;
             this.cost = cost;
@@ -66,7 +67,7 @@ public interface ApplicationContextEvent
             return enhanceManager;
         }
 
-        public int getCost()
+        public long getCost()
         {
             return cost;
         }
@@ -75,9 +76,9 @@ public interface ApplicationContextEvent
     class ExecuteAwareContextInit implements ApplicationContextEvent
     {
         BeanRegisterInfo beanRegisterInfo;
-        int              cost;
+        long             cost;
 
-        public ExecuteAwareContextInit(BeanRegisterInfo beanRegisterInfo, int cost)
+        public ExecuteAwareContextInit(BeanRegisterInfo beanRegisterInfo, long cost)
         {
             this.beanRegisterInfo = beanRegisterInfo;
             this.cost = cost;
@@ -88,45 +89,24 @@ public interface ApplicationContextEvent
             return beanRegisterInfo;
         }
 
-        public int getCost()
+        public long getCost()
         {
             return cost;
         }
     }
 
+    @Data
+    @Builder
     class BeanBuildInstance implements ApplicationContextEvent
     {
         String   beanName;
         Class<?> type;
-        int      buildCost;
-        int      initCost;
-
-        public BeanBuildInstance(String beanName, Class<?> type, int buildCost, int initCost)
-        {
-            this.beanName = beanName;
-            this.type = type;
-            this.buildCost = buildCost;
-            this.initCost = initCost;
-        }
-
-        public String getBeanName()
-        {
-            return beanName;
-        }
-
-        public Class<?> getType()
-        {
-            return type;
-        }
-
-        public int getBuildCost()
-        {
-            return buildCost;
-        }
-
-        public int getInitCost()
-        {
-            return initCost;
-        }
+        long     cycTestCost;
+        long     getUnEnhanceInstanceCost;
+        long     enhanceCost;
+        long     injectCost;
+        long     setEnhanceFieldsCost;
+        long     postConstructMethodCost;
+        long     allCost;
     }
 }

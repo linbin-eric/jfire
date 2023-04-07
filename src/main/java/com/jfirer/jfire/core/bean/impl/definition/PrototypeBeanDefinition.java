@@ -54,7 +54,10 @@ public class PrototypeBeanDefinition implements BeanDefinition
 
     protected synchronized Object buildInstance()
     {
+        ApplicationContextEvent.BeanBuildInstance.BeanBuildInstanceBuilder builder = ApplicationContextEvent.BeanBuildInstance.builder();
+        builder.beanName(beanName).type(type);
         long                t0             = System.nanoTime();
+        long                first          = t0;
         List<CycData>       cycDependStack = cyclicDependenceQueue.get();
         CycData             current        = new CycData(beanName, beanFactory);
         Map<String, Object> map            = tmpBeanInstanceMap.get();
@@ -67,8 +70,12 @@ public class PrototypeBeanDefinition implements BeanDefinition
             {
                 return instance;
             }
+            builder.cycTestCost(System.nanoTime() - t0);
+            t0 = System.nanoTime();
             Object unEnhanceInstance;
             unEnhanceInstance = instance = beanFactory.getUnEnhanceyInstance(this);
+            builder.getUnEnhanceInstanceCost(System.nanoTime() - t0);
+            t0 = System.nanoTime();
             if (enhanceType != null)
             {
                 try
@@ -81,6 +88,12 @@ public class PrototypeBeanDefinition implements BeanDefinition
                 {
                     throw new NewBeanInstanceException(e);
                 }
+                builder.enhanceCost(System.nanoTime() - t0);
+                t0 = System.nanoTime();
+            }
+            else
+            {
+                builder.enhanceCost(0);
             }
             map.put(getBeanName(), instance);
             if (injectHandlers.length != 0)
@@ -90,13 +103,16 @@ public class PrototypeBeanDefinition implements BeanDefinition
                     each.inject(unEnhanceInstance);
                 }
             }
+            builder.injectCost(System.nanoTime() - t0);
+            t0 = System.nanoTime();
             //调用setEnhanceFields时候，其内部实现要求获取的Bean已经是一个实例化好了的Bean，因此需要在依赖注入之后进行，成功率最大。
             if (instance instanceof EnhanceWrapper wrapper)
             {
                 //由于设置增强属性也带来依赖，因此这一步的设置必须在 map.put(getBeanName(), instance)调用之后执行
                 wrapper.setEnhanceFields(context);
+                builder.setEnhanceFieldsCost(System.nanoTime() - t0);
+                t0 = System.nanoTime();
             }
-            long t1 = System.nanoTime();
             if (postConstructMethod != null)
             {
                 try
@@ -107,12 +123,14 @@ public class PrototypeBeanDefinition implements BeanDefinition
                 {
                     throw new PostConstructMethodException(e);
                 }
-                context.publishEvent(new ApplicationContextEvent.BeanBuildInstance(beanName, type, (int) (t1 - t0), (int) (System.nanoTime() - t1)));
+                builder.postConstructMethodCost(System.nanoTime() - t0);
             }
             else
             {
-                context.publishEvent(new ApplicationContextEvent.BeanBuildInstance(beanName, type, (int) (t1 - t0), 0));
+                builder.postConstructMethodCost(0);
             }
+            builder.allCost(System.nanoTime() - first);
+            context.publishEvent(builder.build());
             return instance;
         }
         finally

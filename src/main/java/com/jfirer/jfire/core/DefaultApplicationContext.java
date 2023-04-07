@@ -1,11 +1,9 @@
 package com.jfirer.jfire.core;
 
 import com.jfirer.baseutil.StringUtil;
-import com.jfirer.baseutil.TRACEID;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.smc.compiler.CompileHelper;
 import com.jfirer.baseutil.time.NanoTimeWatch;
-import com.jfirer.baseutil.time.Timewatch;
 import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.impl.AopEnhanceManager;
 import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager;
@@ -121,7 +119,7 @@ public class DefaultApplicationContext implements ApplicationContext
                                             timewatch.start();
                                             FoundNewContextPrepare prepare = contextPrepare.prepare(DefaultApplicationContext.this);
                                             timewatch.end();
-                                            consumer.accept(new ApplicationContextEvent.ExecuteContextPrepare(contextPrepare, (int) timewatch.getTotal()));
+                                            consumer.accept(new ApplicationContextEvent.ExecuteContextPrepare(contextPrepare, timewatch.getTotal()));
                                             return prepare;
                                         })//
                                         .filter(foundNewContextPrepare -> foundNewContextPrepare == FoundNewContextPrepare.YES)//
@@ -222,11 +220,12 @@ public class DefaultApplicationContext implements ApplicationContext
         beanRegisterInfoMap.values().stream()//
                            .filter(beanRegisterInfo -> AwareContextInited.class.isAssignableFrom(beanRegisterInfo.getType()))//
                            .forEach(beanRegisterInfo -> {
+                               AwareContextInited awareContextInited = (AwareContextInited) beanRegisterInfo.get().getBean();
                                timewatch.start();
-                               ((AwareContextInited) beanRegisterInfo.get().getBean()).aware(DefaultApplicationContext.this);
+                               awareContextInited.aware(DefaultApplicationContext.this);
                                timewatch.end();
-                               consumer.accept(new ApplicationContextEvent.ExecuteAwareContextInit(beanRegisterInfo, (int) timewatch.getTotal()));
-                               LOGGER.debug("Bean：{}执行aware方法", beanRegisterInfo.getBeanName());
+                               consumer.accept(new ApplicationContextEvent.ExecuteAwareContextInit(beanRegisterInfo, timewatch.getTotal()));
+                               LOGGER.debug("Bean：{}执行aware方法，耗时:{}", beanRegisterInfo.getBeanName(), timewatch.getTotal() / 1000000L);
                            });
     }
 
@@ -241,7 +240,7 @@ public class DefaultApplicationContext implements ApplicationContext
                                                                timewatch.start();
                                                                enhanceManager.scan(DefaultApplicationContext.this);
                                                                timewatch.end();
-                                                               consumer.accept(new ApplicationContextEvent.ExecuteEnhanceManager(enhanceManager, (int) timewatch.getTotal()));
+                                                               consumer.accept(new ApplicationContextEvent.ExecuteEnhanceManager(enhanceManager, timewatch.getTotal()));
                                                            });
     }
 
