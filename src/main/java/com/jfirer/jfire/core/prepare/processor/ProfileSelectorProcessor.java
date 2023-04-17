@@ -11,6 +11,7 @@ import com.jfirer.jfire.util.PrepareConstant;
 import com.jfirer.jfire.util.Utils;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ProfileSelectorProcessor implements ContextPrepare
 {
@@ -22,13 +23,17 @@ public class ProfileSelectorProcessor implements ContextPrepare
         {
             return ApplicationContext.FoundNewContextPrepare.NO;
         }
+        AtomicReference reference = new AtomicReference();
         context.getAllBeanRegisterInfos().stream()//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(ProfileSelector.class, beanRegisterInfo.getType()))//
-               .map(beanRegisterInfo -> AnnotationContext.getAnnotation(ProfileSelector.class, beanRegisterInfo.getType()))//
+               .map(beanRegisterInfo -> {
+                   reference.set(beanRegisterInfo.getType());
+                   return AnnotationContext.getAnnotation(ProfileSelector.class, beanRegisterInfo.getType());
+               })//
                .flatMap(profileSelector -> Arrays.stream(profileSelector.value()))//
                .map(profile -> Formatter.format(profile, activeAttribute))//
-               .forEach(path -> Utils.readPropertyFile().accept(path, context));
+               .forEach(path -> Utils.readPropertyFile((Class<?>) reference.get()).accept(path, context));
         return ApplicationContext.FoundNewContextPrepare.NO;
     }
 

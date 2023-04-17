@@ -11,6 +11,7 @@ import com.jfirer.jfire.core.inject.InjectHandler;
 import com.jfirer.jfire.core.inject.notated.CanBeNull;
 import com.jfirer.jfire.core.inject.notated.MapKeyBySimpleClassName;
 import com.jfirer.jfire.core.inject.notated.MapKeyMethodName;
+import com.jfirer.jfire.core.prepare.annotation.configuration.Primary;
 import com.jfirer.jfire.exception.BeanDefinitionCanNotFindException;
 import com.jfirer.jfire.exception.InjectTypeException;
 import com.jfirer.jfire.exception.InjectValueException;
@@ -185,7 +186,15 @@ public class DefaultDependencyInjectHandler implements InjectHandler
                 Collection<BeanRegisterInfo> beanRegisterInfos = context.getBeanRegisterInfos(fieldType);
                 if (beanRegisterInfos.size() > 1)
                 {
-                    throw new BeanDefinitionCanNotFindException(beanRegisterInfos, fieldType);
+                    List<BeanRegisterInfo> primary = beanRegisterInfos.stream().filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Primary.class, beanRegisterInfo.getType())).toList();
+                    if (primary.size() != 1)
+                    {
+                        throw new BeanDefinitionCanNotFindException(beanRegisterInfos, fieldType);
+                    }
+                    else
+                    {
+                        beanRegisterInfo = primary.get(0);
+                    }
                 }
                 else if (beanRegisterInfos.size() == 1)
                 {

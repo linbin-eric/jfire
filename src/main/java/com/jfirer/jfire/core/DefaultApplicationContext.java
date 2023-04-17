@@ -217,15 +217,16 @@ public class DefaultApplicationContext implements ApplicationContext
 
     private void awareContextInit()
     {
+        record Wrapper(BeanRegisterInfo beanRegisterInfo, AwareContextInited awareContextInited) {}
         beanRegisterInfoMap.values().stream()//
                            .filter(beanRegisterInfo -> AwareContextInited.class.isAssignableFrom(beanRegisterInfo.getType()))//
-                           .forEach(beanRegisterInfo -> {
-                               AwareContextInited awareContextInited = (AwareContextInited) beanRegisterInfo.get().getBean();
+                           .map(beanRegisterInfo -> new Wrapper(beanRegisterInfo, ((AwareContextInited) beanRegisterInfo.get().getBean())))//
+                           .sorted(Comparator.comparingInt(w -> w.awareContextInited.order())).forEach(w -> {
                                timewatch.start();
-                               awareContextInited.aware(DefaultApplicationContext.this);
+                               w.awareContextInited.aware(DefaultApplicationContext.this);
                                timewatch.end();
-                               consumer.accept(new ApplicationContextEvent.ExecuteAwareContextInit(beanRegisterInfo, timewatch.getTotal()));
-                               LOGGER.debug("Bean：{}执行aware方法，耗时:{}", beanRegisterInfo.getBeanName(), timewatch.getTotal() / 1000000L);
+                               consumer.accept(new ApplicationContextEvent.ExecuteAwareContextInit(w.beanRegisterInfo, timewatch.getTotal()));
+                               LOGGER.debug("Bean：{}执行aware方法，耗时:{}", w.beanRegisterInfo.getBeanName(), timewatch.getTotal() / 1000000L);
                            });
     }
 

@@ -7,11 +7,15 @@ package com.jfirer.jfire.core;
  */
 public interface AwareContextInited
 {
-
     /**
      * 当容器初始化完成后，该接口会被容器调用
      *
      * @author 林斌(eric @ jfire.cn)
      */
     void aware(ApplicationContext applicationContext);
+
+    default int order()
+    {
+        return 0;
+    }
 }

@@ -16,12 +16,12 @@ import java.util.stream.Collectors;
 
 public class Utils
 {
-    public static BiConsumer<String, ApplicationContext> readPropertyFile()
+    public static BiConsumer<String, ApplicationContext> readPropertyFile(Class<?> rootClass)
     {
         return (String path, ApplicationContext context) -> {
             if (path.endsWith("ini") || path.endsWith("properties"))
             {
-                IniReader.IniFile iniFile = Utils.readIniFile(path);
+                IniReader.IniFile iniFile = Utils.readIniFile(path, rootClass);
                 for (String property : iniFile.keySet())
                 {
                     context.getEnv().putProperty(property, iniFile.getValue(property));
@@ -29,7 +29,7 @@ public class Utils
             }
             else if (path.endsWith("yml") || path.endsWith("yaml"))
             {
-                Map<String, Object> ymlFile = Utils.readYmlFile(path);
+                Map<String, Object> ymlFile = Utils.readYmlFile(path, rootClass);
                 ymlFile.forEach((name, value) -> {
                     if (value instanceof String s)
                     {
@@ -44,7 +44,7 @@ public class Utils
         };
     }
 
-    public static Map<String, Object> readYmlFile(String path)
+    public static Map<String, Object> readYmlFile(String path, Class<?> rootClass)
     {
         return processPath(path, inputStream -> {
             try
@@ -55,15 +55,15 @@ public class Utils
             {
                 throw new RuntimeException(e);
             }
-        });
+        }, rootClass);
     }
 
-    public static IniReader.IniFile readIniFile(String path)
+    public static IniReader.IniFile readIniFile(String path, Class<?> rootClass)
     {
-        return processPath(path, inputStream -> IniReader.read(inputStream, StandardCharsets.UTF_8));
+        return processPath(path, inputStream -> IniReader.read(inputStream, StandardCharsets.UTF_8), rootClass);
     }
 
-    private static <R> R processPath(String path, Function<InputStream, R> function)
+    private static <R> R processPath(String path, Function<InputStream, R> function, Class<?> rootClass)
     {
         if (path.startsWith("classpath:"))
         {
@@ -84,11 +84,25 @@ public class Utils
         else if (path.startsWith("file:"))
         {
             path = path.substring(5);
-            if (!new File(path).exists())
+            File dirPath = new File(rootClass.getProtectionDomain().getCodeSource().getLocation().getPath());
+            File pathFile;
+            if (dirPath.isFile())
             {
-                throw new NullPointerException(StringUtil.format("资源:{}不存在", path));
+                pathFile = new File(dirPath.getParentFile().getAbsolutePath() + File.separator + path);
             }
-            try (InputStream inputStream = new FileInputStream(new File(path)))
+            else
+            {
+                pathFile = new File(dirPath + File.separator + path);
+            }
+            if (pathFile.exists() == false)
+            {
+                pathFile = new File(path);
+                if (pathFile.exists() == false)
+                {
+                    throw new NullPointerException(StringUtil.format("资源:{}不存在", path));
+                }
+            }
+            try (InputStream inputStream = new FileInputStream(pathFile))
             {
                 return function.apply(inputStream);
             }
