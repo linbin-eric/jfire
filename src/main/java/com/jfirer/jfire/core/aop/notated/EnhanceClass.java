@@ -1,7 +1,5 @@
 package com.jfirer.jfire.core.aop.notated;
 
-import com.jfirer.jfire.core.aop.notated.support.MatchTargetMethod;
-
 import javax.annotation.Resource;
 import java.lang.annotation.*;
 
@@ -16,8 +14,6 @@ import java.lang.annotation.*;
 public @interface EnhanceClass
 {
     String value() default "";
-
-    Class<? extends MatchTargetMethod> custom() default MatchTargetMethod.class;
 
     /**
      * AOP执行的顺序。数字越大的越先执行。越先执行的越晚结束

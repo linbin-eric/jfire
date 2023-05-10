@@ -1,7 +1,6 @@
 package com.jfirer.jfire.core.aop.impl;
 
 import com.jfirer.baseutil.StringUtil;
-import com.jfirer.baseutil.TRACEID;
 import com.jfirer.baseutil.bytecode.annotation.AnnotationMetadata;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.reflect.ReflectUtil;
@@ -23,14 +22,16 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class AopEnhanceManager implements EnhanceManager
 {
     private static final Logger logger = LoggerFactory.getLogger(AopEnhanceManager.class);
 
-    record EnhanceClassData(EnhanceClass enhanceClass, Collection<MatchTargetMethod> collection) {}
+    record EnhanceClassData(List<String> enhanceClass, Collection<MatchTargetMethod> collection) {}
 
     List<EnhanceClassData> list;
 
@@ -44,8 +45,12 @@ public class AopEnhanceManager implements EnhanceManager
                    .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(EnhanceClass.class, beanRegisterInfo.getType()))//
                    .map(beanRegisterInfo -> beanRegisterInfo.getType())//
                    .forEach(ckass -> {
-                       EnhanceClass enhanceClass = AnnotationContext.getAnnotation(EnhanceClass.class, ckass);
-                       Set<MatchTargetMethod> collect = Arrays.stream(ckass.getDeclaredMethods()).filter(method -> {
+                       List<String> enhanceClass = Stream.iterate(ckass, (Class c) -> c != Object.class, (Class c) -> c.getSuperclass())//
+                                                         .filter(c -> AnnotationContext.isAnnotationPresent(EnhanceClass.class, c))//
+                                                         .map(c -> AnnotationContext.getAnnotation(EnhanceClass.class, c).value()).toList();
+                       Set<MatchTargetMethod> collect = Stream.iterate(ckass, (Class c) -> c != Object.class, (Class c) -> c.getSuperclass())//
+                                                              .flatMap(c -> Arrays.stream(c.getDeclaredMethods()))//
+                                                              .filter(method -> {
                                                                   AnnotationContext annotationContext = AnnotationContext.getInstanceOn(method);
                                                                   if (annotationContext.isAnnotationPresent(Before.class) //
                                                                       || annotationContext.isAnnotationPresent(After.class)//
@@ -97,7 +102,8 @@ public class AopEnhanceManager implements EnhanceManager
                        list.add(new EnhanceClassData(enhanceClass, collect));
                    });
         }
-        return beanRegisterInfo -> list.stream().filter(v -> StringUtil.match(beanRegisterInfo.getType().getName(), v.enhanceClass.value()))//
+        return beanRegisterInfo -> list.stream()//
+                                       .filter(v -> v.enhanceClass.stream().anyMatch(each -> StringUtil.match(beanRegisterInfo.getType().getName(), each)))//
                                        .flatMap(v -> v.collection().stream())//
                                        .anyMatch(matchTargetMethod -> Arrays.stream(beanRegisterInfo.getType().getDeclaredMethods()).anyMatch(matchTargetMethod::match));
     }
@@ -109,48 +115,49 @@ public class AopEnhanceManager implements EnhanceManager
         List<BeanRegisterInfo> list                   = findAspectClass(originType, applicationContext);
         for (BeanRegisterInfo each : list)
         {
-            String  fieldName   = "enhance_" + FIELD_NAME_COUNTER.getAndIncrement();
-            boolean realEnhance = false;
-            for (Method enhanceMethod : each.getType().getMethods())
-            {
-                AnnotationContext annotationContextOnEnhanceMethod = AnnotationContext.getInstanceOn(enhanceMethod);
-                if (annotationContextOnEnhanceMethod.isAnnotationPresent(Before.class))
-                {
-                    if (processBeforeAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                    {
-                        realEnhance = true;
-                    }
-                }
-                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(After.class))
-                {
-                    if (processAfterAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                    {
-                        realEnhance = true;
-                    }
-                }
-                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterReturning.class))
-                {
-                    if (processAfterReturningAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                    {
-                        realEnhance = true;
-                    }
-                }
-                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterThrowable.class))
-                {
-                    if (processAfterThrowableAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                    {
-                        realEnhance = true;
-                    }
-                }
-                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(Around.class))
-                {
-                    if (processAroundAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                    {
-                        realEnhance = true;
-                    }
-                }
-            }
-            if (realEnhance)
+            String        fieldName   = "enhance_" + FIELD_NAME_COUNTER.getAndIncrement();
+            AtomicBoolean realEnhance = new AtomicBoolean();
+            int sum = Stream.iterate(each.getType(), (Class<?> c) -> c != Object.class, (Class<?> c) -> c.getSuperclass()).flatMap(c -> Arrays.stream(c.getDeclaredMethods()))//
+                            .map(enhanceMethod -> {
+                                AnnotationContext annotationContextOnEnhanceMethod = AnnotationContext.getInstanceOn(enhanceMethod);
+                                if (annotationContextOnEnhanceMethod.isAnnotationPresent(Before.class))
+                                {
+                                    if (processBeforeAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                                    {
+                                        return 1;
+                                    }
+                                }
+                                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(After.class))
+                                {
+                                    if (processAfterAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                                    {
+                                        return 1;
+                                    }
+                                }
+                                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterReturning.class))
+                                {
+                                    if (processAfterReturningAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                                    {
+                                        return 1;
+                                    }
+                                }
+                                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterThrowable.class))
+                                {
+                                    if (processAfterThrowableAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                                    {
+                                        return 1;
+                                    }
+                                }
+                                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(Around.class))
+                                {
+                                    if (processAroundAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                                    {
+                                        return 1;
+                                    }
+                                }
+                                return 0;
+                            }).mapToInt(Integer::intValue).sum();
+            if (sum > 0)
             {
                 addFiledAndBuildSet(classModel, setEnhanceFieldsMethod, each, fieldName);
             }
@@ -216,8 +223,8 @@ public class AopEnhanceManager implements EnhanceManager
             {
                 matchTargetMethod = ckass.getDeclaredConstructor().newInstance();
             }
-            catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-                   NoSuchMethodException e)
+            catch (InstantiationException | IllegalAccessException |
+                   InvocationTargetException | NoSuchMethodException e)
             {
                 throw new RuntimeException(e);
             }
@@ -461,11 +468,17 @@ public class AopEnhanceManager implements EnhanceManager
 
     private List<BeanRegisterInfo> findAspectClass(Class<?> type, ApplicationContext applicationContext)
     {
-        List<BeanRegisterInfo> enhanceBeanRegisterList = applicationContext.getAllBeanRegisterInfos().stream().filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(EnhanceClass.class, beanRegisterInfo.getType())).filter(beanRegisterInfo -> {
-            AnnotationContext annotationContext = AnnotationContext.getInstanceOn(beanRegisterInfo.getType());
-            String            rule              = annotationContext.getAnnotation(EnhanceClass.class).value();
-            return StringUtil.match(type.getName(), rule);
-        }).sorted(Comparator.comparingInt(beanRegisterInfo -> AnnotationContext.getInstanceOn(beanRegisterInfo.getType()).getAnnotation(EnhanceClass.class).order())).collect(Collectors.toList());
+        List<BeanRegisterInfo> enhanceBeanRegisterList = applicationContext.getAllBeanRegisterInfos().stream()//
+                                                                           .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(EnhanceClass.class, beanRegisterInfo.getType()))//
+                                                                           .filter(beanRegisterInfo -> {
+                                                                               AnnotationContext annotationContext = AnnotationContext.getInstanceOn(beanRegisterInfo.getType());
+                                                                               return Stream.iterate(beanRegisterInfo.getType(), (Class c) -> c != Object.class, (Class c) -> c.getSuperclass())//
+                                                                                            .filter(c -> AnnotationContext.isAnnotationPresent(EnhanceClass.class, c))//
+                                                                                            .map(c -> AnnotationContext.getAnnotation(EnhanceClass.class, c).value())//
+                                                                                            .anyMatch(enhanceClass -> StringUtil.match(type.getName(), enhanceClass));
+                                                                           })//
+                                                                           .sorted(Comparator.comparingInt(beanRegisterInfo -> AnnotationContext.getInstanceOn(beanRegisterInfo.getType()).getAnnotation(EnhanceClass.class).order()))//
+                                                                           .collect(Collectors.toList());
         return enhanceBeanRegisterList;
     }
 
