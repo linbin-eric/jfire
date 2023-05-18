@@ -1,2 +1,5 @@
 person:
   name: test
+  map:
+    综合:  你好
+    hezuo:  0.57

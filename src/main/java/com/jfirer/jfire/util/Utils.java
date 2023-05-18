@@ -3,10 +3,12 @@ package com.jfirer.jfire.util;
 import com.jfirer.baseutil.IniReader;
 import com.jfirer.baseutil.SimpleYamlReader;
 import com.jfirer.baseutil.StringUtil;
-import com.jfirer.baseutil.reflect.ReflectUtil;
 import com.jfirer.jfire.core.ApplicationContext;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +40,10 @@ public class Utils
                     else if (value instanceof List<?> list)
                     {
                         context.getEnv().putProperty(name, list.stream().map(v -> (String) v).collect(Collectors.joining(",")));
+                    }
+                    else if (value instanceof Map<?, ?> map)
+                    {
+                        context.getEnv().putProperty(name, map.entrySet().stream().map(entry -> ((String) entry.getKey()) + ":" + ((String) entry.getValue())).collect(Collectors.joining(",")));
                     }
                 });
             }

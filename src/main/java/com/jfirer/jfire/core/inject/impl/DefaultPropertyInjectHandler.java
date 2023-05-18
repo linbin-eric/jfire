@@ -12,9 +12,7 @@ import com.jfirer.jfire.exception.InjectValueException;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class DefaultPropertyInjectHandler implements InjectHandler
 {
@@ -98,6 +96,10 @@ public class DefaultPropertyInjectHandler implements InjectHandler
             else if (type.isEnum())
             {
                 inject = new EnumInject(field);
+            }
+            else if (type == Map.class)
+            {
+                inject = new MapInject();
             }
             else
             {
@@ -271,6 +273,23 @@ public class DefaultPropertyInjectHandler implements InjectHandler
         EnumInject(Field field)
         {
             value = Enum.valueOf((Class<Enum>) field.getType(), propertyValue);
+        }
+    }
+
+    class MapInject extends AbstractInject
+    {
+        public MapInject()
+        {
+            Map<String, String> map   = new HashMap<>();
+            String[]            pairs = propertyValue.split(",");
+            for (String pair : pairs)
+            {
+                String[] split = pair.split(":");
+                String   key   = split[0];
+                String   value = split[1];
+                map.put(key, value);
+            }
+            value = map;
         }
     }
 }
