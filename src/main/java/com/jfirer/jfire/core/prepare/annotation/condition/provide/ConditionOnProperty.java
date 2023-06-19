@@ -12,13 +12,16 @@ import com.jfirer.jfire.core.prepare.annotation.condition.provide.ConditionOnPro
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.AnnotatedElement;
+import java.util.Arrays;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Conditional(OnProperty.class)
 public @interface ConditionOnProperty
 {
     /**
-     * 需要存在的属性名称
+     * 两种写法：
+     * 1、只写属性名称，此时只要求属性存在
+     * 2、书写"k=v"的形式，此时要求属性存在并且值也相等
      *
      * @return
      */
@@ -29,15 +32,22 @@ public @interface ConditionOnProperty
         @Override
         public boolean match(ApplicationContext context, AnnotatedElement element, ErrorMessage errorMessage)
         {
-            for (ValuePair each : AnnotationContext.getAnnotationMetadata(ConditionOnProperty.class, element).getAttribyte("value").getArray())
-            {
-                if (!StringUtil.isNotBlank(context.getEnv().getProperty(each.getStringValue())))
-                {
-                    errorMessage.addErrorMessage("缺少属性:" + each);
-                    return false;
-                }
-            }
-            return true;
+            return Arrays.stream(AnnotationContext.getAnnotationMetadata(ConditionOnProperty.class, element).getAttribyte("value").getArray())//
+                         .map(ValuePair::getStringValue)//
+                         .allMatch(value -> {
+                             if (value.contains("="))
+                             {
+                                 String[] split            = value.split("=");
+                                 String   property         = split[0];
+                                 String   propertyValue    = split[1];
+                                 String   envPropertyValue = context.getEnv().getProperty(property);
+                                 return StringUtil.isNotBlank(envPropertyValue) && envPropertyValue.equals(propertyValue);
+                             }
+                             else
+                             {
+                                 return StringUtil.isNotBlank(context.getEnv().getProperty(value));
+                             }
+                         });
         }
     }
 }
