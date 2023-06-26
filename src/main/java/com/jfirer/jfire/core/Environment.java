@@ -1,9 +1,6 @@
 package com.jfirer.jfire.core;
 
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 public interface Environment
 {
@@ -12,6 +9,8 @@ public interface Environment
     void addProperties(Properties properties);
 
     String getProperty(String propertyName);
+
+    Collection<String> properties();
 
     class EnvironmentImpl implements Environment
     {
@@ -27,8 +26,7 @@ public interface Environment
         public void addProperties(Properties properties)
         {
             Enumeration<?> enumeration = properties.propertyNames();
-            while (enumeration.hasMoreElements())
-            {
+            while (enumeration.hasMoreElements()) {
                 String name = (String) enumeration.nextElement();
                 store.put(name, (String) properties.get(name));
             }
@@ -38,6 +36,12 @@ public interface Environment
         public String getProperty(String propertyName)
         {
             return store.get(propertyName);
+        }
+
+        @Override
+        public Collection<String> properties()
+        {
+            return store.keySet();
         }
     }
 }
