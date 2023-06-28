@@ -18,41 +18,42 @@ import java.util.stream.Collectors;
 
 public class Utils
 {
-    public static BiConsumer<String, ApplicationContext> readPropertyFile(Class<?> rootClass)
+
+    public static void readPropertyFile(Class<?> rootClass, String path, ApplicationContext context)
     {
-        return (String path, ApplicationContext context) -> {
-            if (path.endsWith("ini") || path.endsWith("properties"))
+        if (path.endsWith("ini") || path.endsWith("properties"))
+        {
+            IniReader.IniFile iniFile = Utils.readIniFile(path, rootClass);
+            for (String property : iniFile.keySet())
             {
-                IniReader.IniFile iniFile = Utils.readIniFile(path, rootClass);
-                for (String property : iniFile.keySet())
-                {
-                    context.getEnv().putProperty(property, iniFile.getValue(property));
-                }
+                context.getEnv().putProperty(property, iniFile.getValue(property));
             }
-            else if (path.endsWith("yml") || path.endsWith("yaml"))
-            {
-                Map<String, Object> ymlFile = Utils.readYmlFile(path, rootClass);
-                ymlFile.forEach((name, value) -> {
-                    if (value instanceof String s)
-                    {
-                        context.getEnv().putProperty(name, s);
-                    }
-                    else if (value instanceof List<?> list)
-                    {
-                        context.getEnv().putProperty(name, list.stream().map(v -> (String) v).collect(Collectors.joining(",")));
-                    }
-                    else if (value instanceof Map<?, ?> map)
-                    {
-                        context.getEnv().putProperty(name, map.entrySet().stream().map(entry -> ((String) entry.getKey()) + ":" + ((String) entry.getValue())).collect(Collectors.joining(",")));
-                    }
-                });
-            }
-        };
+        }
+        else if (path.endsWith("yml") || path.endsWith("yaml"))
+        {
+            Map<String, Object> ymlFile = Utils.readYmlFile(path, rootClass);
+            ymlFile.forEach((name, value) ->
+                            {
+                                if (value instanceof String s)
+                                {
+                                    context.getEnv().putProperty(name, s);
+                                }
+                                else if (value instanceof List<?> list)
+                                {
+                                    context.getEnv().putProperty(name, list.stream().map(v -> (String) v).collect(Collectors.joining(",")));
+                                }
+                                else if (value instanceof Map<?, ?> map)
+                                {
+                                    context.getEnv().putProperty(name, map.entrySet().stream().map(entry -> ((String) entry.getKey()) + ":" + ((String) entry.getValue())).collect(Collectors.joining(",")));
+                                }
+                            });
+        }
     }
 
     public static Map<String, Object> readYmlFile(String path, Class<?> rootClass)
     {
-        return processPath(path, inputStream -> {
+        return processPath(path, inputStream ->
+        {
             try
             {
                 return SimpleYamlReader.read(inputStream);
@@ -91,15 +92,13 @@ public class Utils
         {
             path = path.substring(5);
             File dirPath = new File(rootClass.getProtectionDomain().getCodeSource().getLocation().getPath());
-            File pathFile;
-            if (dirPath.isFile())
+            dirPath = dirPath.isFile() ? dirPath.getParentFile() : dirPath;
+            while (path.startsWith("../"))
             {
-                pathFile = new File(dirPath.getParentFile().getAbsolutePath() + File.separator + path);
+                dirPath = dirPath.getParentFile();
+                path    = path.substring(3);
             }
-            else
-            {
-                pathFile = new File(dirPath + File.separator + path);
-            }
+            File pathFile = new File(dirPath, path);
             if (pathFile.exists() == false)
             {
                 pathFile = new File(path);

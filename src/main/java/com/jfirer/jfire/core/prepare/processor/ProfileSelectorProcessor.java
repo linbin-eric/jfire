@@ -19,21 +19,22 @@ public class ProfileSelectorProcessor implements ContextPrepare
     public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
         String activeAttribute = context.getEnv().getProperty(ProfileSelector.activePropertyName);
-        if (!StringUtil.isNotBlank(activeAttribute))
+        if (StringUtil.isBlank(activeAttribute))
         {
             return ApplicationContext.FoundNewContextPrepare.NO;
         }
-        AtomicReference reference = new AtomicReference();
+        AtomicReference<Class<?>> reference = new AtomicReference();
         context.getAllBeanRegisterInfos().stream()//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(ProfileSelector.class, beanRegisterInfo.getType()))//
-               .map(beanRegisterInfo -> {
-                   reference.set(beanRegisterInfo.getType());
-                   return AnnotationContext.getAnnotation(ProfileSelector.class, beanRegisterInfo.getType());
-               })//
+               .map(beanRegisterInfo ->
+                    {
+                        reference.set(beanRegisterInfo.getType());
+                        return AnnotationContext.getAnnotation(ProfileSelector.class, beanRegisterInfo.getType());
+                    })//
                .flatMap(profileSelector -> Arrays.stream(profileSelector.value()))//
                .map(profile -> Formatter.format(profile, activeAttribute))//
-               .forEach(path -> Utils.readPropertyFile((Class<?>) reference.get()).accept(path, context));
+               .forEach(path -> Utils.readPropertyFile(reference.get(), path, context));
         return ApplicationContext.FoundNewContextPrepare.NO;
     }
 

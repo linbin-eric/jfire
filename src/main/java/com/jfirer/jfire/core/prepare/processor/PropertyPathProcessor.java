@@ -16,8 +16,8 @@ public class PropertyPathProcessor implements ContextPrepare
     @Override
     public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
-        ClassLoader     classLoader = Thread.currentThread().getContextClassLoader();
-        AtomicReference reference   = new AtomicReference();
+        ClassLoader               classLoader = Thread.currentThread().getContextClassLoader();
+        AtomicReference<Class<?>> reference   = new AtomicReference();
         context.getAllBeanRegisterInfos().stream()//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(PropertyPath.class, beanRegisterInfo.getType()))//
@@ -27,7 +27,7 @@ public class PropertyPathProcessor implements ContextPrepare
                         return AnnotationContext.getAnnotation(PropertyPath.class, beanRegisterInfo.getType());
                     })//
                .flatMap(propertyPath -> Arrays.stream(propertyPath.value()))//
-               .forEach(path -> Utils.readPropertyFile((Class<?>) reference.get()).accept(path, context));
+               .forEach(path -> Utils.readPropertyFile(reference.get(), path, context));
         return ApplicationContext.FoundNewContextPrepare.NO;
     }
 
