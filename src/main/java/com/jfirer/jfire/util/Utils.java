@@ -4,18 +4,21 @@ import com.jfirer.baseutil.IniReader;
 import com.jfirer.baseutil.SimpleYamlReader;
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.jfire.core.ApplicationContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class Utils
 {
 
@@ -23,54 +26,33 @@ public class Utils
     {
         if (path.endsWith("ini") || path.endsWith("properties"))
         {
-            IniReader.IniFile iniFile = Utils.readIniFile(path, rootClass);
-            for (String property : iniFile.keySet())
-            {
-                context.getEnv().putProperty(property, iniFile.getValue(property));
-            }
+            processPath(path, inputStream -> IniReader.read(inputStream, StandardCharsets.UTF_8), rootClass,//
+                        iniFile -> iniFile.keySet().forEach(property -> context.getEnv().putProperty(property, iniFile.getValue(property)))
+
+                       );
         }
         else if (path.endsWith("yml") || path.endsWith("yaml"))
         {
-            Map<String, Object> ymlFile = Utils.readYmlFile(path, rootClass);
-            ymlFile.forEach((name, value) ->
-                            {
-                                if (value instanceof String s)
-                                {
-                                    context.getEnv().putProperty(name, s);
-                                }
-                                else if (value instanceof List<?> list)
-                                {
-                                    context.getEnv().putProperty(name, list.stream().map(v -> (String) v).collect(Collectors.joining(",")));
-                                }
-                                else if (value instanceof Map<?, ?> map)
-                                {
-                                    context.getEnv().putProperty(name, map.entrySet().stream().map(entry -> ((String) entry.getKey()) + ":" + ((String) entry.getValue())).collect(Collectors.joining(",")));
-                                }
-                            });
+            processPath(path, SimpleYamlReader::read, rootClass,//
+                        (Map<String, Object> yaml) -> yaml.forEach((name, value) ->
+                                                                   {
+                                                                       if (value instanceof String s)
+                                                                       {
+                                                                           context.getEnv().putProperty(name, s);
+                                                                       }
+                                                                       else if (value instanceof List<?> list)
+                                                                       {
+                                                                           context.getEnv().putProperty(name, list.stream().map(v -> (String) v).collect(Collectors.joining(",")));
+                                                                       }
+                                                                       else if (value instanceof Map<?, ?> map)
+                                                                       {
+                                                                           context.getEnv().putProperty(name, map.entrySet().stream().map(entry -> ((String) entry.getKey()) + ":" + ((String) entry.getValue())).collect(Collectors.joining(",")));
+                                                                       }
+                                                                   }));
         }
     }
 
-    public static Map<String, Object> readYmlFile(String path, Class<?> rootClass)
-    {
-        return processPath(path, inputStream ->
-        {
-            try
-            {
-                return SimpleYamlReader.read(inputStream);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }, rootClass);
-    }
-
-    public static IniReader.IniFile readIniFile(String path, Class<?> rootClass)
-    {
-        return processPath(path, inputStream -> IniReader.read(inputStream, StandardCharsets.UTF_8), rootClass);
-    }
-
-    private static <R> R processPath(String path, Function<InputStream, R> function, Class<?> rootClass)
+    private static <R> void processPath(String path, Function<InputStream, R> function, Class<?> rootClass, Consumer<R> consumer)
     {
         if (path.startsWith("classpath:"))
         {
@@ -81,35 +63,41 @@ public class Utils
             }
             try (InputStream inputStream = Utils.class.getClassLoader().getResourceAsStream(path))
             {
-                return function.apply(inputStream);
+                consumer.accept(function.apply(inputStream));
             }
             catch (IOException e)
             {
-                throw new RuntimeException(e);
+                log.warn("路径:{}的配置文件不存在", path);
             }
         }
         else if (path.startsWith("file:"))
         {
-            path = path.substring(5);
-            File dirPath = new File(rootClass.getProtectionDomain().getCodeSource().getLocation().getPath());
-            dirPath = dirPath.isFile() ? dirPath.getParentFile() : dirPath;
-            while (path.startsWith("../"))
+            String filePath = path.substring(5);
+            File   dirPath  = null;
+            try
             {
-                dirPath = dirPath.getParentFile();
-                path    = path.substring(3);
+                dirPath = new File(rootClass.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
             }
-            File pathFile = new File(dirPath, path);
+            catch (URISyntaxException e)
+            {
+                log.warn("路径:{}的配置文件不存在", path);
+                return;
+            }
+            dirPath = dirPath.isFile() ? dirPath : dirPath.getParentFile().getParentFile();
+            while (filePath.startsWith("../"))
+            {
+                dirPath  = dirPath.getParentFile();
+                filePath = filePath.substring(3);
+            }
+            File pathFile = new File(dirPath, filePath);
             if (pathFile.exists() == false)
             {
-                pathFile = new File(path);
-                if (pathFile.exists() == false)
-                {
-                    throw new NullPointerException(StringUtil.format("资源:{}不存在", path));
-                }
+                log.warn("路径:{}的配置文件不存在", path);
+                return;
             }
             try (InputStream inputStream = new FileInputStream(pathFile))
             {
-                return function.apply(inputStream);
+                consumer.accept(function.apply(inputStream));
             }
             catch (IOException e)
             {
