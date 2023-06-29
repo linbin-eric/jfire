@@ -81,7 +81,8 @@ public class Utils
                 log.warn("路径:{}的配置文件不存在", path);
                 return;
             }
-            dirPath = dirPath.isFile() ? dirPath : dirPath.getParentFile().getParentFile();
+            //如果 dirPath 是一个文件夹路径，则意味着在编译输出目录下的 classes 文件夹下；如果 dirPath 是一个文件，则意味着他是一个jar 包
+            dirPath = dirPath.isFile() ? dirPath.getParentFile() : dirPath.getParentFile().getParentFile();
             while (filePath.startsWith("../"))
             {
                 dirPath  = dirPath.getParentFile();
