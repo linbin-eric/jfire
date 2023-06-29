@@ -27,9 +27,7 @@ public class Utils
         if (path.endsWith("ini") || path.endsWith("properties"))
         {
             processPath(path, inputStream -> IniReader.read(inputStream, StandardCharsets.UTF_8), rootClass,//
-                        iniFile -> iniFile.keySet().forEach(property -> context.getEnv().putProperty(property, iniFile.getValue(property)))
-
-                       );
+                        iniFile -> iniFile.keySet().forEach(property -> context.getEnv().putProperty(property, iniFile.getValue(property))));
         }
         else if (path.endsWith("yml") || path.endsWith("yaml"))
         {
@@ -92,7 +90,7 @@ public class Utils
             File pathFile = new File(dirPath, filePath);
             if (pathFile.exists() == false)
             {
-                log.warn("路径:{}的配置文件不存在", path);
+                log.warn("路径:{}的配置文件不存在", pathFile.getAbsolutePath());
                 return;
             }
             try (InputStream inputStream = new FileInputStream(pathFile))
