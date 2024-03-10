@@ -17,7 +17,8 @@ import java.util.*;
 public class DefaultPropertyInjectHandler implements InjectHandler
 {
     private ValueAccessor valueAccessor;
-    private String        propertyValue;
+    private Object        propertyValue;
+    private String        propertyName;
     private Inject        inject;
 
     @Override
@@ -26,12 +27,12 @@ public class DefaultPropertyInjectHandler implements InjectHandler
         valueAccessor = new ValueAccessor(field);
         AnnotationContext annotationContext = AnnotationContext.getInstanceOn(field);
         PropertyRead      propertyRead      = annotationContext.getAnnotation(PropertyRead.class);
-        String            propertyName      = StringUtil.isNotBlank(propertyRead.value()) ? propertyRead.value() : field.getName();
+        propertyName = StringUtil.isNotBlank(propertyRead.value()) ? propertyRead.value() : field.getName();
         if (StringUtil.isNotBlank(System.getProperty(propertyName)))
         {
             propertyValue = System.getProperty(propertyName);
         }
-        else if (StringUtil.isNotBlank(applicationContext.getEnv().getProperty(propertyName)))
+        else if (applicationContext.getEnv().getProperty(propertyName) != null)
         {
             propertyValue = applicationContext.getEnv().getProperty(propertyName);
         }
@@ -145,7 +146,7 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         BooleanInject()
         {
-            value = Boolean.valueOf(propertyValue);
+            value = Boolean.valueOf((String) propertyValue);
         }
     }
 
@@ -153,7 +154,7 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         IntInject()
         {
-            value = Integer.valueOf(propertyValue);
+            value = Integer.valueOf((String) propertyValue);
         }
     }
 
@@ -161,7 +162,7 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         LongInject()
         {
-            value = Long.valueOf(propertyValue);
+            value = Long.valueOf((String) propertyValue);
         }
     }
 
@@ -169,7 +170,7 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         ShortInject()
         {
-            value = Short.valueOf(propertyValue);
+            value = Short.valueOf((String) propertyValue);
         }
     }
 
@@ -177,7 +178,7 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         FloatInject()
         {
-            value = Float.valueOf(propertyValue);
+            value = Float.valueOf((String) propertyValue);
         }
     }
 
@@ -185,7 +186,7 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         DoubleInject()
         {
-            value = Double.valueOf(propertyValue);
+            value = Double.valueOf((String) propertyValue);
         }
     }
 
@@ -193,13 +194,14 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         ByteArrayInject()
         {
-            if (propertyValue.startsWith("0x"))
+            String tmp = (String) propertyValue;
+            if (tmp.startsWith("0x"))
             {
-                value = StringUtil.hexStringToBytes(propertyValue.substring(2));
+                value = StringUtil.hexStringToBytes(tmp.substring(2));
             }
             else
             {
-                value = Base64Tool.decode(propertyValue);
+                value = Base64Tool.decode(tmp);
             }
         }
     }
@@ -210,7 +212,7 @@ public class DefaultPropertyInjectHandler implements InjectHandler
         {
             try
             {
-                value = this.getClass().getClassLoader().loadClass(propertyValue);
+                value = this.getClass().getClassLoader().loadClass((String) propertyValue);
             }
             catch (Exception e)
             {
@@ -223,7 +225,7 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         FileInject()
         {
-            value = new File(propertyValue);
+            value = new File((String) propertyValue);
         }
     }
 
@@ -231,13 +233,24 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         IntArrayInject()
         {
-            String[] tmp   = propertyValue.split(",");
-            int[]    array = new int[tmp.length];
-            for (int i = 0; i < array.length; i++)
+            if (propertyValue instanceof String s)
             {
-                array[i] = Integer.valueOf(tmp[i]);
+                String[] tmp   = s.split(",");
+                int[]    array = new int[tmp.length];
+                for (int i = 0; i < array.length; i++)
+                {
+                    array[i] = Integer.parseInt(tmp[i]);
+                }
+                value = array;
             }
-            value = array;
+            else if (propertyValue instanceof List<?> list)
+            {
+                value = list.stream().map(s -> (String) s).mapToInt(Integer::parseInt).toArray();
+            }
+            else
+            {
+                throw new IllegalArgumentException("属性:" + propertyName + "实际值不是数字列表也不是以,隔开的数字字符串，解析失败");
+            }
         }
     }
 
@@ -245,7 +258,14 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         StringInject()
         {
-            value = propertyValue;
+            if (propertyValue instanceof String)
+            {
+                value = propertyValue;
+            }
+            else
+            {
+                throw new IllegalArgumentException("属性:" + propertyName + "不是字符串，解析失败");
+            }
         }
     }
 
@@ -253,7 +273,18 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         StringArrayInject()
         {
-            value = propertyValue.split(",");
+            if (propertyValue instanceof String)
+            {
+                value = ((String) propertyValue).split(",");
+            }
+            else if (propertyValue instanceof List<?> list)
+            {
+                value = list.stream().map(s -> (String) s).toArray(String[]::new);
+            }
+            else
+            {
+                throw new IllegalArgumentException("属性:" + propertyName + "实际值不是字符串列表也不是以,隔开的字符串，解析失败");
+            }
         }
     }
 
@@ -262,7 +293,14 @@ public class DefaultPropertyInjectHandler implements InjectHandler
         SetStringInject()
         {
             Set<String> set = new HashSet<String>();
-            Collections.addAll(set, propertyValue.split(","));
+            if (propertyValue instanceof String s)
+            {
+                Collections.addAll(set, s.split(","));
+            }
+            else if (propertyValue instanceof List<?> list)
+            {
+                list.stream().map(s -> (String) s).forEach(set::add);
+            }
             value = set;
         }
     }
@@ -272,7 +310,7 @@ public class DefaultPropertyInjectHandler implements InjectHandler
         @SuppressWarnings({"unchecked", "rawtypes"})
         EnumInject(Field field)
         {
-            value = Enum.valueOf((Class<Enum>) field.getType(), propertyValue);
+            value = Enum.valueOf((Class<Enum>) field.getType(), (String) propertyValue);
         }
     }
 
@@ -280,16 +318,14 @@ public class DefaultPropertyInjectHandler implements InjectHandler
     {
         public MapInject()
         {
-            Map<String, String> map   = new HashMap<>();
-            String[]            pairs = propertyValue.split(",");
-            for (String pair : pairs)
+            if (propertyValue instanceof Map<?, ?>)
             {
-                String[] split = pair.split(":");
-                String   key   = split[0];
-                String   value = split[1];
-                map.put(key, value);
+                value = propertyValue;
             }
-            value = map;
+            else
+            {
+                throw new IllegalArgumentException("属性:" + propertyName + "实际值不是Map，解析失败");
+            }
         }
     }
 }

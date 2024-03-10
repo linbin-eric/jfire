@@ -1,8 +1,8 @@
 package com.jfirer.jfire.util;
 
-import com.jfirer.baseutil.IniReader;
-import com.jfirer.baseutil.SimpleYamlReader;
+import com.jfirer.baseutil.IoUtil;
 import com.jfirer.baseutil.StringUtil;
+import com.jfirer.baseutil.YamlReader;
 import com.jfirer.jfire.core.ApplicationContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,42 +12,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class Utils
 {
-
-    public static void readPropertyFile(Class<?> rootClass, String path, ApplicationContext context)
+    public static void readYmlConfig(Class<?> rootClass, String path, ApplicationContext context)
     {
-        if (path.endsWith("ini") || path.endsWith("properties"))
+        if (path.endsWith("yml") || path.endsWith("yaml"))
         {
-            processPath(path, inputStream -> IniReader.read(inputStream, StandardCharsets.UTF_8), rootClass,//
-                    iniFile -> iniFile.keySet().forEach(property -> context.getEnv().putProperty(property, iniFile.getValue(property))));
-        } else if (path.endsWith("yml") || path.endsWith("yaml"))
-        {
-            processPath(path, SimpleYamlReader::read, rootClass,//
-                    (Map<String, Object> yaml) -> yaml.forEach((name, value) ->
-                    {
-                        if (value instanceof String s)
-                        {
-                            context.getEnv().putProperty(name, s);
-                        } else if (value instanceof List<?> list)
-                        {
-                            context.getEnv().putProperty(name, list.stream().map(v -> (String) v).collect(Collectors.joining(",")));
-                        } else if (value instanceof Map<?, ?> map)
-                        {
-                            context.getEnv().putProperty(name, map.entrySet().stream().map(entry -> ((String) entry.getKey()) + ":" + ((String) entry.getValue())).collect(Collectors.joining(",")));
-                        }
-                    }));
+            processPath(path, rootClass,//
+                        content -> {
+                            Map<String, Object> mapWithFullPath = new YamlReader(content).getMapWithFullPath();
+                            mapWithFullPath.forEach((key, value) -> context.getEnv().putProperty(key, value));
+                        });
         }
     }
 
-    private static <R> void processPath(String path, Function<InputStream, R> function, Class<?> rootClass, Consumer<R> consumer)
+    private static <R> void processPath(String path, Class<?> rootClass, Consumer<String> consumer)
     {
         if (path.startsWith("classpath:"))
         {
@@ -58,19 +41,24 @@ public class Utils
             }
             try (InputStream inputStream = Utils.class.getClassLoader().getResourceAsStream(path))
             {
-                consumer.accept(function.apply(inputStream));
-            } catch (IOException e)
+                assert inputStream != null;
+                byte[] bytes = IoUtil.readAllBytes(inputStream);
+                consumer.accept(new String(bytes, StandardCharsets.UTF_8));
+            }
+            catch (Throwable e)
             {
                 log.warn("路径:{}的配置文件不存在", path);
             }
-        } else if (path.startsWith("file:"))
+        }
+        else if (path.startsWith("file:"))
         {
             String filePath = path.substring(5);
-            File dirPath = null;
+            File   dirPath  = null;
             try
             {
                 dirPath = new File(rootClass.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
-            } catch (URISyntaxException e)
+            }
+            catch (URISyntaxException e)
             {
                 log.warn("路径:{}的配置文件不存在", path);
                 return;
@@ -79,11 +67,11 @@ public class Utils
             dirPath = dirPath.isFile() ? dirPath.getParentFile() : dirPath.getParentFile().getParentFile();
             while (filePath.startsWith("../"))
             {
-                dirPath = dirPath.getParentFile();
+                dirPath  = dirPath.getParentFile();
                 filePath = filePath.substring(3);
             }
             File pathFile = new File(dirPath, filePath);
-            if (pathFile.exists() == false)
+            if (!pathFile.exists())
             {
                 log.warn("路径:{}的配置文件不存在", pathFile.getAbsolutePath());
                 return;
@@ -91,12 +79,15 @@ public class Utils
             log.info("读取配置文件:{}", pathFile);
             try (InputStream inputStream = new FileInputStream(pathFile))
             {
-                consumer.accept(function.apply(inputStream));
-            } catch (IOException e)
+                byte[] bytes = IoUtil.readAllBytes(inputStream);
+                consumer.accept(new String(bytes, StandardCharsets.UTF_8));
+            }
+            catch (IOException e)
             {
                 throw new RuntimeException(e);
             }
-        } else
+        }
+        else
         {
             throw new UnsupportedOperationException("不支持的资源识别前缀:" + path);
         }

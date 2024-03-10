@@ -13,12 +13,15 @@ import com.jfirer.jfire.util.Utils;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * 通过注解ProfileSelector的 value 属性来引入动态名称的配置文件位置，并且在activePropertyName代表的属性被激活的时候，来解析动态名称的文件位置实际值，并且载入系统。
+ */
 public class ProfileSelectorProcessor implements ContextPrepare
 {
     @Override
     public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
-        String activeAttribute = context.getEnv().getProperty(ProfileSelector.activePropertyName);
+        String activeAttribute = (String) context.getEnv().getProperty(ProfileSelector.activePropertyName);
         if (StringUtil.isBlank(activeAttribute))
         {
             return ApplicationContext.FoundNewContextPrepare.NO;
@@ -27,14 +30,13 @@ public class ProfileSelectorProcessor implements ContextPrepare
         context.getAllBeanRegisterInfos().stream()//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(ProfileSelector.class, beanRegisterInfo.getType()))//
-               .map(beanRegisterInfo ->
-                    {
-                        reference.set(beanRegisterInfo.getType());
-                        return AnnotationContext.getAnnotation(ProfileSelector.class, beanRegisterInfo.getType());
-                    })//
+               .map(beanRegisterInfo -> {
+                   reference.set(beanRegisterInfo.getType());
+                   return AnnotationContext.getAnnotation(ProfileSelector.class, beanRegisterInfo.getType());
+               })//
                .flatMap(profileSelector -> Arrays.stream(profileSelector.value()))//
                .map(profile -> Formatter.format(profile, activeAttribute))//
-               .forEach(path -> Utils.readPropertyFile(reference.get(), path, context));
+               .forEach(path -> Utils.readYmlConfig(reference.get(), path, context));
         return ApplicationContext.FoundNewContextPrepare.NO;
     }
 

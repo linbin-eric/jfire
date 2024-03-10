@@ -40,12 +40,12 @@ public @interface ConditionOnProperty
                                  String[] split            = value.split("=");
                                  String   property         = split[0];
                                  String   propertyValue    = split[1];
-                                 String   envPropertyValue = context.getEnv().getProperty(property);
+                                 String   envPropertyValue = (String) context.getEnv().getProperty(property);
                                  return StringUtil.isNotBlank(envPropertyValue) && envPropertyValue.equals(propertyValue);
                              }
                              else
                              {
-                                 return StringUtil.isNotBlank(context.getEnv().getProperty(value));
+                                 return context.getEnv().getProperty(value)!=null;
                              }
                          });
         }

@@ -21,13 +21,12 @@ public class PropertyPathProcessor implements ContextPrepare
         context.getAllBeanRegisterInfos().stream()//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(Configuration.class, beanRegisterInfo.getType()))//
                .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(PropertyPath.class, beanRegisterInfo.getType()))//
-               .map(beanRegisterInfo ->
-                    {
-                        reference.set(beanRegisterInfo.getType());
-                        return AnnotationContext.getAnnotation(PropertyPath.class, beanRegisterInfo.getType());
-                    })//
+               .map(beanRegisterInfo -> {
+                   reference.set(beanRegisterInfo.getType());
+                   return AnnotationContext.getAnnotation(PropertyPath.class, beanRegisterInfo.getType());
+               })//
                .flatMap(propertyPath -> Arrays.stream(propertyPath.value()))//
-               .forEach(path -> Utils.readPropertyFile(reference.get(), path, context));
+               .forEach(path -> Utils.readYmlConfig(reference.get(), path, context));
         return ApplicationContext.FoundNewContextPrepare.NO;
     }
 
