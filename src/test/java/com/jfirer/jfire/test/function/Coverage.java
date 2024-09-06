@@ -9,7 +9,6 @@ import com.jfirer.jfire.test.function.cyclicDependenceTest.CyclicDependenceTest;
 import com.jfirer.jfire.test.function.initmethod.InitMethodTest;
 import com.jfirer.jfire.test.function.loader.HolderTest;
 import com.jfirer.jfire.test.function.map.MapTest;
-import com.jfirer.jfire.test.function.validate.ValidateTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,7 +24,6 @@ import org.junit.runners.Suite;
         HolderTest.class, //
         ConfigurationOrderTest.class,//
         MapTest.class, //
-        ValidateTest.class, //
         ConfigBeanTest.class, //
         DiTest.class, //
         ParamFieldTest.class, //

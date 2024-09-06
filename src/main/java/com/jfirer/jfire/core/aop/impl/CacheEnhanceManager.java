@@ -14,6 +14,7 @@ import com.jfirer.jfire.core.aop.notated.cache.CacheGet;
 import com.jfirer.jfire.core.aop.notated.cache.CachePut;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfireel.expression.Expression;
+import com.jfirer.jfireel.expression.Operand;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -38,6 +39,7 @@ public class CacheEnhanceManager implements EnhanceManager
     public void enhance(ClassModel classModel, Class<?> type, ApplicationContext applicationContext, String hostFieldName)
     {
         classModel.addImport(Expression.class);
+        classModel.addImport(Operand.class);
         classModel.addImport(HashMap.class);
         classModel.addImport(Map.class);
         classModel.addImport(String.class);
@@ -283,7 +285,7 @@ public class CacheEnhanceManager implements EnhanceManager
     private String generateKeyField(ClassModel classModel, String key)
     {
         String     lexerKeyFieldName = "expression_" + FIELD_NAME_COUNTER.getAndIncrement();
-        FieldModel keyField          = new FieldModel(lexerKeyFieldName, Expression.class, "Expression.parse(\"" + key + "\")", classModel);
+        FieldModel keyField          = new FieldModel(lexerKeyFieldName, Operand.class, "Expression.parse(\"" + key + "\")", classModel);
         classModel.addField(keyField);
         return lexerKeyFieldName;
     }
@@ -291,7 +293,7 @@ public class CacheEnhanceManager implements EnhanceManager
     private String generateConditionField(ClassModel classModel, String condition)
     {
         String     lexerConditionFieldName = "expression_" + FIELD_NAME_COUNTER.getAndIncrement();
-        FieldModel conditionField          = new FieldModel(lexerConditionFieldName, Expression.class, "Expression.parse(\"" + condition + "\")", classModel);
+        FieldModel conditionField          = new FieldModel(lexerConditionFieldName, Operand.class, "Expression.parse(\"" + condition + "\")", classModel);
         classModel.addField(conditionField);
         return lexerConditionFieldName;
     }

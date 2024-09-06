@@ -8,7 +8,6 @@ import com.jfirer.jfire.core.aop.EnhanceManager;
 import com.jfirer.jfire.core.aop.impl.AopEnhanceManager;
 import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager;
 import com.jfirer.jfire.core.aop.impl.TransactionEnhanceManager;
-import com.jfirer.jfire.core.aop.impl.ValidateEnhanceManager;
 import com.jfirer.jfire.core.bean.BeanDefinition;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.bean.impl.register.ContextPrepareBeanRegisterInfo;
@@ -104,7 +103,6 @@ public class DefaultApplicationContext implements ApplicationContext
         register(AopEnhanceManager.class);
         register(TransactionEnhanceManager.class);
         register(CacheEnhanceManager.class);
-        register(ValidateEnhanceManager.class);
         register(ConfigurationProcessor.class);
     }
 
