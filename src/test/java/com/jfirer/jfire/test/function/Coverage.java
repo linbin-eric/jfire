@@ -31,7 +31,9 @@ import org.junit.runners.Suite;
         StarterTest.class, //
         CyclicDependenceTest.class,//
         BeanHolderTest.class,//
+        ImportTest.class,//
         AnnodatationDatabaseTest.class,//
 })
 public class Coverage
-{}
+{
+}

@@ -1,6 +1,6 @@
 package com.jfirer.jfire.core.inject.impl;
 
-import com.jfirer.baseutil.Formatter;
+import com.jfirer.baseutil.STR;
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.reflect.ValueAccessor;
@@ -108,7 +108,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
             Type     actualTypeArgument = ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
             if (declaringClass.equals(actualTypeArgument) == false)
             {
-                throw new IllegalArgumentException(Formatter.format("请检查类:{}的字段:{}，BeanHolder字段的泛型必须要匹配该字段所在的类", declaringClass.getName(), field.getName()));
+                throw new IllegalArgumentException(STR.format("请检查类:{}的字段:{}，BeanHolder字段的泛型必须要匹配该字段所在的类", declaringClass.getName(), field.getName()));
             }
             beanRegisterInfo = context.getBeanRegisterInfo(declaringClass);
             if (beanRegisterInfo == null)

@@ -1,6 +1,6 @@
 package com.jfirer.jfire.core.prepare.processor;
 
-import com.jfirer.baseutil.Formatter;
+import com.jfirer.baseutil.STR;
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.jfire.core.ApplicationContext;
@@ -35,7 +35,7 @@ public class ProfileSelectorProcessor implements ContextPrepare
                    return AnnotationContext.getAnnotation(ProfileSelector.class, beanRegisterInfo.getType());
                })//
                .flatMap(profileSelector -> Arrays.stream(profileSelector.value()))//
-               .map(profile -> Formatter.format(profile, activeAttribute))//
+               .map(profile -> STR.format(profile, activeAttribute))//
                .forEach(path -> Utils.readYmlConfig(reference.get(), path, context));
         return ApplicationContext.FoundNewContextPrepare.NO;
     }

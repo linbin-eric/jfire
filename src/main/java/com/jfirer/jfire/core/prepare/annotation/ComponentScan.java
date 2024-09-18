@@ -15,5 +15,5 @@ import java.lang.annotation.*;
 @Import(ComponentScanProcessor.class)
 public @interface ComponentScan
 {
-    String[] value();
+    String[] value() default {};
 }

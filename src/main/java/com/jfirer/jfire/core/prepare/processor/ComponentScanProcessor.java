@@ -1,36 +1,44 @@
 package com.jfirer.jfire.core.prepare.processor;
 
 import com.jfirer.baseutil.PackageScan;
-import com.jfirer.baseutil.TRACEID;
 import com.jfirer.baseutil.bytecode.ClassFileParser;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.bytecode.util.BytecodeUtil;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
+import com.jfirer.jfire.core.prepare.annotation.Import;
 import com.jfirer.jfire.util.PrepareConstant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * 负责在路径之下扫描具备@Resource的类
  */
+@Slf4j
 public class ComponentScanProcessor implements ContextPrepare
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ComponentScanProcessor.class);
-
     @Override
     public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         long count = context.getAllBeanRegisterInfos().stream()//
                             .filter(beanRegisterInfo -> AnnotationContext.isAnnotationPresent(ComponentScan.class, beanRegisterInfo.getType()))//
-                            .map(beanRegisterInfo -> AnnotationContext.getAnnotation(ComponentScan.class, beanRegisterInfo.getType()))//
-                            .flatMap(componentScan -> Arrays.stream(componentScan.value()))//
+                            .flatMap(beanRegisterInfo -> {
+                                ComponentScan componentScan = AnnotationContext.getAnnotation(ComponentScan.class, beanRegisterInfo.getType());
+                                if (componentScan.value().length == 0)
+                                {
+                                    return Arrays.stream(new String[]{beanRegisterInfo.getType().getPackage().getName()});
+                                }
+                                else
+                                {
+                                    return Arrays.stream(componentScan.value());
+                                }
+                            })//
                             .flatMap(scanPath -> Arrays.stream(PackageScan.scan(scanPath)))//
                             .map(className -> className.replace('.', '/'))//
                             .filter(resourceName -> new ClassFileParser(BytecodeUtil.loadBytecode(classLoader, resourceName)).parse().isAnnotation() == false)//
@@ -41,8 +49,39 @@ public class ComponentScanProcessor implements ContextPrepare
                                 try
                                 {
                                     Class<?> ckass = classLoader.loadClass(className);
-                                    LOGGER.debug("扫描发现类:{}", className);
-                                    return context.register(ckass);
+                                    log.debug("扫描发现类:{}", className);
+                                    if (AnnotationContext.isAnnotationPresent(Import.class, ckass))
+                                    {
+                                        List<Import>   imports      = AnnotationContext.getAnnotations(Import.class, ckass);
+                                        List<Class<?>> list         = imports.stream().map(Import::value).flatMap(values -> Arrays.stream(values)).toList();
+                                        boolean        existPrepare = false;
+                                        for (Class<?> aClass : list)
+                                        {
+                                            if (context.register(aClass) == ApplicationContext.RegisterResult.PREPARE)
+                                            {
+                                                existPrepare = true;
+                                            }
+                                        }
+                                        if (context.register(ckass) == ApplicationContext.RegisterResult.PREPARE)
+                                        {
+                                            existPrepare = true;
+                                        }
+                                        if (existPrepare)
+                                        {
+                                            return ApplicationContext.RegisterResult.PREPARE;
+                                        }
+                                        else
+                                        {
+                                            /**
+                                             * 因为这个集合最终是统计PREPARE结果的个数，因此其他的结果返回并不需要实际区分，返回什么都可以。
+                                             */
+                                            return ApplicationContext.RegisterResult.BEAN;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return context.register(ckass);
+                                    }
                                 }
                                 catch (ClassNotFoundException e)
                                 {
