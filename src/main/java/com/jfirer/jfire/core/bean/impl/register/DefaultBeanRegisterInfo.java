@@ -1,5 +1,7 @@
 package com.jfirer.jfire.core.bean.impl.register;
 
+import com.jfirer.baseutil.PostConstruct;
+import com.jfirer.baseutil.Resource;
 import com.jfirer.baseutil.STR;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.smc.SmcHelper;
@@ -22,8 +24,6 @@ import com.jfirer.jfire.core.inject.impl.DefaultPropertyInjectHandler;
 import com.jfirer.jfire.core.inject.notated.PropertyRead;
 import com.jfirer.jfire.exception.EnhanceException;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -45,10 +45,10 @@ public class DefaultBeanRegisterInfo extends BeanDefinitionCacheHolder
 
     public DefaultBeanRegisterInfo(boolean prototype, Class<?> type, String beanName, ApplicationContext context, BeanFactory beanFactory)
     {
-        this.prototype = prototype;
-        this.type = type;
-        this.beanName = beanName;
-        this.context = context;
+        this.prototype   = prototype;
+        this.type        = type;
+        this.beanName    = beanName;
+        this.context     = context;
         this.beanFactory = beanFactory;
     }
 

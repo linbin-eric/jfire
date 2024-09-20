@@ -1,11 +1,11 @@
 package com.jfirer.jfire.test.function.aop;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.aop.impl.support.transaction.ConnectionHolder;
 import com.jfirer.jfire.core.aop.impl.support.transaction.JdbcTransactionManager;
 import com.jfirer.jfire.core.aop.impl.support.transaction.Propagation;
 import com.jfirer.jfire.core.aop.impl.support.transaction.TransactionState;
 
-import javax.annotation.Resource;
 
 @Resource
 public class TxManager extends JdbcTransactionManager

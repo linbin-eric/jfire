@@ -1,13 +1,12 @@
 package com.jfirer.jfire.test.function.cyclicDependenceTest;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Bean;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import org.junit.Assert;
 import org.junit.Test;
-
-import javax.annotation.Resource;
 
 @Configuration
 @Resource
@@ -18,7 +17,9 @@ public class CyclicDependenceTest
     @Resource
     public static class A
     {
-        public static class FieldA {}
+        public static class FieldA
+        {
+        }
 
         @Resource
         FieldA a;
@@ -34,7 +35,9 @@ public class CyclicDependenceTest
     @Resource
     public static class B
     {
-        public static class FieldB {}
+        public static class FieldB
+        {
+        }
 
         @Resource
         FieldB b;

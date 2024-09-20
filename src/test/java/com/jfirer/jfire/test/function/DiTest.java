@@ -1,12 +1,12 @@
 package com.jfirer.jfire.test.function;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.inject.notated.CanBeNull;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.annotation.Resource;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -53,19 +53,16 @@ public class DiTest
 
     public interface forDi
     {
-
     }
 
     @Resource(name = "di")
     public static class ForDi1 implements forDi
     {
-
     }
 
     @Resource
     public static class ForDi2 implements forDi
     {
-
     }
 
     @Resource

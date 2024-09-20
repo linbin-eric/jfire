@@ -1,10 +1,9 @@
 package com.jfirer.jfire.core.aop.impl.support.cache;
 
-import javax.annotation.PostConstruct;
+import com.jfirer.baseutil.PostConstruct;
 
 public class ConcurrentMapCacheManager extends AbstractCacheManager
 {
-
     @PostConstruct
     public void init()
     {

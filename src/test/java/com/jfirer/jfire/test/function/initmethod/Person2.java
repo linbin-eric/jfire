@@ -1,6 +1,6 @@
 package com.jfirer.jfire.test.function.initmethod;
 
-import javax.annotation.Resource;
+import com.jfirer.baseutil.Resource;
 
 @Resource(name = "p2")
 public class Person2

@@ -1,5 +1,6 @@
 package com.jfirer.jfire.test.function.beanannotest;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.inject.notated.PropertyRead;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
@@ -9,7 +10,6 @@ import com.jfirer.jfire.core.prepare.annotation.condition.Conditional;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Bean;
 import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 
-import javax.annotation.Resource;
 
 @Configuration
 @ComponentScan("com.jfirer.jfire.test.function.beanannotest")

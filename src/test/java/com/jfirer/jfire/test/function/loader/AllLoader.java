@@ -1,9 +1,9 @@
 package com.jfirer.jfire.test.function.loader;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.bean.BeanDefinition;
 import com.jfirer.jfire.core.beanfactory.BeanFactory;
 
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 

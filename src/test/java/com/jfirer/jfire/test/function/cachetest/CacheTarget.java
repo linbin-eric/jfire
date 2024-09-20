@@ -1,5 +1,6 @@
 package com.jfirer.jfire.test.function.cachetest;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.baseutil.uniqueid.AutumnId;
 import com.jfirer.jfire.core.aop.notated.cache.CacheDelete;
 import com.jfirer.jfire.core.aop.notated.cache.CacheGet;
@@ -7,12 +8,9 @@ import com.jfirer.jfire.core.aop.notated.cache.CachePut;
 import com.jfirer.jfire.test.function.base.data.House;
 import com.jfirer.jfire.test.function.base.data.MutablePerson;
 
-import javax.annotation.Resource;
-
 @Resource
 public class CacheTarget
 {
-
     @CacheGet(value = "'ab'", cacheName = "name", condition = "person.age > 13")
     public House get4(MutablePerson person)
     {

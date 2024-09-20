@@ -1,5 +1,6 @@
 package com.jfirer.jfire.test.function;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.aop.ProceedPoint;
 import com.jfirer.jfire.core.aop.ProceedPointImpl;
@@ -8,8 +9,6 @@ import com.jfirer.jfire.core.aop.notated.EnhanceClass;
 import com.jfirer.jfire.core.inject.BeanHolder;
 import org.junit.Assert;
 import org.junit.Test;
-
-import javax.annotation.Resource;
 
 public class BeanHolderTest
 {

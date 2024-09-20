@@ -1,6 +1,6 @@
 package com.jfirer.jfire.test.function.aop;
 
-import javax.annotation.Resource;
+import com.jfirer.baseutil.Resource;
 
 @Resource
 public class Home

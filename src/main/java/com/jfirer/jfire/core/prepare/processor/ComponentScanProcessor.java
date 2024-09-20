@@ -1,6 +1,7 @@
 package com.jfirer.jfire.core.prepare.processor;
 
 import com.jfirer.baseutil.PackageScan;
+import com.jfirer.baseutil.Resource;
 import com.jfirer.baseutil.bytecode.ClassFileParser;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.bytecode.util.BytecodeUtil;
@@ -11,7 +12,6 @@ import com.jfirer.jfire.core.prepare.annotation.Import;
 import com.jfirer.jfire.util.PrepareConstant;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;

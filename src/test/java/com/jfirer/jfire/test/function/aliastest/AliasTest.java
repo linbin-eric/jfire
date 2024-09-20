@@ -1,5 +1,6 @@
 package com.jfirer.jfire.test.function.aliastest;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
@@ -8,7 +9,6 @@ import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.annotation.Resource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -50,5 +50,6 @@ public class AliasTest
     @ComponentScan("com.jfirer.jfire.test.function.aliastest")
     @Configuration
     public static class aliasCompopntScan
-    {}
+    {
+    }
 }

@@ -1,5 +1,6 @@
 package com.jfirer.jfire.core;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
 import com.jfirer.baseutil.smc.compiler.CompileHelper;
@@ -26,7 +27,6 @@ import com.jfirer.jfire.exception.BeanDefinitionCanNotFindException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Resource;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;

@@ -1,7 +1,7 @@
 package com.jfirer.jfire.test.function.initmethod;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
+import com.jfirer.baseutil.PostConstruct;
+import com.jfirer.baseutil.Resource;
 
 @Resource
 public class Person

@@ -1,9 +1,10 @@
 package com.jfirer.jfire.core.inject.impl;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.baseutil.STR;
 import com.jfirer.baseutil.StringUtil;
 import com.jfirer.baseutil.bytecode.support.AnnotationContext;
-import com.jfirer.baseutil.reflect.ValueAccessor;
+import com.jfirer.baseutil.reflect.valueaccessor.ValueAccessor;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
 import com.jfirer.jfire.core.inject.BeanHolder;
@@ -17,7 +18,6 @@ import com.jfirer.jfire.exception.InjectTypeException;
 import com.jfirer.jfire.exception.InjectValueException;
 import com.jfirer.jfire.exception.MapKeyMethodCanNotFindException;
 
-import javax.annotation.Resource;
 import java.lang.reflect.*;
 import java.util.*;
 
@@ -34,8 +34,8 @@ public class DefaultDependencyInjectHandler implements InjectHandler
         {
             throw new UnsupportedOperationException("基础类型无法执行注入操作");
         }
-        this.context = context;
-        valueAccessor = new ValueAccessor(field);
+        this.context  = context;
+        valueAccessor = ValueAccessor.standard(field);
         Class<?> fieldType = field.getType();
         /**
          *
@@ -74,9 +74,7 @@ public class DefaultDependencyInjectHandler implements InjectHandler
 
     enum MapKeyType
     {
-        BEAN_NAME,
-        SIMPLE_CLASSNAME,
-        METHOD
+        BEAN_NAME, SIMPLE_CLASSNAME, METHOD
     }
 
     interface Inject

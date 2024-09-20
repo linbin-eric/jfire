@@ -1,6 +1,7 @@
 package com.jfirer.jfire.core.aop.notated;
 
-import javax.annotation.Resource;
+import com.jfirer.baseutil.Resource;
+
 import java.lang.annotation.*;
 
 /**

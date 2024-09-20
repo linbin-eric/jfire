@@ -1,9 +1,9 @@
 package com.jfirer.jfire.test.function.aop;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.aop.impl.support.transaction.Propagation;
 import com.jfirer.jfire.core.aop.notated.Transactional;
 
-import javax.annotation.Resource;
 
 @Resource
 public class Person

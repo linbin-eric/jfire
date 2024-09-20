@@ -1,5 +1,6 @@
 package com.jfirer.jfire.test.function.condition;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.prepare.annotation.ComponentScan;
@@ -10,8 +11,6 @@ import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import com.jfirer.jfire.exception.BeanDefinitionCanNotFindException;
 import org.junit.Assert;
 import org.junit.Test;
-
-import javax.annotation.Resource;
 
 @ComponentScan("com.jfirer.jfire.test.function.condition")
 @Configuration
@@ -49,10 +48,12 @@ public class ConditionTest
     }
 
     static class Demo1
-    {}
+    {
+    }
 
     static class Demo2
-    {}
+    {
+    }
 
     @Test
     public void test2()

@@ -1,5 +1,6 @@
 package com.jfirer.jfire.test.function;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.Environment;
@@ -8,7 +9,6 @@ import com.jfirer.jfire.core.prepare.ContextPrepare;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -73,13 +73,11 @@ public class ParamFieldTest
 
     public enum name
     {
-        test1,
-        test2
+        test1, test2
     }
 
     public static class ForProperty implements ContextPrepare
     {
-
         @Override
         public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
         {

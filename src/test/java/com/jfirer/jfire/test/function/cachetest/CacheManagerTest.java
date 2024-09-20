@@ -1,9 +1,9 @@
 package com.jfirer.jfire.test.function.cachetest;
 
+import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager.Cache;
 import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager.CacheManager;
 
-import javax.annotation.Resource;
 
 @Resource
 public class CacheManagerTest implements CacheManager
