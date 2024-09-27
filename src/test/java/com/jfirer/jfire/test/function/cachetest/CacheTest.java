@@ -2,6 +2,7 @@ package com.jfirer.jfire.test.function.cachetest;
 
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
+import com.jfirer.jfire.core.aop.impl.support.cache.ConcurrentMapCacheManager;
 import com.jfirer.jfire.test.function.base.data.House;
 import com.jfirer.jfire.test.function.base.data.MutablePerson;
 import org.junit.Assert;
@@ -20,13 +21,13 @@ public class CacheTest
         House       house       = cacheTarget.get(1);
         House       second      = cacheTarget.get(1);
         Assert.assertNotSame(house, second);
-        house = cacheTarget.get(5);
+        house  = cacheTarget.get(5);
         second = cacheTarget.get(5);
         Assert.assertSame(house, second);
         cacheTarget.put(5);
         second = cacheTarget.get(5);
         Assert.assertNotSame(house, second);
-        house = cacheTarget.get(5);
+        house  = cacheTarget.get(5);
         second = cacheTarget.get(5);
         Assert.assertSame(house, second);
         cacheTarget.remove(5);
@@ -84,6 +85,20 @@ public class CacheTest
         context.register(CacheTarget.class);
         context.register(DemoCache.class);
         context.register(CacheManagerTest.class);
+        CacheTarget   cacheTarget = context.getBean(CacheTarget.class);
+        MutablePerson person      = new MutablePerson();
+        person.setAge(18);
+        House house  = cacheTarget.get4(person);
+        House second = cacheTarget.get4(person);
+        Assert.assertSame(house, second);
+    }
+
+    @Test
+    public void test5()
+    {
+        ApplicationContext context = new DefaultApplicationContext();
+        context.register(ConcurrentMapCacheManager.class);
+        context.register(CacheTarget.class);
         CacheTarget   cacheTarget = context.getBean(CacheTarget.class);
         MutablePerson person      = new MutablePerson();
         person.setAge(18);

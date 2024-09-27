@@ -1,16 +1,17 @@
 package com.jfirer.jfire.core.aop.impl.support.cache;
 
-import com.jfirer.baseutil.PostConstruct;
+import com.jfirer.jfire.core.aop.impl.CacheEnhanceManager;
 
-public class ConcurrentMapCacheManager extends AbstractCacheManager
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+public class ConcurrentMapCacheManager implements CacheEnhanceManager.CacheManager
 {
-    @PostConstruct
-    public void init()
+    protected ConcurrentMap<String, CacheEnhanceManager.Cache> cacheMap = new ConcurrentHashMap<String, CacheEnhanceManager.Cache>();
+
+    @Override
+    public CacheEnhanceManager.Cache get(String name)
     {
-        for (String name : cacheNames)
-        {
-            ConcurrentMapCache cache = new ConcurrentMapCache();
-            cacheMap.put(name, cache);
-        }
+        return cacheMap.computeIfAbsent(name, key -> new ConcurrentMapCache());
     }
 }
