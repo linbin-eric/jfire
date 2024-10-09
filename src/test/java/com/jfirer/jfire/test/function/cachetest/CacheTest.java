@@ -3,11 +3,15 @@ package com.jfirer.jfire.test.function.cachetest;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
 import com.jfirer.jfire.core.aop.impl.support.cache.ConcurrentMapCacheManager;
+import com.jfirer.jfire.core.prepare.annotation.EnableCacheManager;
+import com.jfirer.jfire.core.prepare.annotation.configuration.Configuration;
 import com.jfirer.jfire.test.function.base.data.House;
 import com.jfirer.jfire.test.function.base.data.MutablePerson;
 import org.junit.Assert;
 import org.junit.Test;
 
+@EnableCacheManager
+@Configuration
 public class CacheTest
 {
     @Test
@@ -96,7 +100,7 @@ public class CacheTest
     @Test
     public void test5()
     {
-        ApplicationContext context = new DefaultApplicationContext();
+        ApplicationContext context = ApplicationContext.boot(CacheTest.class);
         context.register(ConcurrentMapCacheManager.class);
         context.register(CacheTarget.class);
         CacheTarget   cacheTarget = context.getBean(CacheTarget.class);
