@@ -1,10 +1,9 @@
 package com.jfirer.jfire.core;
 
 import com.jfirer.jfire.core.bean.BeanRegisterInfo;
-import com.jfirer.jfire.core.listener.ApplicationContextEvent;
+import com.jfirer.jfire.util.YmlConfig;
 
 import java.util.Collection;
-import java.util.function.Consumer;
 
 public interface ApplicationContext
 {
@@ -14,8 +13,7 @@ public interface ApplicationContext
 
     <E> E getBean(String beanName);
 
-    ////
-    Environment getEnv();
+    YmlConfig getConfig();
 
     Collection<BeanRegisterInfo> getAllBeanRegisterInfos();
 
@@ -42,20 +40,14 @@ public interface ApplicationContext
      */
     RegisterResult registerBeanRegisterInfo(BeanRegisterInfo beanRegisterInfo);
 
-    void publishEvent(ApplicationContextEvent event);
-
     enum FoundNewContextPrepare
     {
-        YES,
-        NO
+        YES, NO
     }
 
     enum RegisterResult
     {
-        PREPARE,
-        CONFIGURATION,
-        BEAN,
-        NODATA
+        PREPARE, CONFIGURATION, BEAN, NODATA
     }
 
     static ApplicationContext boot(Class<?> bootClass)
@@ -66,19 +58,5 @@ public interface ApplicationContext
     static ApplicationContext boot()
     {
         return new DefaultApplicationContext();
-    }
-
-    static ApplicationContext boot(Class<?> bootClass, Consumer<ApplicationContextEvent> consumer)
-    {
-        DefaultApplicationContext applicationContext = new DefaultApplicationContext(bootClass);
-        applicationContext.setConsumer(consumer);
-        return applicationContext;
-    }
-
-    static ApplicationContext boot(Consumer<ApplicationContextEvent> consumer)
-    {
-        DefaultApplicationContext applicationContext = new DefaultApplicationContext();
-        applicationContext.setConsumer(consumer);
-        return applicationContext;
     }
 }

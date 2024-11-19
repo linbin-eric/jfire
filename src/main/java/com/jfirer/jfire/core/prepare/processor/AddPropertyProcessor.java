@@ -22,7 +22,7 @@ public class AddPropertyProcessor implements ContextPrepare
                    {
                        String property = pair.substring(0, index).trim();
                        String value    = pair.substring(index + 1).trim();
-                       context.getEnv().putProperty(property, value);
+                       context.getConfig().addProperty(property, value);
                    }
                });
         return ApplicationContext.FoundNewContextPrepare.NO;

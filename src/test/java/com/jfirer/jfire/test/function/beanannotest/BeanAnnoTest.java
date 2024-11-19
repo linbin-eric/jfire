@@ -30,7 +30,7 @@ public class BeanAnnoTest
         context = new DefaultApplicationContext(Data.class);
         Properties properties = new Properties();
         properties.put("person2", "pass");
-        context.getEnv().addProperties(properties);
+        context.getConfig().addProperty("person2","pass");
         person2 = context.getBean("person2");
         Assert.assertNotNull(person2);
         Person person4 = context.getBean("person4");

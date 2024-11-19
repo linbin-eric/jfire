@@ -28,13 +28,14 @@ public class DefaultPropertyInjectHandler implements InjectHandler
         AnnotationContext annotationContext = AnnotationContext.getInstanceOn(field);
         PropertyRead      propertyRead      = annotationContext.getAnnotation(PropertyRead.class);
         propertyName = StringUtil.isNotBlank(propertyRead.value()) ? propertyRead.value() : field.getName();
+        Map<String, Object> config = applicationContext.getConfig().fullPathConfig();
         if (StringUtil.isNotBlank(System.getProperty(propertyName)))
         {
             propertyValue = System.getProperty(propertyName);
         }
-        else if (applicationContext.getEnv().getProperty(propertyName) != null)
+        else if (config.containsKey(propertyName))
         {
-            propertyValue = applicationContext.getEnv().getProperty(propertyName);
+            propertyValue = config.get(propertyName);
         }
         else
         {

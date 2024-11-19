@@ -7,12 +7,10 @@ import com.jfirer.jfire.core.bean.BeanDefinition;
 import com.jfirer.jfire.core.beanfactory.BeanFactory;
 import com.jfirer.jfire.core.beanfactory.impl.ClassBeanFactory;
 import com.jfirer.jfire.core.inject.InjectHandler;
-import com.jfirer.jfire.core.listener.ApplicationContextEvent;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
 import com.jfirer.jfire.exception.NewBeanInstanceException;
 import com.jfirer.jfire.exception.PostConstructMethodException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -21,9 +19,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class PrototypeBeanDefinition implements BeanDefinition
 {
-    record CycData(String beanName, BeanFactory beanFactory) {}
+    record CycData(String beanName, BeanFactory beanFactory)
+    {
+    }
 
     protected static final ThreadLocal<Map<String, Object>> tmpBeanInstanceMap    = ThreadLocal.withInitial(() -> new HashMap<String, Object>());
     protected static final ThreadLocal<List<CycData>>       cyclicDependenceQueue = ThreadLocal.withInitial(ArrayList::new);
@@ -35,7 +36,6 @@ public class PrototypeBeanDefinition implements BeanDefinition
     protected              Class<?>                         enhanceType;
     protected              Class                            type;
     protected              String                           beanName;
-    private static final   Logger                           LOGGER                = LoggerFactory.getLogger(PrototypeBeanDefinition.class);
 
     public PrototypeBeanDefinition(BeanFactory beanFactory, ApplicationContext context, Method postConstructMethod, InjectHandler[] injectHandlers, Class<?> enhanceType, Class type, String beanName)
     {
@@ -43,21 +43,17 @@ public class PrototypeBeanDefinition implements BeanDefinition
         {
             throw new IllegalArgumentException("框架代码自身错误，ContextPrepare 或 EnhanceManager 类型的Bean应该要选择特定的BeanDefinition");
         }
-        this.beanFactory = beanFactory;
-        this.context = context;
+        this.beanFactory         = beanFactory;
+        this.context             = context;
         this.postConstructMethod = postConstructMethod;
-        this.injectHandlers = injectHandlers;
-        this.enhanceType = enhanceType;
-        this.type = type;
-        this.beanName = beanName;
+        this.injectHandlers      = injectHandlers;
+        this.enhanceType         = enhanceType;
+        this.type                = type;
+        this.beanName            = beanName;
     }
 
     protected synchronized Object buildInstance()
     {
-        ApplicationContextEvent.BeanBuildInstance.BeanBuildInstanceBuilder builder = ApplicationContextEvent.BeanBuildInstance.builder();
-        builder.beanName(beanName).type(type);
-        long                t0             = System.nanoTime();
-        long                first          = t0;
         List<CycData>       cycDependStack = cyclicDependenceQueue.get();
         CycData             current        = new CycData(beanName, beanFactory);
         Map<String, Object> map            = tmpBeanInstanceMap.get();
@@ -70,12 +66,8 @@ public class PrototypeBeanDefinition implements BeanDefinition
             {
                 return instance;
             }
-            builder.cycTestCost(System.nanoTime() - t0);
-            t0 = System.nanoTime();
             Object unEnhanceInstance;
             unEnhanceInstance = instance = beanFactory.getUnEnhanceyInstance(this);
-            builder.getUnEnhanceInstanceCost(System.nanoTime() - t0);
-            t0 = System.nanoTime();
             if (enhanceType != null)
             {
                 try
@@ -88,12 +80,10 @@ public class PrototypeBeanDefinition implements BeanDefinition
                 {
                     throw new NewBeanInstanceException(e);
                 }
-                builder.enhanceCost(System.nanoTime() - t0);
-                t0 = System.nanoTime();
             }
             else
             {
-                builder.enhanceCost(0);
+                ;
             }
             map.put(getBeanName(), instance);
             if (injectHandlers.length != 0)
@@ -103,15 +93,11 @@ public class PrototypeBeanDefinition implements BeanDefinition
                     each.inject(unEnhanceInstance);
                 }
             }
-            builder.injectCost(System.nanoTime() - t0);
-            t0 = System.nanoTime();
             //调用setEnhanceFields时候，其内部实现要求获取的Bean已经是一个实例化好了的Bean，因此需要在依赖注入之后进行，成功率最大。
             if (instance instanceof EnhanceWrapper wrapper)
             {
                 //由于设置增强属性也带来依赖，因此这一步的设置必须在 map.put(getBeanName(), instance)调用之后执行
                 wrapper.setEnhanceFields(context);
-                builder.setEnhanceFieldsCost(System.nanoTime() - t0);
-                t0 = System.nanoTime();
             }
             if (postConstructMethod != null)
             {
@@ -123,14 +109,11 @@ public class PrototypeBeanDefinition implements BeanDefinition
                 {
                     throw new PostConstructMethodException(e);
                 }
-                builder.postConstructMethodCost(System.nanoTime() - t0);
             }
             else
             {
-                builder.postConstructMethodCost(0);
+                ;
             }
-            builder.allCost(System.nanoTime() - first);
-            context.publishEvent(builder.build());
             return instance;
         }
         finally
@@ -167,7 +150,7 @@ public class PrototypeBeanDefinition implements BeanDefinition
                         int currentIndex = cycDependStack.lastIndexOf(current);
                         cycDependStack.add(current);
                         String collect = cycDependStack.stream().skip(currentIndex).map(cyc -> context.getBeanRegisterInfo(cyc.beanName).getType().getSimpleName()).collect(Collectors.joining("\n↓\n"));
-                        LOGGER.debug("发现循环依赖，具体为:\n{}\n", collect);
+                        log.debug("发现循环依赖，具体为:\n{}\n", collect);
                         throw new IllegalStateException("发现循环依赖，具体为:\n" + collect);
                     }
                 }
@@ -176,8 +159,7 @@ public class PrototypeBeanDefinition implements BeanDefinition
                     cycDependStack.add(current);
                     break;
                 }
-            }
-            while (index >= 0);
+            } while (index >= 0);
         }
         else
         {

@@ -3,13 +3,13 @@ package com.jfirer.jfire.test.function;
 import com.jfirer.baseutil.Resource;
 import com.jfirer.jfire.core.ApplicationContext;
 import com.jfirer.jfire.core.DefaultApplicationContext;
-import com.jfirer.jfire.core.Environment;
 import com.jfirer.jfire.core.inject.notated.PropertyRead;
 import com.jfirer.jfire.core.prepare.ContextPrepare;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Resource
@@ -81,21 +81,21 @@ public class ParamFieldTest
         @Override
         public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
         {
-            Environment environment = context.getEnv();
-            environment.putProperty("f1", "1,2");
-            environment.putProperty("f2", "aaa");
-            environment.putProperty("f3", "1");
-            environment.putProperty("f4", "2");
-            environment.putProperty("f5", "3");
-            environment.putProperty("f6", "4");
-            environment.putProperty("f7", "true");
-            environment.putProperty("f8", "false");
-            environment.putProperty("f9", "2.65");
-            environment.putProperty("f10", "2.35");
-            environment.putProperty("f11", "ni,sx");
-            environment.putProperty("f12", "xx,rr");
-            environment.putProperty("f13", ParamFieldTest.class.getName());
-            environment.putProperty("f14", "test1");
+            Map<String,Object> environment = context.getConfig().fullPathConfig();
+            environment.put("f1", "1,2");
+            environment.put("f2", "aaa");
+            environment.put("f3", "1");
+            environment.put("f4", "2");
+            environment.put("f5", "3");
+            environment.put("f6", "4");
+            environment.put("f7", "true");
+            environment.put("f8", "false");
+            environment.put("f9", "2.65");
+            environment.put("f10", "2.35");
+            environment.put("f11", "ni,sx");
+            environment.put("f12", "xx,rr");
+            environment.put("f13", ParamFieldTest.class.getName());
+            environment.put("f14", "test1");
             return ApplicationContext.FoundNewContextPrepare.NO;
         }
 

@@ -21,7 +21,7 @@ public class ProfileSelectorProcessor implements ContextPrepare
     @Override
     public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
     {
-        String activeAttribute = (String) context.getEnv().getProperty(ProfileSelector.activePropertyName);
+        String activeAttribute = (String) context.getConfig().fullPathConfig().get(ProfileSelector.activePropertyName);
         if (StringUtil.isBlank(activeAttribute))
         {
             return ApplicationContext.FoundNewContextPrepare.NO;

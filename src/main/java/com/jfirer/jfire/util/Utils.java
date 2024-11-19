@@ -25,7 +25,7 @@ public class Utils
             processPath(path, rootClass,//
                         content -> {
                             Map<String, Object> mapWithFullPath = new YamlReader(content).getMapWithFullPath();
-                            mapWithFullPath.forEach((key, value) -> context.getEnv().putProperty(key, value));
+                            mapWithFullPath.forEach((key, value) -> context.getConfig().addProperty(key, value));
                         });
         }
     }

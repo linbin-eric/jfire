@@ -67,7 +67,7 @@ public class Data
         @Override
         public ApplicationContext.FoundNewContextPrepare prepare(ApplicationContext context)
         {
-            context.getEnv().putProperty("name", "linbin");
+            context.getConfig().addProperty("name", "linbin");
             return ApplicationContext.FoundNewContextPrepare.NO;
         }
 

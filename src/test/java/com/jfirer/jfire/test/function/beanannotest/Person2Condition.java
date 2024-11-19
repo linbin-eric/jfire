@@ -11,7 +11,7 @@ public class Person2Condition implements Condition
     @Override
     public boolean match(ApplicationContext context, AnnotatedElement element, ErrorMessage errorMessage)
     {
-        if ("pass".equals(context.getEnv().getProperty("person2")))
+        if ("pass".equals(context.getConfig().fullPathConfig().get("person2")))
         {
             return true;
         }
