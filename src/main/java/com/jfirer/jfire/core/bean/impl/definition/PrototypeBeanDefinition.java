@@ -99,7 +99,11 @@ public class PrototypeBeanDefinition implements BeanDefinition
                 //由于设置增强属性也带来依赖，因此这一步的设置必须在 map.put(getBeanName(), instance)调用之后执行
                 wrapper.setEnhanceFields(context);
             }
-            if (postConstructMethod != null)
+            /**
+             * 如果是是MethodBeanfatory，并且还使用PostConstruct，可能会导致初始化方法被错误的执行多次。
+             * 因此限定只有ClassBeanFactory才执行。
+             */
+            if (postConstructMethod != null && beanFactory instanceof ClassBeanFactory)
             {
                 try
                 {
