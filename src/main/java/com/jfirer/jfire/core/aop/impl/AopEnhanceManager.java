@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -31,7 +32,9 @@ public class AopEnhanceManager implements EnhanceManager
 {
     private static final Logger logger = LoggerFactory.getLogger(AopEnhanceManager.class);
 
-    record EnhanceClassData(List<String> enhanceClass, Collection<MatchTargetMethod> collection) {}
+    record EnhanceClassData(List<String> enhanceClass, Collection<MatchTargetMethod> collection)
+    {
+    }
 
     List<EnhanceClassData> list;
 
@@ -188,7 +191,9 @@ public class AopEnhanceManager implements EnhanceManager
         Before            before            = annotationContextOnEnhanceMethod.getAnnotation(Before.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, before.value(), before.custom());
         return Arrays.stream(originType.getDeclaredMethods())//
-                     .filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
+                     .filter(method -> method.isBridge() == false)//
+                     .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
+                     .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("前置通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
@@ -223,8 +228,7 @@ public class AopEnhanceManager implements EnhanceManager
             {
                 matchTargetMethod = ckass.getDeclaredConstructor().newInstance();
             }
-            catch (InstantiationException | IllegalAccessException |
-                   InvocationTargetException | NoSuchMethodException e)
+            catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e)
             {
                 throw new RuntimeException(e);
             }
@@ -292,7 +296,9 @@ public class AopEnhanceManager implements EnhanceManager
     {
         After             after             = annotationContextOnEnhanceMethod.getAnnotation(After.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, after.value(), after.custom());
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false)//
+                     .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
+                     .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("后置通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
@@ -324,7 +330,9 @@ public class AopEnhanceManager implements EnhanceManager
     {
         AfterReturning    afterReturning    = annotationContextOnEnhanceMethod.getAnnotation(AfterReturning.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterReturning.value(), afterReturning.custom());
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false)//
+                     .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
+                     .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("返回通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
@@ -355,7 +363,9 @@ public class AopEnhanceManager implements EnhanceManager
         AfterThrowable    afterThrowable    = annotationContextOnEnhanceMethod.getAnnotation(AfterThrowable.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterThrowable.value(), afterThrowable.custom());
         classModel.addImport(ReflectUtil.class);
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge()).filter(method -> matchTargetMethod.match(method))//
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge())//
+                     .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
+                     .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
@@ -393,7 +403,9 @@ public class AopEnhanceManager implements EnhanceManager
     {
         Around            around            = annotationContextOnEnhanceMethod.getAnnotation(Around.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, around.value(), around.custom());
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false).filter(method -> matchTargetMethod.match(method))//
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false)//
+                     .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
+                     .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("环绕通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
