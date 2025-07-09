@@ -119,47 +119,69 @@ public class AopEnhanceManager implements EnhanceManager
         for (BeanRegisterInfo each : list)
         {
             String        fieldName   = "enhance_" + FIELD_NAME_COUNTER.getAndIncrement();
-            AtomicBoolean realEnhance = new AtomicBoolean();
-            int sum = Stream.iterate(each.getType(), (Class<?> c) -> c != Object.class, (Class<?> c) -> c.getSuperclass()).flatMap(c -> Arrays.stream(c.getDeclaredMethods()))//
-                            .map(enhanceMethod -> {
-                                AnnotationContext annotationContextOnEnhanceMethod = AnnotationContext.getInstanceOn(enhanceMethod);
-                                if (annotationContextOnEnhanceMethod.isAnnotationPresent(Before.class))
-                                {
-                                    if (processBeforeAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                                    {
-                                        return 1;
-                                    }
-                                }
-                                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(After.class))
-                                {
-                                    if (processAfterAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                                    {
-                                        return 1;
-                                    }
-                                }
-                                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterReturning.class))
-                                {
-                                    if (processAfterReturningAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                                    {
-                                        return 1;
-                                    }
-                                }
-                                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterThrowable.class))
-                                {
-                                    if (processAfterThrowableAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                                    {
-                                        return 1;
-                                    }
-                                }
-                                else if (annotationContextOnEnhanceMethod.isAnnotationPresent(Around.class))
-                                {
-                                    if (processAroundAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
-                                    {
-                                        return 1;
-                                    }
-                                }
-                                return 0;
-                            }).mapToInt(Integer::intValue).sum();
+            //按照顺序处理，before，around，after，afterReturning，afterThrowable
+            int           sum         = 0;
+            sum += Stream.iterate(each.getType(), (Class<?> c) -> c != Object.class, (Class<?> c) -> c.getSuperclass()).flatMap(c -> Arrays.stream(c.getDeclaredMethods()))//
+                         .map(enhanceMethod -> {
+                             AnnotationContext annotationContextOnEnhanceMethod = AnnotationContext.getInstanceOn(enhanceMethod);
+                             if (annotationContextOnEnhanceMethod.isAnnotationPresent(Before.class) && processBeforeAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                             {
+                                 return 1;
+                             }
+                             else
+                             {
+                                 return 0;
+                             }
+                         }).mapToInt(Integer::intValue).sum();
+            sum += Stream.iterate(each.getType(), (Class<?> c) -> c != Object.class, (Class<?> c) -> c.getSuperclass()).flatMap(c -> Arrays.stream(c.getDeclaredMethods()))//
+                         .map(enhanceMethod -> {
+                             AnnotationContext annotationContextOnEnhanceMethod = AnnotationContext.getInstanceOn(enhanceMethod);
+                             if (annotationContextOnEnhanceMethod.isAnnotationPresent(Around.class) && processAroundAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                             {
+                                 return 1;
+                             }
+                             else
+                             {
+                                 return 0;
+                             }
+                         }).mapToInt(Integer::intValue).sum();
+            sum += Stream.iterate(each.getType(), (Class<?> c) -> c != Object.class, (Class<?> c) -> c.getSuperclass()).flatMap(c -> Arrays.stream(c.getDeclaredMethods()))//
+                         .map(enhanceMethod -> {
+                             AnnotationContext annotationContextOnEnhanceMethod = AnnotationContext.getInstanceOn(enhanceMethod);
+                             if (annotationContextOnEnhanceMethod.isAnnotationPresent(After.class) && processAfterAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                             {
+                                 return 1;
+                             }
+                             else
+                             {
+                                 return 0;
+                             }
+                         }).mapToInt(Integer::intValue).sum();
+            sum += Stream.iterate(each.getType(), (Class<?> c) -> c != Object.class, (Class<?> c) -> c.getSuperclass()).flatMap(c -> Arrays.stream(c.getDeclaredMethods()))//
+                         .map(enhanceMethod -> {
+                             AnnotationContext annotationContextOnEnhanceMethod = AnnotationContext.getInstanceOn(enhanceMethod);
+                             if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterReturning.class) && processAfterReturningAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                             {
+                                 return 1;
+                             }
+                             else
+                             {
+                                 return 0;
+                             }
+                         }).mapToInt(Integer::intValue).sum();
+            sum += Stream.iterate(each.getType(), (Class<?> c) -> c != Object.class, (Class<?> c) -> c.getSuperclass()).flatMap(c -> Arrays.stream(c.getDeclaredMethods()))//
+                         .map(enhanceMethod -> {
+                             AnnotationContext annotationContextOnEnhanceMethod = AnnotationContext.getInstanceOn(enhanceMethod);
+                             if (annotationContextOnEnhanceMethod.isAnnotationPresent(AfterThrowable.class) && processAfterThrowableAdvice(classModel, originType, annotationContextOnEnhanceMethod, hostFieldName, fieldName, enhanceMethod))
+                             {
+                                 return 1;
+                             }
+                             else
+                             {
+                                 return 0;
+                             }
+                         }).mapToInt(Integer::intValue).sum();
+
             if (sum > 0)
             {
                 addFiledAndBuildSet(classModel, setEnhanceFieldsMethod, each, fieldName);
