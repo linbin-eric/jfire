@@ -32,7 +32,7 @@ public class Person
         String[] strs = new String[ints.length];
         for (int i = 0; i < strs.length; i++)
         {
-            strs[0] = String.valueOf(ints[i]);
+            strs[i] = String.valueOf(ints[i]);
         }
         return strs;
     }

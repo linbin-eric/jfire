@@ -43,6 +43,11 @@ public interface ProceedPoint
     Object getResult();
 
     /**
+     * 环绕增强中，可以直接设定要返回的结果。需要自己保证与原方法返回的类型一致。
+     */
+    void setResult(Object result);
+
+    /**
      * 获得目标方法的入参数组
      *
      * @return

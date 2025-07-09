@@ -2,6 +2,7 @@ package com.jfirer.jfire.test.function.aop;
 
 import com.jfirer.baseutil.Verify;
 import com.jfirer.jfire.core.aop.ProceedPoint;
+import com.jfirer.jfire.core.aop.ProceedPointImpl;
 import com.jfirer.jfire.core.aop.notated.*;
 import com.jfirer.jfire.core.aop.notated.support.MatchTargetMethod;
 import org.junit.Assert;
@@ -39,6 +40,8 @@ public class Enhance
         System.out.println("asdasd");
         point.invoke();
         Assert.assertEquals(((int[]) point.getParams()[0]).length, ((String[]) point.getResult()).length);
+        Assert.assertEquals(3,((String[]) point.getResult()).length);
+        point.setResult(new String[]{"1","2"});
     }
 
     @Before(value = "order()")

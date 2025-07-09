@@ -30,8 +30,9 @@ public class AopTest
     {
         ApplicationContext context = new DefaultApplicationContext(AopTtestScan.class);
         Person             person  = context.getBean(Person.class);
-        person.testInts(new int[]{1, 2, 3});
+        String[]           result = person.testInts(new int[]{1, 2, 3});
         assertEquals(1, person.invokeCount());
+        assertArrayEquals(new String[]{"1","2"}, result);
     }
 
     /**

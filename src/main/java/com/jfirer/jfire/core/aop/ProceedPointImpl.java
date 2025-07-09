@@ -61,6 +61,7 @@ public class ProceedPointImpl implements ProceedPoint
         return result;
     }
 
+    @Override
     public void setResult(Object result)
     {
         this.result = result;
