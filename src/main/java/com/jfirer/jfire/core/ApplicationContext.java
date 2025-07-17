@@ -23,6 +23,8 @@ public interface ApplicationContext
 
     Collection<BeanRegisterInfo> getBeanRegisterInfos(Class<?> ckass);
 
+    void makeAvailable();
+
     /**
      * 注册一个类，框架会分析导入类的类型：<br/>
      * 1. 如果实现了JfirePrepare接口，则调用registerJfirePrepare接口进行注册。<br/>

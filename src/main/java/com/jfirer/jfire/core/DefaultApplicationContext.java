@@ -57,7 +57,8 @@ public class DefaultApplicationContext implements ApplicationContext
     {
     }
 
-    private void refreshIfNeed()
+    @Override
+    public void makeAvailable()
     {
         if (!freshed)
         {
@@ -239,7 +240,7 @@ public class DefaultApplicationContext implements ApplicationContext
     @Override
     public <E> E getBean(Class<E> ckass)
     {
-        refreshIfNeed();
+        makeAvailable();
         Optional<BeanDefinition> any = beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> ckass.isAssignableFrom(beanRegisterInfo.getType())).map(beanRegisterInfo -> beanRegisterInfo.get()).findAny();
         if (any.isPresent())
         {
@@ -260,14 +261,14 @@ public class DefaultApplicationContext implements ApplicationContext
     @Override
     public <E> Collection<E> getBeans(Class<E> ckass)
     {
-        refreshIfNeed();
+        makeAvailable();
         return (Set<E>) beanRegisterInfoMap.values().stream().filter(beanRegisterInfo -> ckass.isAssignableFrom(beanRegisterInfo.getType())).map(beanRegisterInfo -> (beanRegisterInfo.get().getBean())).collect(Collectors.toSet());
     }
 
     @Override
     public <E> E getBean(String beanName)
     {
-        refreshIfNeed();
+        makeAvailable();
         BeanRegisterInfo beanRegisterInfo = beanRegisterInfoMap.get(beanName);
         if (beanRegisterInfo == null)
         {
