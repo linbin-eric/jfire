@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Jfire Framework API Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+
+        header h1 {
+            color: white;
+            margin: 0;
+        }
+
+        nav {
+            margin-top: 20px;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        nav li a {
+            text-decoration: none;
+            color: #3498db;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        nav li a:hover {
+            background-color: #3498db;
+            color: white;
+        }
+
+        section {
+            background-color: white;
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .api-item {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .api-item:last-child {
+            border-bottom: none;
+        }
+
+        .api-name {
+            font-size: 1.4em;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+
+        .api-description {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .api-example {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+
+        .api-example pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Jfire Framework API Documentation</h1>
+    <p>Jfire 是一个轻量级的 Java IOC (Inversion of Control) 和 AOP (Aspect-Oriented Programming) 容器，旨在提供透明的对象管理和高效的AOP操作。</p>
+    <nav>
+        <ul>
+            <li><a href="#ioc">IOC 核心</a></li>
+            <li><a href="#aop">AOP 核心</a></li>
+            <li><a href="#transaction">事务管理</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <section id="ioc">
+        <h2>IOC (Inversion of Control) 核心</h2>
+        <p>Jfire 的 IOC 容器负责对象的生命周期管理和依赖注入。</p>
+
+        <div class="api-item">
+            <div class="api-name">ApplicationContext</div>
+            <div class="api-description">
+                <p><code>ApplicationContext</code> 是 Jfire 框架的核心接口，用于管理所有 Bean 实例。它是整个框架的入口点。</p>
+                <p>主要职责包括：</p>
+                <ul>
+                    <li>初始化和配置 Bean。</li>
+                    <li>根据名称或类型获取 Bean 实例。</li>
+                    <li>管理 Bean 的作用域（如单例、原型）。</li>
+                </ul>
+                <p>实现类通常是 <code>DefaultApplicationContext</code>。</p>
+            </div>
+            <div class="api-example">
+                <pre>// 1. 创建 ApplicationContext 实例 (通过静态方法)
+ApplicationContext context = ApplicationContext.boot(MyConfiguration.class);
+// 或者不带配置类启动
+// ApplicationContext context = ApplicationContext.boot();
+
+// 2. 如果需要，可以加载额外的配置或注册类
+// context.register(SomeOtherClass.class);
+
+// 3. 初始化上下文 (makeAvailable 会触发初始化)
+context.makeAvailable();
+
+// 4. 获取 Bean 实例
+MyService myService = context.getBean(MyService.class);
+MyService myServiceByName = (MyService) context.getBean("myServiceName");
+
+// 5. 使用 Bean
+myService.doSomething();
+
+// 6. 关闭上下文 (如果需要释放资源，虽然 Jfire 可能没有显式的 close 方法)
+// context.close(); // 检查是否有 close 或类似方法</pre>
+            </div>
+        </div>
+
+        <div class="api-item">
+            <div class="api-name">@Resource</div>
+            <div class="api-description">
+                <p>标记一个类为 Bean，使其可以被 ApplicationContext 管理。通常用在类级别。也可以用于字段注入。</p>
+                <p>当用在类上时：</p>
+                <ul>
+                    <li><code>name</code>: 指定 Bean 的名称，默认为类的全限定名。</li>
+                    <li><code>shareable</code>: 指定 Bean 是否为单例（shareable=true）或原型（shareable=false）。默认为单例。</li>
+                </ul>
+                <p>当用在字段上时，用于标记需要注入的依赖。</p>
+            </div>
+            <div class="api-example">
+                <pre>// 用在类上，声明这是一个 Bean
+@Resource(name = "myService", shareable = true) // 单例 Bean
+public class MyServiceImpl implements MyService {
+    // ...
+}
+
+// 用在字段上，进行依赖注入
+public class AnotherService {
+    @Resource(name = "myService") // 根据名称注入
+    private MyService myService;
+
+    // 或者根据类型注入（如果容器中只有一个该类型的 Bean）
+    // @Resource
+    // private MyService myService;
+}</pre>
+            </div>
+        </div>
+
+        <div class="api-item">
+            <div class="api-name">@Configuration & @Bean</div>
+            <div class="api-description">
+                <p><code>@Configuration</code> 注解标记一个类为配置类。在配置类中，可以使用 <code>@Bean</code> 注解标记方法，该方法的返回值将被注册为一个 Bean。</p>
+            </div>
+            <div class="api-example">
+                <pre>// 1. 定义配置类
+@Configuration
+public class MyConfiguration {
+
+    // 2. 定义 Bean
+    @Bean
+    public MyService myService() {
+        return new MyServiceImpl();
+    }
+
+    @Bean
+    public AnotherService anotherService(MyService myService) { // 依赖注入
+        AnotherService service = new AnotherService();
+        service.setMyService(myService);
+        return service;
+    }
+}
+
+// 3. 启动时使用配置类
+ApplicationContext context = ApplicationContext.boot(MyConfiguration.class);
+MyService service = context.getBean(MyService.class);</pre>
+            </div>
+        </div>
+
+        <div class="api-item">
+            <div class="api-name">@ComponentScan</div>
+            <div class="api-description">
+                <p>用于配置类上，指示 ApplicationContext 自动扫描指定包路径下的 <code>@Resource</code> 注解的类，并将它们注册为 Bean。</p>
+                <p><code>value</code> 属性指定要扫描的包路径。如果不指定，则默认扫描配置类所在的包。</p>
+            </div>
+            <div class="api-example">
+                <pre>@Configuration
+@ComponentScan({"com.example.service", "com.example.repository"}) // 扫描这两个包
+public class AppConfig {
+    // ...
+}
+
+// 或者扫描配置类所在包及其子包
+@Configuration
+@ComponentScan // 等同于 @ComponentScan("com.example.config")
+public class AppConfig {
+    // ...
+}</pre>
+            </div>
+        </div>
+
+        <div class="api-item">
+            <div class="api-name">@Import</div>
+            <div class="api-description">
+                <p>用于配置类上，用于导入其他配置类或 <code>ContextPrepare</code> 实现类。</p>
+            </div>
+            <div class="api-example">
+                <pre>@Configuration
+@Import({DatabaseConfig.class, SecurityConfig.class}) // 导入其他配置类
+public class MainConfig {
+    // ...
+}</pre>
+            </div>
+        </div>
+
+        <div class="api-item">
+            <div class="api-name">@PostConstruct</div>
+            <div class="api-description">
+                <p>标记一个公共（public）方法作为 Bean 初始化完成后需要调用的回调方法。类似于 Spring 的 <code>@PostConstruct</code>。</p>
+            </div>
+            <div class="api-example">
+                <pre>@Resource
+public class MyService {
+    private boolean initialized = false;
+
+    @PostConstruct
+    public void init() {
+        // 在 Bean 所有依赖注入完成后执行
+        System.out.println("MyService is being initialized...");
+        // 执行一些初始化逻辑，例如打开数据库连接、加载缓存等
+        initialized = true;
+    }
+
+    public void doSomething() {
+        if (!initialized) {
+             throw new IllegalStateException("Service not initialized");
+        }
+        // ...
+    }
+}</pre>
+            </div>
+        </div>
+
+        <div class="api-item">
+            <div class="api-name">@PropertyRead</div>
+            <div class="api-description">
+                <p>用于字段上，标记该字段的值需要从配置文件中读取。通常用于注入配置属性。</p>
+                <p><code>value</code> 属性指定配置文件中的键名。</p>
+            </div>
+            <div class="api-example">
+                <pre>@Resource
+public class DatabaseConfig {
+    @PropertyRead("database.url")
+    private String dbUrl;
+
+    @PropertyRead("database.username")
+    private String username;
+
+    // getters...
+}</pre>
+            </div>
+        </div>
+
+    </section>
+
+    <section id="aop">
+        <h2>AOP (Aspect-Oriented Programming) 核心</h2>
+        <p>Jfire 提供了基于注解的 AOP API，允许开发者通过切面（Aspect）来模块化横切关注点，如日志、安全检查等。</p>
+
+        <div class="api-item">
+            <div class="api-name">@EnhanceClass & AOP 注解</div>
+            <div class="api-description">
+                <p><code>@EnhanceClass</code> 注解标记一个类为 AOP 切面类。<code>value</code> 属性使用通配符规则指定要增强的目标类。<code>order</code> 属性指定 AOP 的执行顺序。</p>
+                <p>在切面类的方法上，可以使用以下注解来定义通知（Advice）：</p>
+                <ul>
+                    <li><code>@Before</code>: 前置通知，在目标方法执行前执行。</li>
+                    <li><code>@After</code>: 后置通知，在目标方法执行后执行（无论是否抛出异常）。</li>
+                    <li><code>@AfterReturning</code>: 返回通知，在目标方法成功执行并返回后执行。</li>
+                    <li><code>@AfterThrowable</code>: 异常通知，在目标方法抛出异常后执行。</li>
+                    <li><code>@Around</code>: 环绕通知，可以完全控制目标方法的执行。</li>
+                </p>
+                <p>这些通知注解的 <code>value</code> 属性是一个字符串规则，用于匹配目标方法（例如 <code>"methodName(*)"</code> 表示匹配名为 methodName 的任何方法）。<code>custom</code> 属性可以指定一个自定义的 <code>MatchTargetMethod</code> 实现类来定义更复杂的匹配规则。</p>
+            </div>
+            <div class="api-example">
+                <pre>// 1. 定义一个切面类
+@EnhanceClass("com.example.service.*") // 增强 com.example.service 包下的所有类
+public class LoggingAspect {
+
+    // 定义前置通知，匹配所有方法
+    @Before("*(*)")
+    public void logBefore(ProceedPoint joinPoint) {
+        System.out.println("Before method: " + joinPoint.getMethodDescription().getName());
+    }
+
+    // 定义后置通知
+    @After("*(*)")
+    public void logAfter(ProceedPoint joinPoint) {
+        System.out.println("After method: " + joinPoint.getMethodDescription().getName());
+    }
+
+    // 定义环绕通知
+    @Around("performAction(*)")
+    public Object logAround(ProceedPoint joinPoint) throws Throwable {
+        System.out.println("Around before method: " + joinPoint.getMethodDescription().getName());
+        try {
+            Object result = joinPoint.invokeInternel(); // 执行目标方法
+            System.out.println("Around after method: " + joinPoint.getMethodDescription().getName());
+            return result;
+        } catch (Exception e) {
+            System.out.println("Exception in method: " + joinPoint.getMethodDescription().getName());
+            throw e;
+        }
+    }
+}
+
+// 2. 被增强的目标类
+@Resource
+public class BusinessService {
+    public void performAction(String data) {
+        System.out.println("Performing business action with data: " + data);
+    }
+}
+
+// 3. 在配置类中确保 AOP 被启用（通常默认启用）
+@Configuration
+@ComponentScan("com.example")
+public class AppConfig { }
+
+// 4. 启动并使用
+ApplicationContext context = ApplicationContext.boot(AppConfig.class);
+context.makeAvailable();
+
+BusinessService service = context.getBean(BusinessService.class);
+service.performAction("test data"); // 这里会触发 AOP 通知
+</pre>
+            </div>
+        </div>
+
+        <div class="api-item">
+            <div class="api-name">ProceedPoint</div>
+            <div class="api-description">
+                <p>在 AOP 通知方法中，<code>ProceedPoint</code> 对象提供了对连接点（通常是方法调用）的访问。</p>
+                <p>主要方法包括：</p>
+                <ul>
+                    <li><code>getMethodDescription()</code>: 获取被拦截方法的描述信息（名称、参数类型）。</li>
+                    <li><code>getParams()</code>: 获取方法调用的参数数组。</li>
+                    <li><code>getResult()</code>: 在 <code>@AfterReturning</code> 和 <code>@Around</code> 通知中获取方法的返回值。</li>
+                    <li><code>getE()</code>: 在 <code>@AfterThrowable</code> 通知中获取抛出的异常。</li>
+                    <li><code>invokeInternel()</code>: 在 <code>@Around</code> 通知中调用目标方法。</li>
+                </ul>
+            </div>
+            <div class="api-example">
+                <pre>// 切面类中的通知方法
+@EnhanceClass("com.example.*")
+public class MyAspect {
+
+    @Before("*(*)")
+    public void beforeAdvice(ProceedPoint jp) {
+        String methodName = jp.getMethodDescription().getName();
+        Object[] args = jp.getParams();
+        System.out.println("Before " + methodName + " with args: " + Arrays.toString(args));
+    }
+
+    @Around("calculate(*)")
+    public Object aroundAdvice(ProceedPoint pjp) throws Throwable {
+        String methodName = pjp.getMethodDescription().getName();
+        System.out.println("Around before " + methodName);
+
+        Object result;
+        try {
+            result = pjp.invokeInternel(); // 调用目标方法
+            System.out.println("Around after " + methodName + ", result: " + result);
+        } catch (Throwable t) {
+            System.out.println("Exception in " + methodName + ": " + t.getMessage());
+            throw t; // 重新抛出异常
+        }
+        return result;
+    }
+}</pre>
+            </div>
+        </div>
+
+    </section>
+
+    <section id="transaction">
+        <h2>事务管理</h2>
+        <p>Jfire 通过 AOP 实现了透明的事务管理。开发者可以通过 <code>@Transactional</code> 注解来声明事务边界。</p>
+
+        <div class="api-item">
+            <div class="api-name">@Transactional</div>
+            <div class="api-description">
+                <p>用于标记一个方法需要在事务中执行。<code>@Transactional</code> 注解可以指定事务的传播行为（<code>propagation</code>），默认为 <code>REQUIRED</code>。</p>
+                <p>支持的传播行为（<code>Propagation</code> 枚举）：</p>
+                <ul>
+                    <li><code>REQUIRED</code>: 如果当前存在事务，则加入该事务；如果当前没有事务，则创建一个新的事务。这是最常用的行为。</li>
+                    <li><code>SUPPORTS</code>: 如果当前存在事务，则加入该事务；如果当前没有事务，则以非事务方式执行。</li>
+                    <li><code>MANDATORY</code>: 如果当前存在事务，则加入该事务；如果当前没有事务，则抛出异常。</li>
+                    <li><code>REQUIRES_NEW</code>: 创建一个新的事务，如果当前存在事务，则把当前事务挂起。</li>
+                </ul>
+                <p>如果被 <code>@Transactional</code> 标记的方法正常结束，事务将被提交；如果方法抛出异常，事务将被回滚。</p>
+            </div>
+            <div class="api-example">
+                <pre>// 在类级别应用，该类的所有公共方法都将包含在事务中
+// 注意：根据 TransactionEnhanceManager 的实现，它主要检查方法上的注解。
+// 在类上使用可能不会自动应用到所有方法，除非有其他机制支持。
+// 最稳妥的方式是直接在需要事务的方法上使用 @Transactional。
+/*
+@Transactional // 不太推荐直接在类上使用，除非框架明确支持
+*/
+public class UserService {
+
+    private UserRepository userRepository;
+
+    // 这个方法将在事务中执行
+    @Transactional
+    public void createUser(User user) {
+        userRepository.save(user);
+        // 如果这里抛出异常，事务会自动回滚
+        // userRepository.save(invalidUser); // 假设这会抛出异常
+    }
+
+    // 这个方法也将在事务中执行
+    @Transactional(propagation = Propagation.REQUIRES_NEW) // 独立的新事务
+    public void updateUser(User user) {
+        userRepository.update(user);
+    }
+
+    // 这个方法不在事务中 (除非类上有注解且框架支持)
+    public List<User> findAllUsers() {
+        return userRepository.findAll();
+    }
+}
+
+// 配置类，确保事务管理器被正确配置和注入
+@Configuration
+public class TransactionConfig {
+    // 需要配置一个实现了 TransactionManager 接口的 Bean
+    // 例如：
+    // @Bean
+    // public TransactionManager transactionManager(DataSource dataSource) {
+    //     return new MyTransactionManagerImpl(dataSource); // 具体实现需自行提供
+    // }
+}</pre>
+            </div>
+        </div>
+
+    </section>
+</main>
+
+<footer>
+    <p>Generated by Qwen Code for Jfire Framework</p>
+</footer>
+
+</body>
+</html>
