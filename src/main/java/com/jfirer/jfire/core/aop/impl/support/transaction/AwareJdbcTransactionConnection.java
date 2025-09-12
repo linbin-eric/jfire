@@ -10,7 +10,8 @@ import java.util.concurrent.Executor;
 @Data
 public class AwareJdbcTransactionConnection implements Connection
 {
-    private final  Connection connection;
+    private final Connection connection;
+
     @Override
     public Statement createStatement() throws SQLException
     {
@@ -62,7 +63,7 @@ public class AwareJdbcTransactionConnection implements Connection
     @Override
     public void close() throws SQLException
     {
-        throw new UnsupportedOperationException("事务链接会自动处理关闭，不需要手动执行");
+        ;
     }
 
     @Override
