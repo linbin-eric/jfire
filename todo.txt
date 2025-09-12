@@ -1,3 +1,0 @@
-1、实现一个新的事务管理器，这个事务管理器直接和jdbc打交道，直接控制connection，也就是入参就是datasource
-2、实现一个新的transactionState逻辑，不持有connection对象的，则提交和回滚动作都没有意义。有些类似rootConnection，但是看起来更清晰。
-3、提供一个datasource的包装类，这个包装类需要和事务管理器是联动的，而且可以感知事务逻辑。当存在事务的时候，通过这个包装类，始终都返回和事务关联的connection对象。而不是像普通的datasource，每次都是新建。
