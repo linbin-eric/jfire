@@ -20,9 +20,12 @@ public class AwareJdbcTransactionDatasource implements DataSource
         JdbcTransactionState currentState = JdbcTransactionManager.CONTEXT.get();
         if (currentState == null)
         {
-            throw new IllegalStateException("当前上下文中没有事务对象，无法获取链接");
+            return dataSource.getConnection();
         }
-        return new AwareJdbcTransactionConnection(currentState.findConnection());
+        else
+        {
+            return new AwareJdbcTransactionConnection(currentState.findConnection());
+        }
     }
 
     @Override
