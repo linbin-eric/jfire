@@ -96,7 +96,7 @@ public class JdbcTransactionManager implements TransactionManager
                 }
                 finally
                 {
-                    jdbcTransactionState.setAutoCommit(false);
+                    jdbcTransactionState.setAutoCommit(true);
                 }
             }
             if (jdbcTransactionState.getConnection() != null)
@@ -125,7 +125,7 @@ public class JdbcTransactionManager implements TransactionManager
                 }
                 finally
                 {
-                    jdbcTransactionState.setAutoCommit(false);
+                    jdbcTransactionState.setAutoCommit(true);
                 }
             }
             if (jdbcTransactionState.getConnection() != null)

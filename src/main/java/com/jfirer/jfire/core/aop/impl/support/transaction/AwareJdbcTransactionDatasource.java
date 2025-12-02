@@ -9,6 +9,11 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.logging.Logger;
 
+/**
+ * 供其他体系的持久化框架使用，使得其他体系的框架在需要获取 Connection 的场合，能够感知到当前的事务存在与否。
+ * 如果存在，则返回事务中已经存在的链接来使用；
+ * 如果不存在，则创建新的链接。
+ */
 @Data
 public class AwareJdbcTransactionDatasource implements DataSource
 {
