@@ -1,0 +1,34 @@
+package cc.jfire.jfire.test.function.cachetest;
+
+import cc.jfire.jfire.core.aop.impl.CacheEnhanceManager.Cache;
+
+import java.util.HashMap;
+
+public class DemoCache implements Cache
+{
+    private final HashMap<Object, Object> map = new HashMap<Object, Object>();
+
+    @Override
+    public Object get(String key)
+    {
+        return map.get(key);
+    }
+
+    @Override
+    public void remove(String key)
+    {
+        map.remove(key);
+    }
+
+    @Override
+    public void clear()
+    {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void put(String key, Object value, int timeToLive)
+    {
+        map.put(key, value);
+    }
+}

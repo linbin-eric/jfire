@@ -1,0 +1,142 @@
+package cc.jfire.jfire.test.function;
+
+import cc.jfire.baseutil.Resource;
+import cc.jfire.jfire.core.ApplicationContext;
+import cc.jfire.jfire.core.DefaultApplicationContext;
+import cc.jfire.jfire.core.prepare.annotation.ComponentScan;
+import cc.jfire.jfire.core.prepare.annotation.configuration.Bean;
+import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+@Configuration
+@ComponentScan("com.jfirer.jfire.test.function:in~com.jfirer.jfire.test.function.ConfigurationOrderTest*")
+@Resource
+public class ConfigurationOrderTest
+{
+    public static AtomicInteger count = new AtomicInteger();
+
+    @Test
+    public void test()
+    {
+        ApplicationContext context = new DefaultApplicationContext(ConfigurationOrderTest.class);
+        Assert.assertEquals(1, ((Person) context.getBean("person")).getAge());
+        Assert.assertEquals(2, ((Person) context.getBean("person2")).getAge());
+        Assert.assertEquals(3, ((Person) context.getBean("person3")).getAge());
+        Assert.assertEquals(4, ((Person) context.getBean("person4")).getAge());
+        Assert.assertEquals(5, ((Person) context.getBean("person5")).getAge());
+        Assert.assertEquals(5, count.get());
+    }
+
+    public static class Person
+    {
+        private int age = -1;
+
+        public Person(int age)
+        {
+            this.age = age;
+        }
+
+        public int getAge()
+        {
+            return age;
+        }
+    }
+
+    @Resource
+    @Configuration
+    public static class Order_1
+    {
+        @Bean
+        public Person person()
+        {
+            if (count.get() == 0)
+            {
+                count.set(1);
+                return new Person(1);
+            }
+            else
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
+    @Resource
+    @Configuration
+    public static class Order_3
+    {
+        @Bean
+        public Person person2()
+        {
+            if (count.get() == 1)
+            {
+                count.set(2);
+                return new Person(2);
+            }
+            else
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
+    @Resource
+    @Configuration
+    public static class Order_2
+    {
+        @Bean
+        public static Person person3()
+        {
+            if (count.get() == 2)
+            {
+                count.set(3);
+                return new Person(3);
+            }
+            else
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
+    @Resource
+    @Configuration
+    public static class Order_4
+    {
+        @Bean
+        public static Person person4()
+        {
+            if (count.get() == 3)
+            {
+                count.set(4);
+                return new Person(4);
+            }
+            else
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
+    @Resource
+    @Configuration
+    public static class Order_5
+    {
+        @Bean
+        public static Person person5()
+        {
+            if (count.get() == 4)
+            {
+                count.set(5);
+                return new Person(5);
+            }
+            else
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+}
