@@ -21,7 +21,7 @@ public class MapTest
     }
 
     @Configuration
-    @ComponentScan("com.jfirer.jfire.test.function.map")
+    @ComponentScan("cc.jfire.jfire.test.function.map")
     public static class MapTestScan
     {
 

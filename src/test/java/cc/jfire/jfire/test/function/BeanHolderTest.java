@@ -25,7 +25,7 @@ public class BeanHolderTest
         Assert.assertEquals(3, testBean.getAge());
     }
 
-    @EnhanceClass("com.jfirer.jfire.test.function.BeanHolderTest$TestBean")
+    @EnhanceClass("cc.jfire.jfire.test.function.BeanHolderTest$TestBean")
     public static class Enhance
     {
         @Around("say()")

@@ -60,7 +60,7 @@ public class ContextTest
     }
 
     @Configuration
-    @ComponentScan("com.jfirer.jfire.test.function.base")
+    @ComponentScan("cc.jfire.jfire.test.function.base")
     public static class ContextTestScan
     {
 

@@ -8,7 +8,7 @@ import org.junit.Assert;
 
 import java.lang.reflect.Method;
 
-@EnhanceClass("com.jfirer.jfire.*.aop.Person")
+@EnhanceClass("cc.jfire.jfire.*.aop.Person")
 public class Enhance
 {
     private int     order;
@@ -111,7 +111,7 @@ public class Enhance
         findTestForCustom = true;
     }
 
-    @EnhanceClass(value = "com.jfirer.jfire.*.aop.Person", order = 2)
+    @EnhanceClass(value = "cc.jfire.jfire.*.aop.Person", order = 2)
     public static class EnhanceForOrder
     {
         public static String result = "";

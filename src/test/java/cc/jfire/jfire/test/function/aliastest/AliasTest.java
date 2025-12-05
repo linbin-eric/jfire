@@ -47,7 +47,7 @@ public class AliasTest
         assertNotNull(demo);
     }
 
-    @ComponentScan("com.jfirer.jfire.test.function.aliastest")
+    @ComponentScan("cc.jfire.jfire.test.function.aliastest")
     @Configuration
     public static class aliasCompopntScan
     {

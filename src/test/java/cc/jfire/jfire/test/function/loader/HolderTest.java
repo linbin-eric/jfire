@@ -20,7 +20,7 @@ public class HolderTest
     }
 
     @Configuration
-    @ComponentScan("com.jfirer.jfire.test.function.loader")
+    @ComponentScan("cc.jfire.jfire.test.function.loader")
     public static class HolderTestScan
     {
 

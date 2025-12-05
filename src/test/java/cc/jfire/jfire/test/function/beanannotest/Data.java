@@ -12,7 +12,7 @@ import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
 
 
 @Configuration
-@ComponentScan("com.jfirer.jfire.test.function.beanannotest")
+@ComponentScan("cc.jfire.jfire.test.function.beanannotest")
 @MyImport(name = "myimport")
 @Import({HouseProvider.class, Data.NameProperty.class})
 public class Data

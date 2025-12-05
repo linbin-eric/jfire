@@ -125,7 +125,7 @@ public class AopTest
     }
 
     @Configuration
-    @ComponentScan("com.jfirer.jfire.test.function.aop")
+    @ComponentScan("cc.jfire.jfire.test.function.aop")
     public static class AopTtestScan
     {}
 }

@@ -10,7 +10,7 @@ import org.junit.Test;
 
 @Configuration
 @Resource
-@ComponentScan("com.jfirer.jfire.test.function.cyclicDependenceTest")
+@ComponentScan("cc.jfire.jfire.test.function.cyclicDependenceTest")
 public class CyclicDependenceTest
 {
     @Configuration

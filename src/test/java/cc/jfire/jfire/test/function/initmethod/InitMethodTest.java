@@ -19,7 +19,7 @@ public class InitMethodTest
     }
 
     @Configuration
-    @ComponentScan("com.jfirer.jfire.test.function.initmethod")
+    @ComponentScan("cc.jfire.jfire.test.function.initmethod")
     public static class InitMethodTestScan
     {
 

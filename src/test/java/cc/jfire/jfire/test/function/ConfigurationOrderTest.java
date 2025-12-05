@@ -12,7 +12,7 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Configuration
-@ComponentScan("com.jfirer.jfire.test.function:in~com.jfirer.jfire.test.function.ConfigurationOrderTest*")
+@ComponentScan("cc.jfire.jfire.test.function:in~cc.jfire.jfire.test.function.ConfigurationOrderTest*")
 @Resource
 public class ConfigurationOrderTest
 {
