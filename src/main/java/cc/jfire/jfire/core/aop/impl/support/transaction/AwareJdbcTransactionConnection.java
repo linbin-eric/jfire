@@ -66,7 +66,7 @@ public class AwareJdbcTransactionConnection implements Connection
     @Override
     public void close() throws SQLException
     {
-        ;
+        throw new UnsupportedOperationException("事务链接会自动关闭，不需要手动执行");
     }
 
     @Override
