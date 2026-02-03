@@ -216,12 +216,20 @@ public class AopEnhanceManager implements EnhanceManager
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, before.value(), before.custom());
         return Arrays.stream(originType.getDeclaredMethods())//
                      .filter(method -> method.isBridge() == false)//
+                     // 代理类只会生成 public 且可覆盖的方法；这里保持一致，避免匹配到无法增强的方法导致 NPE/无效增强
+                     .filter(method -> Modifier.isPublic(method.getModifiers()))//
+                     .filter(method -> Modifier.isFinal(method.getModifiers()) == false)//
                      .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
                      .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("前置通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                          MethodModel                methodModel = classModel.getMethodModel(key);
+                         if (methodModel == null)
+                         {
+                             logger.debug("前置通知匹配到的方法在增强类中不存在(可能是非可覆盖/未生成的代理方法)，跳过。method={}", method);
+                             return;
+                         }
                          String                     originBody  = methodModel.getBody();
                          String                     pointName   = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
                          StringBuilder              cache       = new StringBuilder();
@@ -321,12 +329,20 @@ public class AopEnhanceManager implements EnhanceManager
         After             after             = annotationContextOnEnhanceMethod.getAnnotation(After.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, after.value(), after.custom());
         return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false)//
+                     // 代理类只会生成 public 且可覆盖的方法；这里保持一致，避免匹配到无法增强的方法导致 NPE/无效增强
+                     .filter(method -> Modifier.isPublic(method.getModifiers()))//
+                     .filter(method -> Modifier.isFinal(method.getModifiers()) == false)//
                      .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
                      .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("后置通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                          MethodModel                methodModel = classModel.getMethodModel(key);
+                         if (methodModel == null)
+                         {
+                             logger.debug("后置通知匹配到的方法在增强类中不存在(可能是非可覆盖/未生成的代理方法)，跳过。method={}", method);
+                             return;
+                         }
                          String                     originBody  = methodModel.getBody();
                          String                     pointName   = "point_" + FIELD_NAME_COUNTER.getAndIncrement();
                          StringBuilder              cache       = new StringBuilder();
@@ -355,12 +371,20 @@ public class AopEnhanceManager implements EnhanceManager
         AfterReturning    afterReturning    = annotationContextOnEnhanceMethod.getAnnotation(AfterReturning.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterReturning.value(), afterReturning.custom());
         return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false)//
+                     // 代理类只会生成 public 且可覆盖的方法；这里保持一致，避免匹配到无法增强的方法导致 NPE/无效增强
+                     .filter(method -> Modifier.isPublic(method.getModifiers()))//
+                     .filter(method -> Modifier.isFinal(method.getModifiers()) == false)//
                      .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
                      .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("返回通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key    = new MethodModel.MethodModelKey(method);
                          MethodModel                origin = classModel.removeMethodModel(key);
+                         if (origin == null)
+                         {
+                             logger.debug("返回通知匹配到的方法在增强类中不存在(可能是非可覆盖/未生成的代理方法)，跳过。method={}", method);
+                             return;
+                         }
                          MethodModel                newOne = new MethodModel(method, classModel);
                          origin.setAccessLevel(MethodModel.AccessLevel.PRIVATE);
                          origin.setMethodName(origin.getMethodName() + "_" + METHOD_NAME_COUNTER.getAndIncrement());
@@ -387,13 +411,21 @@ public class AopEnhanceManager implements EnhanceManager
         AfterThrowable    afterThrowable    = annotationContextOnEnhanceMethod.getAnnotation(AfterThrowable.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, afterThrowable.value(), afterThrowable.custom());
         classModel.addImport(ReflectUtil.class);
-        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge())//
+        return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false)//
+                     // 代理类只会生成 public 且可覆盖的方法；这里保持一致，避免匹配到无法增强的方法导致 NPE/无效增强
+                     .filter(method -> Modifier.isPublic(method.getModifiers()))//
+                     .filter(method -> Modifier.isFinal(method.getModifiers()) == false)//
                      .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
                      .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                          MethodModel                methodModel = classModel.getMethodModel(key);
+                         if (methodModel == null)
+                         {
+                             logger.debug("异常通知匹配到的方法在增强类中不存在(可能是非可覆盖/未生成的代理方法)，跳过。method={}", method);
+                             return;
+                         }
                          String                     body        = methodModel.getBody();
                          StringBuilder              cache       = new StringBuilder();
                          cache.append("try\r\n{\r\n").append(body).append("}\r\ncatch(java.lang.Throwable e)\r\n{");
@@ -428,12 +460,20 @@ public class AopEnhanceManager implements EnhanceManager
         Around            around            = annotationContextOnEnhanceMethod.getAnnotation(Around.class);
         MatchTargetMethod matchTargetMethod = getMatchTargetMethod(enhanceMethod, around.value(), around.custom());
         return Arrays.stream(originType.getDeclaredMethods()).filter(method -> method.isBridge() == false)//
+                     // 代理类只会生成 public 且可覆盖的方法；这里保持一致，避免匹配到无法增强的方法导致 NPE/无效增强
+                     .filter(method -> Modifier.isPublic(method.getModifiers()))//
+                     .filter(method -> Modifier.isFinal(method.getModifiers()) == false)//
                      .filter(method -> Modifier.isStatic(method.getModifiers()) == false)//
                      .filter(method -> matchTargetMethod.match(method))//
                      .peek(method -> {
                          logger.debug("环绕通知规则匹配成功，方法:{},通知方法:{}", method.getDeclaringClass().getSimpleName() + "." + method.getName(), enhanceMethod.getDeclaringClass().getSimpleName() + "." + enhanceMethod.getName());
                          MethodModel.MethodModelKey key         = new MethodModel.MethodModelKey(method);
                          MethodModel                methodModel = classModel.getMethodModel(key);
+                         if (methodModel == null)
+                         {
+                             logger.debug("环绕通知匹配到的方法在增强类中不存在(可能是非可覆盖/未生成的代理方法)，跳过。method={}", method);
+                             return;
+                         }
                          boolean[]                  flags       = new boolean[methodModel.getParamterTypes().length];
                          Arrays.fill(flags, true);
                          methodModel.setParamterFinals(flags);
