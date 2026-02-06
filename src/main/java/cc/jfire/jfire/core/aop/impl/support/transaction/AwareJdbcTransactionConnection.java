@@ -54,19 +54,19 @@ public class AwareJdbcTransactionConnection implements Connection
     @Override
     public void commit() throws SQLException
     {
-        throw new UnsupportedOperationException("事务链接会自动处理提交，不需要手动执行");
+        ;
     }
 
     @Override
     public void rollback() throws SQLException
     {
-        throw new UnsupportedOperationException("事务链接会自动处理回滚，不需要手动执行");
+        ;
     }
 
     @Override
     public void close() throws SQLException
     {
-        throw new UnsupportedOperationException("事务链接会自动关闭，不需要手动执行");
+        ;
     }
 
     @Override

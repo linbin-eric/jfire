@@ -25,7 +25,7 @@ public class AwareJdbcTransactionDatasource implements DataSource
         JdbcTransactionState currentState = JdbcTransactionManager.CONTEXT.get();
         if (currentState == null)
         {
-            return dataSource.getConnection();
+            throw new IllegalStateException("当前调用，没有开启事务注解，请检查");
         }
         else
         {
