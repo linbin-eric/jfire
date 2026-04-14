@@ -5,8 +5,8 @@ import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.inject.notated.PropertyRead;
 import cc.jfire.jfire.core.prepare.annotation.PropertyPath;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -27,8 +27,8 @@ public class PropertyPathImporterTest
         ApplicationContext context = ApplicationContext.boot(Test3.class);
         context.register(PropertyPathImporterTest.class);
         PropertyPathImporterTest bean = context.getBean(PropertyPathImporterTest.class);
-        Assert.assertEquals("test", bean.name);
-        Assert.assertEquals("你好", bean.map.get("综合"));
+        Assertions.assertEquals("test", bean.name);
+        Assertions.assertEquals("你好", bean.map.get("综合"));
     }
 
 

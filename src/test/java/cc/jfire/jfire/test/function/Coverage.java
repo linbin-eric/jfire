@@ -9,11 +9,11 @@ import cc.jfire.jfire.test.function.cyclicDependenceTest.CyclicDependenceTest;
 import cc.jfire.jfire.test.function.initmethod.InitMethodTest;
 import cc.jfire.jfire.test.function.loader.HolderTest;
 import cc.jfire.jfire.test.function.map.MapTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses({ //
+@Suite
+@SelectClasses({ //
         AliasTest.class, //
         AopTest.class, //
         ContextTest.class, //

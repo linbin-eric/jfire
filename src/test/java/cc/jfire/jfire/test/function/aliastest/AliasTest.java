@@ -6,14 +6,14 @@ import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.prepare.annotation.ComponentScan;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Testalis3(t = "sada")
 public class AliasTest
@@ -30,7 +30,7 @@ public class AliasTest
     public void test() throws NoSuchMethodException, SecurityException, NoSuchFieldException
     {
         Resource resource = AnnotationContext.getInstanceOn(AliasTest.class).getAnnotation(Resource.class);
-        Assert.assertTrue(resource.shareable());
+        Assertions.assertTrue(resource.shareable());
         Method     method     = AliasTest.class.getMethod("take");
         InitMethod initMethod = AnnotationContext.getInstanceOn(method).getAnnotation(InitMethod.class);
         assertEquals("ss", initMethod.name());

@@ -7,12 +7,12 @@ import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
 import cc.jfire.jfire.test.function.base.data.House;
 import cc.jfire.jfire.test.function.base.data.ImmutablePerson;
 import cc.jfire.jfire.test.function.base.data.MutablePerson;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ContextTest
 {

@@ -3,7 +3,7 @@ package cc.jfire.jfire.test.function.cachetest;
 import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.test.function.base.data.House;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class NewCacheTest
 {

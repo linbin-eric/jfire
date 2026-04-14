@@ -3,12 +3,12 @@ package cc.jfire.jfire.test.function;
 import cc.jfire.baseutil.bytecode.support.AnnotationContext;
 import cc.jfire.baseutil.bytecode.support.AnnotationContextFactory;
 import cc.jfire.baseutil.bytecode.support.DefaultAnnotationContextFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @AnnodatationDatabaseTest.test1(value = RetentionPolicy.RUNTIME, value2 = "22", value3 = AnnodatationDatabaseTest.class, value5 = @AnnodatationDatabaseTest.test2("kk"), value6 = {@AnnodatationDatabaseTest.test2("gg")})
 public class AnnodatationDatabaseTest

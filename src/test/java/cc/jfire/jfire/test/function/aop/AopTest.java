@@ -5,10 +5,10 @@ import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.prepare.annotation.ComponentScan;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
 import cc.jfire.jfire.test.function.aop.Enhance.EnhanceForOrder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AopTest
 {
@@ -102,8 +102,8 @@ public class AopTest
         person.tx();
         person.autoClose();
         TxManager txManager = context.getBean(TxManager.class);
-        Assert.assertTrue(txManager.isBeginTransAction());
-        Assert.assertTrue(txManager.isCommit());
+        Assertions.assertTrue(txManager.isBeginTransAction());
+        Assertions.assertTrue(txManager.isCommit());
     }
 
     @Test

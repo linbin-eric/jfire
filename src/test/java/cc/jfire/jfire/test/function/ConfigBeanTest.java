@@ -4,8 +4,8 @@ import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Bean;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 @Configuration
 public class ConfigBeanTest
@@ -30,8 +30,8 @@ public class ConfigBeanTest
         ApplicationContext context = new DefaultApplicationContext(ConfigBeanTest.class);
         Home               home    = context.getBean(Home.class);
         Person             person  = context.getBean(Person.class);
-        Assert.assertNotNull(person);
-        Assert.assertSame(person, home.person);
+        Assertions.assertNotNull(person);
+        Assertions.assertSame(person, home.person);
     }
 
     public static class Home

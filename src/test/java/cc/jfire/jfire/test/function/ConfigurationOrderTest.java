@@ -6,8 +6,8 @@ import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.prepare.annotation.ComponentScan;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Bean;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -22,12 +22,12 @@ public class ConfigurationOrderTest
     public void test()
     {
         ApplicationContext context = new DefaultApplicationContext(ConfigurationOrderTest.class);
-        Assert.assertEquals(1, ((Person) context.getBean("person")).getAge());
-        Assert.assertEquals(2, ((Person) context.getBean("person2")).getAge());
-        Assert.assertEquals(3, ((Person) context.getBean("person3")).getAge());
-        Assert.assertEquals(4, ((Person) context.getBean("person4")).getAge());
-        Assert.assertEquals(5, ((Person) context.getBean("person5")).getAge());
-        Assert.assertEquals(5, count.get());
+        Assertions.assertEquals(1, ((Person) context.getBean("person")).getAge());
+        Assertions.assertEquals(2, ((Person) context.getBean("person2")).getAge());
+        Assertions.assertEquals(3, ((Person) context.getBean("person3")).getAge());
+        Assertions.assertEquals(4, ((Person) context.getBean("person4")).getAge());
+        Assertions.assertEquals(5, ((Person) context.getBean("person5")).getAge());
+        Assertions.assertEquals(5, count.get());
     }
 
     public static class Person

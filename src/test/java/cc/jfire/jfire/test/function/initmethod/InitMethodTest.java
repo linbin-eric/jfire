@@ -4,8 +4,8 @@ import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.prepare.annotation.ComponentScan;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class InitMethodTest
 {
@@ -14,8 +14,8 @@ public class InitMethodTest
     {
         ApplicationContext context = new DefaultApplicationContext(InitMethodTestScan.class);
         Person             person  = context.getBean(Person.class);
-        Assert.assertEquals(23, person.getAge());
-        Assert.assertEquals("林斌", person.getName());
+        Assertions.assertEquals(23, person.getAge());
+        Assertions.assertEquals("林斌", person.getName());
     }
 
     @Configuration
