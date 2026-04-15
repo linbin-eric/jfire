@@ -1,7 +1,6 @@
 package cc.jfire.jfire.util;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class YmlConfig
@@ -20,13 +19,6 @@ public class YmlConfig
 
     public void addProperty(String key, Object value)
     {
-        if (value instanceof String || value instanceof List || value instanceof Map)
-        {
-            config.put(key, value);
-        }
-        else
-        {
-            throw new IllegalArgumentException();
-        }
+        config.put(key, value);
     }
 }

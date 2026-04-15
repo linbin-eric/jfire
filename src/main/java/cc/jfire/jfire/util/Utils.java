@@ -26,8 +26,9 @@ public class Utils
                         (originPath, content) -> {
                             YamlReader          reader          = new YamlReader(content);
                             Map<String, Object> mapWithFullPath = reader.getMapWithFullPath();
+                            Map<String, Object> mapWithIndentStructure = reader.getMapWithIndentStructure();
                             mapWithFullPath.forEach((key, value) -> context.getConfig().addProperty(key, value));
-                            context.getYmlMap().put(originPath, reader.getMapWithIndentStructure());
+                            context.getYmlMap().put(originPath, mapWithIndentStructure);
                         });
         }
     }
@@ -50,7 +51,7 @@ public class Utils
             }
             catch (Throwable e)
             {
-                log.warn("路径:{}的配置文件不存在", path);
+                log.warn("路径:{}的配置文件不存在", path,e);
             }
         }
         else if (path.startsWith("file:"))
@@ -63,7 +64,7 @@ public class Utils
             }
             catch (URISyntaxException e)
             {
-                log.warn("路径:{}的配置文件不存在", path);
+                log.warn("路径:{}的配置文件不存在", path,e);
                 return;
             }
             //如果 dirPath 是一个文件夹路径，则意味着在编译输出目录下的 classes 文件夹下；如果 dirPath 是一个文件，则意味着他是一个jar 包
