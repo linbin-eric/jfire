@@ -26,23 +26,26 @@ import cc.jfire.jfire.util.YmlConfig;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class DefaultApplicationContext implements ApplicationContext
 {
-    public static final CompileHelper                 COMPILE_HELPER      = new CompileHelper();
+    public static final CompileHelper                              COMPILE_HELPER      = new CompileHelper();
     /**
      * 只有Configuration注解下并且有Conditional注解的情况下，才会有Bean是否被注册的可能。
      * 如果支持每一轮刷新都根据不同的环境变量或者其他条件满足来增减Bean定义会变得较为复杂，而且实际上也没有遇到这样的场景。
      * 因为目前简化为只支持Bean定义不断增多。
      */
-    protected           Map<String, BeanRegisterInfo> beanRegisterInfoMap = new HashMap<>();
-    private final       YmlConfig                     config              = new YmlConfig();
+    protected           Map<String, BeanRegisterInfo>              beanRegisterInfoMap = new HashMap<>();
+    private final       YmlConfig                                  config              = new YmlConfig();
     /**
      * 容器是否刷新过。只有刷新过的容器才能对外提供完整服务。
      */
-    private             boolean                       freshed             = false;
+    private             boolean                                    freshed             = false;
+    private             ConcurrentMap<String, Map<String, Object>> ymlMap              = new ConcurrentHashMap<>();
 
     public DefaultApplicationContext(Class<?> bootStarpClass)
     {
@@ -192,6 +195,12 @@ public class DefaultApplicationContext implements ApplicationContext
             log.debug("注册bean:{}", beanRegisterInfo.getBeanName());
             return RegisterResult.BEAN;
         }
+    }
+
+    @Override
+    public Map<String, Map<String, Object>> getYmlMap()
+    {
+        return ymlMap;
     }
 
     private void awareContextInit()

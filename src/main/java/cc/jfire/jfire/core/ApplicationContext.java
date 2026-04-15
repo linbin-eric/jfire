@@ -4,6 +4,7 @@ import cc.jfire.jfire.core.bean.BeanRegisterInfo;
 import cc.jfire.jfire.util.YmlConfig;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * 应用上下文接口，提供Bean的获取、注册等核心功能
@@ -98,6 +99,14 @@ public interface ApplicationContext
      * @return 注册结果
      */
     RegisterResult registerBeanRegisterInfo(BeanRegisterInfo beanRegisterInfo);
+
+    /**
+     * 返回当前存储的所有 yml 配置
+     * key：配置文件的完整原始路径。也就是在PropertyPath中的值
+     * value：yaml 解析出来的完整结构的 yaml 内容
+     * @return
+     */
+    Map<String,Map<String,Object>> getYmlMap();
 
     /**
      * 是否发现新的ContextPrepare枚举

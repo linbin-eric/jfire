@@ -13,7 +13,7 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 @Slf4j
 public class Utils
@@ -23,15 +23,18 @@ public class Utils
         if (path.endsWith("yml") || path.endsWith("yaml"))
         {
             processPath(path, rootClass,//
-                        content -> {
-                            Map<String, Object> mapWithFullPath = new YamlReader(content).getMapWithFullPath();
+                        (originPath, content) -> {
+                            YamlReader          reader          = new YamlReader(content);
+                            Map<String, Object> mapWithFullPath = reader.getMapWithFullPath();
                             mapWithFullPath.forEach((key, value) -> context.getConfig().addProperty(key, value));
+                            context.getYmlMap().put(originPath, reader.getMapWithIndentStructure());
                         });
         }
     }
 
-    private static <R> void processPath(String path, Class<?> rootClass, Consumer<String> consumer)
+    private static <R> void processPath(String path, Class<?> rootClass, BiConsumer<String, String> consumer)
     {
+        String originPath = path;
         if (path.startsWith("classpath:"))
         {
             path = path.substring(10);
@@ -43,7 +46,7 @@ public class Utils
             {
                 assert inputStream != null;
                 byte[] bytes = IoUtil.readAllBytes(inputStream);
-                consumer.accept(new String(bytes, StandardCharsets.UTF_8));
+                consumer.accept(originPath, new String(bytes, StandardCharsets.UTF_8));
             }
             catch (Throwable e)
             {
@@ -80,7 +83,7 @@ public class Utils
             try (InputStream inputStream = new FileInputStream(pathFile))
             {
                 byte[] bytes = IoUtil.readAllBytes(inputStream);
-                consumer.accept(new String(bytes, StandardCharsets.UTF_8));
+                consumer.accept(originPath, new String(bytes, StandardCharsets.UTF_8));
             }
             catch (IOException e)
             {
