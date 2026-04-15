@@ -4,7 +4,7 @@ import cc.jfire.baseutil.Verify;
 import cc.jfire.jfire.core.aop.ProceedPoint;
 import cc.jfire.jfire.core.aop.notated.*;
 import cc.jfire.jfire.core.aop.notated.support.MatchTargetMethod;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.lang.reflect.Method;
 
@@ -38,8 +38,8 @@ public class Enhance
     {
         System.out.println("asdasd");
         point.invoke();
-        Assert.assertEquals(((int[]) point.getParams()[0]).length, ((String[]) point.getResult()).length);
-        Assert.assertEquals(3,((String[]) point.getResult()).length);
+        Assertions.assertEquals(((int[]) point.getParams()[0]).length, ((String[]) point.getResult()).length);
+        Assertions.assertEquals(3,((String[]) point.getResult()).length);
         point.setResult(new String[]{"1","2"});
     }
 

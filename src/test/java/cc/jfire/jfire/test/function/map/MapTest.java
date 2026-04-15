@@ -4,9 +4,9 @@ import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.prepare.annotation.ComponentScan;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MapTest
 {

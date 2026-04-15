@@ -9,8 +9,8 @@ import cc.jfire.jfire.core.prepare.annotation.condition.provide.ConditionOnPrope
 import cc.jfire.jfire.core.prepare.annotation.configuration.Bean;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
 import cc.jfire.jfire.exception.BeanDefinitionCanNotFindException;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 @ComponentScan("com.jfirer.jfire.test.function.condition")
 @Configuration
@@ -37,14 +37,14 @@ public class ConditionTest
         try
         {
             demo1 = applicationContext.getBean(Demo1.class);
-            Assert.fail();
+            Assertions.fail();
         }
         catch (Exception e)
         {
-            Assert.assertTrue(e instanceof BeanDefinitionCanNotFindException);
+            Assertions.assertTrue(e instanceof BeanDefinitionCanNotFindException);
         }
         Demo2 demo2 = applicationContext.getBean(Demo2.class);
-        Assert.assertNotNull(demo2);
+        Assertions.assertNotNull(demo2);
     }
 
     static class Demo1
@@ -62,12 +62,12 @@ public class ConditionTest
         try
         {
             context.getBean(Demo1.class);
-            Assert.fail();
+            Assertions.fail();
         }
         catch (Exception e)
         {
             e.printStackTrace();
-            Assert.assertTrue(e instanceof BeanDefinitionCanNotFindException);
+            Assertions.assertTrue(e instanceof BeanDefinitionCanNotFindException);
         }
     }
 

@@ -7,8 +7,8 @@ import cc.jfire.jfire.core.aop.ProceedPointImpl;
 import cc.jfire.jfire.core.aop.notated.Around;
 import cc.jfire.jfire.core.aop.notated.EnhanceClass;
 import cc.jfire.jfire.core.inject.BeanHolder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class BeanHolderTest
 {
@@ -20,9 +20,9 @@ public class BeanHolderTest
         applicationContext.register(Enhance.class);
         TestBean testBean = applicationContext.getBean(TestBean.class);
         testBean.say2();
-        Assert.assertEquals(1, testBean.getAge());
+        Assertions.assertEquals(1, testBean.getAge());
         testBean.say3();
-        Assert.assertEquals(3, testBean.getAge());
+        Assertions.assertEquals(3, testBean.getAge());
     }
 
     @EnhanceClass("cc.jfire.jfire.test.function.BeanHolderTest$TestBean")

@@ -2,99 +2,43 @@ package cc.jfire.jfire.helpjunit;
 
 import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.DefaultApplicationContext;
-import org.junit.rules.RunRules;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runner.Runner;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.BlockJUnit4ClassRunner;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.InitializationError;
-import org.junit.runners.model.Statement;
-
-import java.util.List;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolver;
+import org.junit.jupiter.api.extension.TestInstanceFactory;
+import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 
 /**
- * Jfire 的 JUnit4 Runner。
- * 每个测试方法执行前，都会先从 ApplicationContext 中获取测试类对应的 Bean。
+ * JUnit5 测试扩展，用于在测试中自动创建应用上下文
  */
-public class JfireRunner extends Runner
+public class JfireRunner implements TestInstanceFactory, ParameterResolver
 {
-    private final DelegateRunner delegateRunner;
+    private static final ExtensionContext.Namespace NAMESPACE =
+            ExtensionContext.Namespace.create(JfireRunner.class);
 
-    public JfireRunner(Class<?> klass) throws InitializationError
+    @Override
+    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
     {
-        delegateRunner = new DelegateRunner(klass);
+        Class<?> testClass = factoryContext.getTestClass();
+        ApplicationContext context = getOrCreateContext(extensionContext, testClass);
+        return context.getBean(testClass);
     }
 
     @Override
-    public Description getDescription()
+    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
     {
-        return delegateRunner.getDescription();
+        return parameterContext.getParameter().getType() == ApplicationContext.class;
     }
 
     @Override
-    public void run(RunNotifier notifier)
+    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
     {
-        delegateRunner.run(notifier);
+        return getOrCreateContext(extensionContext, extensionContext.getRequiredTestClass());
     }
 
-    private static class DelegateRunner extends BlockJUnit4ClassRunner
+    private ApplicationContext getOrCreateContext(ExtensionContext extensionContext, Class<?> testClass)
     {
-        private final Class<?>           klass;
-        private final ApplicationContext context;
-
-        private DelegateRunner(Class<?> klass) throws InitializationError
-        {
-            super(klass);
-            this.klass = klass;
-            context = new DefaultApplicationContext(klass);
-        }
-
-        @Override
-        @SuppressWarnings("deprecation")
-        protected Statement methodBlock(FrameworkMethod method)
-        {
-            Object    test      = createTest();
-            Statement statement = methodInvoker(method, test);
-            statement = possiblyExpectingExceptions(method, test, statement);
-            statement = withPotentialTimeout(method, test, statement);
-            statement = withBefores(method, test, statement);
-            statement = withAfters(method, test, statement);
-            statement = withRules(method, test, statement);
-            return statement;
-        }
-
-        private Statement withRules(FrameworkMethod method, Object target, Statement statement)
-        {
-            List<TestRule> testRules = getTestRules(target);
-            Statement      result    = statement;
-            result = withMethodRules(method, testRules, target, result);
-            result = withTestRules(method, testRules, result);
-            return result;
-        }
-
-        private Statement withTestRules(FrameworkMethod method, List<TestRule> testRules, Statement statement)
-        {
-            return testRules.isEmpty() ? statement : new RunRules(statement, testRules, describeChild(method));
-        }
-
-        private Statement withMethodRules(FrameworkMethod method, List<TestRule> testRules, Object target, Statement result)
-        {
-            for (org.junit.rules.MethodRule each : rules(target))
-            {
-                if (!testRules.contains(each))
-                {
-                    result = each.apply(result, method, target);
-                }
-            }
-            return result;
-        }
-
-        @Override
-        protected Object createTest()
-        {
-            return context.getBean(klass);
-        }
+        return extensionContext.getStore(NAMESPACE)
+                .getOrComputeIfAbsent(testClass, key -> new DefaultApplicationContext(testClass), ApplicationContext.class);
     }
 }

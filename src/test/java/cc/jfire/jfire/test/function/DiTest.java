@@ -4,8 +4,8 @@ import cc.jfire.baseutil.Resource;
 import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.inject.notated.CanBeNull;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -23,7 +23,7 @@ public class DiTest
         context.register(ForDi2.class);
         context.register(Holder.class);
         Holder holder = context.getBean(Holder.class);
-        Assert.assertEquals(2, holder.f.size());
+        Assertions.assertEquals(2, holder.f.size());
     }
 
     /**
@@ -36,7 +36,7 @@ public class DiTest
         context.register(ForDi1.class);
         context.register(Holder2.class);
         Holder2 holder = context.getBean(Holder2.class);
-        Assert.assertNotNull(holder.di);
+        Assertions.assertNotNull(holder.di);
     }
 
     /**
@@ -48,7 +48,7 @@ public class DiTest
         ApplicationContext context = new DefaultApplicationContext();
         context.register(Holder3.class);
         Holder3 holder = context.getBean(Holder3.class);
-        Assert.assertNull(holder.di);
+        Assertions.assertNull(holder.di);
     }
 
     public interface forDi

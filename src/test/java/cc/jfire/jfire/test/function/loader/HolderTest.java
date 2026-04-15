@@ -4,8 +4,8 @@ import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.prepare.annotation.ComponentScan;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class HolderTest
 {
@@ -14,9 +14,9 @@ public class HolderTest
     {
         ApplicationContext context = new DefaultApplicationContext(HolderTestScan.class);
         Person             person  = context.getBean(Person.class);
-        Assert.assertEquals("name", person.getName());
+        Assertions.assertEquals("name", person.getName());
         Home home = context.getBean(Home.class);
-        Assert.assertEquals(100, home.getLength());
+        Assertions.assertEquals(100, home.getLength());
     }
 
     @Configuration

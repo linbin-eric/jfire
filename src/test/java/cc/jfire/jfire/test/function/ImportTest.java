@@ -3,8 +3,8 @@ package cc.jfire.jfire.test.function;
 import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.test.function.importtest.Node2;
 import cc.jfire.jfire.test.function.importtest.Root;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ImportTest
 {
@@ -13,6 +13,6 @@ public class ImportTest
     {
         ApplicationContext boot = ApplicationContext.boot(Root.class);
         Node2              bean = boot.getBean(Node2.class);
-        Assert.assertNotNull(bean);
+        Assertions.assertNotNull(bean);
     }
 }

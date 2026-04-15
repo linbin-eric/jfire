@@ -5,8 +5,8 @@ import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.prepare.annotation.EnableAutoConfiguration;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Bean;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 @EnableAutoConfiguration
 @Configuration
@@ -17,9 +17,9 @@ public class StarterTest
     {
         ApplicationContext context   = new DefaultApplicationContext(StarterTest.class);
         MyStarter          myStarter = context.getBean(MyStarter.class);
-        Assert.assertNotNull(myStarter);
+        Assertions.assertNotNull(myStarter);
         WithStarter withStarter = context.getBean(WithStarter.class);
-        Assert.assertNotNull(withStarter);
+        Assertions.assertNotNull(withStarter);
     }
 
     @Configuration

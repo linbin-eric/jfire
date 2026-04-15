@@ -5,8 +5,8 @@ import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.prepare.annotation.ComponentScan;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Bean;
 import cc.jfire.jfire.core.prepare.annotation.configuration.Configuration;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 @Configuration
 @Resource
@@ -56,11 +56,11 @@ public class CyclicDependenceTest
         try
         {
             applicationContext.getBean(A.class);
-            Assert.fail();
+            Assertions.fail();
         }
         catch (Exception e)
         {
-            Assert.assertTrue(e instanceof IllegalStateException);
+            Assertions.assertTrue(e instanceof IllegalStateException);
         }
     }
 }

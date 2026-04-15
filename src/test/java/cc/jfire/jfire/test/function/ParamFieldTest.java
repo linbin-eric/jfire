@@ -5,8 +5,8 @@ import cc.jfire.jfire.core.ApplicationContext;
 import cc.jfire.jfire.core.DefaultApplicationContext;
 import cc.jfire.jfire.core.inject.notated.PropertyRead;
 import cc.jfire.jfire.core.prepare.ContextPrepare;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -52,23 +52,23 @@ public class ParamFieldTest
         context.register(ParamFieldTest.class);
         context.register(ForProperty.class);
         ParamFieldTest data = context.getBean(ParamFieldTest.class);
-        Assert.assertArrayEquals(new int[]{1, 2}, data.f1);
-        Assert.assertEquals("aaa", data.f2);
-        Assert.assertEquals(1, data.f3.intValue());
-        Assert.assertEquals(2, data.f4);
-        Assert.assertEquals(3, data.f5.intValue());
-        Assert.assertEquals(4, data.f6);
-        Assert.assertTrue(data.f7);
-        Assert.assertFalse(data.f8);
-        Assert.assertEquals(2.65, data.f9, 0.001);
-        Assert.assertEquals(2.35, data.f10.floatValue(), 0.001);
-        Assert.assertArrayEquals(new String[]{"ni", "sx"}, data.f11);
+        Assertions.assertArrayEquals(new int[]{1, 2}, data.f1);
+        Assertions.assertEquals("aaa", data.f2);
+        Assertions.assertEquals(1, data.f3.intValue());
+        Assertions.assertEquals(2, data.f4);
+        Assertions.assertEquals(3, data.f5.intValue());
+        Assertions.assertEquals(4, data.f6);
+        Assertions.assertTrue(data.f7);
+        Assertions.assertFalse(data.f8);
+        Assertions.assertEquals(2.65, data.f9, 0.001);
+        Assertions.assertEquals(2.35, data.f10.floatValue(), 0.001);
+        Assertions.assertArrayEquals(new String[]{"ni", "sx"}, data.f11);
         Set<String> set = new HashSet<String>();
         set.add("xx");
         set.add("rr");
-        Assert.assertEquals(set, data.f12);
-        Assert.assertEquals(ParamFieldTest.class, data.f13);
-        Assert.assertEquals(name.test1, data.f14);
+        Assertions.assertEquals(set, data.f12);
+        Assertions.assertEquals(ParamFieldTest.class, data.f13);
+        Assertions.assertEquals(name.test1, data.f14);
     }
 
     public enum name
